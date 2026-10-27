@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HOI4-Style TTRPG Combat Simulator</title>
+  
+  <!-- Tailwind CSS & Google Fonts -->
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+  
+  <!-- Project Custom Stylesheet -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="min-h-screen flex flex-col selection:bg-amber-500 selection:text-slate-950 bg-[#0b0f17] text-slate-200">
+
+  <!-- Top Header Navigation -->
+  <header class="bg-slate-900/95 border-b border-slate-800 sticky top-0 z-30 backdrop-blur">
+    <div class="max-w-[1600px] mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 font-bold font-mono text-lg shadow-inner">
+          ⚔
+        </div>
+        <div>
+          <h1 class="text-base sm:text-lg font-extrabold tracking-tight text-white flex items-center gap-2">
+            IRON DIVISION <span class="text-xs font-mono uppercase px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">HOI4-TTRPG Engine</span>
+          </h1>
+          <p class="text-xs text-slate-400 hidden sm:block">Tactical Division Combat, Armor Piercing &amp; Supply Simulation</p>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="flex flex-wrap items-center gap-1 bg-slate-950/70 p-1 rounded-lg border border-slate-800">
+        <button type="button" onclick="switchTab('battlefield')" id="tab-battlefield" class="tab-btn active px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold text-slate-300 hover:text-white transition">
+          ⚔ Battlefield
+        </button>
+        <button type="button" onclick="switchTab('units')" id="tab-units" class="tab-btn px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold text-slate-300 hover:text-white transition">
+          🛡 Unit Designer
+        </button>
+        <button type="button" onclick="switchTab('traits')" id="tab-traits" class="tab-btn px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold text-slate-300 hover:text-white transition">
+          🎖 Traits &amp; Support
+        </button>
+        <button type="button" onclick="switchTab('commanders')" id="tab-commanders" class="tab-btn px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold text-slate-300 hover:text-white transition">
+          ★ Commanders
+        </button>
+        <button type="button" onclick="switchTab('terrain')" id="tab-terrain" class="tab-btn px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold text-slate-300 hover:text-white transition">
+          ⛰ Terrain &amp; Weather
+        </button>
+        <button type="button" onclick="switchTab('tactics')" id="tab-tactics" class="tab-btn px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold text-slate-300 hover:text-white transition">
+          📋 Tactics Guide
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Floating Toast Notifications -->
+  <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Main Application Workspace -->
+  <main class="flex-1 max-w-[1600px] w-full mx-auto p-3 sm:p-4">
+
+    <!-- ==================== TAB 1: BATTLEFIELD ==================== -->
+    <section id="view-battlefield" class="space-y-4">
+      <!-- Theatre Controls Bar -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 sm:p-4 shadow-lg">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
+          <!-- Terrain Selector -->
+          <div>
+            <label class="block text-[11px] font-mono uppercase text-slate-400 mb-1">Base Terrain</label>
+            <select id="bf-terrain" onchange="onEnvironmentChange()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-amber-500"></select>
+          </div>
+          <!-- Terrain Feature Selector -->
+          <div>
+            <label class="block text-[11px] font-mono uppercase text-slate-400 mb-1">Terrain Feature (Multiplicative)</label>
+            <select id="bf-feature" onchange="onEnvironmentChange()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-amber-500"></select>
+          </div>
+          <!-- Weather Selector -->
+          <div>
+            <label class="block text-[11px] font-mono uppercase text-slate-400 mb-1">Weather Condition</label>
+            <select id="bf-weather" onchange="onEnvironmentChange()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-amber-500"></select>
+          </div>
+          <!-- Theatre Role & Opening Surprise -->
+          <div class="grid grid-cols-2 gap-1.5">
+            <div>
+              <label class="block text-[10px] font-mono uppercase text-slate-400 mb-1">Theatre Role</label>
+              <select id="bf-theatre-atk" onchange="onEnvironmentChange()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-2 text-xs text-white focus:outline-none focus:border-amber-500" title="Locks which side is assaulting vs entrenched in fortifications/rivers">
+                <option value="A">Side A Invades / B Entrenched</option>
+                <option value="B">Side B Invades / A Entrenched</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-mono uppercase text-slate-400 mb-1">Opening</label>
+              <label class="flex items-center gap-1.5 bg-slate-950 border border-slate-700 rounded-lg px-2 py-2 text-[11px] cursor-pointer">
+                <input type="checkbox" id="bf-unexpected" onchange="onEnvironmentChange()" class="rounded accent-amber-500">
+                <span class="truncate" title="Unexpected Initiative on Round 1">Surprise Rd1</span>
+              </label>
+            </div>
+          </div>
+          <!-- Round Controls -->
+          <div class="flex flex-wrap items-center justify-end gap-1.5">
+            <button type="button" onclick="runSingleRound()" id="btn-next-round" class="px-3 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs sm:text-sm transition shadow">
+              ▶ Next Round
+            </button>
+            <button type="button" onclick="toggleAutoRun()" id="btn-auto-run" class="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs sm:text-sm transition">
+              ⏩ Auto Battle
+            </button>
+            <button type="button" onclick="resetCurrentBattle()" id="btn-reset-battle" class="px-2.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-medium text-xs transition" title="Fully reset current battle &amp; restore deployed units">
+              ↺ Reset
+            </button>
+            <button type="button" onclick="emptyBattlefield()" id="btn-empty-bf" class="px-2.5 py-2 rounded-lg bg-rose-950/80 hover:bg-rose-900 border border-rose-800 text-rose-200 font-medium text-xs transition" title="Remove all units from both sides">
+              ✕ Empty
+            </button>
+          </div>
+        </div>
+
+        <!-- Environmental Modifiers Status Bar -->
+        <div id="env-summary-bar" class="mt-3 pt-2.5 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400"></div>
+      </div>
+
+      <!-- 3-Column Battlefield Layout -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+
+        <!-- SIDE A COLUMN -->
+        <div class="lg:col-span-4 space-y-3">
+          <div class="bg-slate-900 border border-sky-900/60 rounded-xl p-3.5 shadow-lg">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2.5 mb-3">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-sky-400 inline-block"></span>
+                <h2 class="font-bold text-sm sm:text-base text-sky-300 uppercase tracking-wider">Side A — Vanguard Force</h2>
+              </div>
+              <span id="sideA-role-badge" class="text-[11px] font-mono px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/40 font-semibold">ATTACKING THIS ROUND</span>
+            </div>
+
+            <!-- Commander & Tactic Selection -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-3">
+              <div>
+                <label class="block text-[10px] font-mono uppercase text-slate-400 mb-1">Commander</label>
+                <select id="sideA-commander" onchange="updateSideConfig('A')" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white"></select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-mono uppercase text-slate-400 mb-1">Tactic Selection</label>
+                <select id="sideA-tactic" onchange="updateSideConfig('A')" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white"></select>
+              </div>
+            </div>
+
+            <!-- Side A Telemetry Banner -->
+            <div id="sideA-summary" class="bg-slate-950/80 border border-slate-800 rounded-lg p-2.5 mb-3 text-xs grid grid-cols-3 gap-2 text-center"></div>
+
+            <!-- Deploy Unit Picker -->
+            <div class="flex gap-1.5 mb-3">
+              <select id="sideA-add-select" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white"></select>
+              <button type="button" onclick="deployUnitToSide('A')" class="px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white font-semibold rounded-lg text-xs transition shrink-0">
+                + Deploy Unit
+              </button>
+            </div>
+
+            <!-- Deployed Units Roster -->
+            <div id="sideA-units-list" class="space-y-2.5 max-h-[620px] overflow-y-auto custom-scroll pr-1"></div>
+          </div>
+        </div>
+
+        <!-- CENTER COLUMN: TELEMETRY & LOG -->
+        <div class="lg:col-span-4 space-y-3 flex flex-col">
+          <!-- Round Telemetry & Force Ratio -->
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 shadow-lg">
+            <div class="flex items-center justify-between mb-2">
+              <div>
+                <span class="text-[11px] font-mono uppercase text-slate-400 block">Battle Status</span>
+                <div class="text-lg font-extrabold text-amber-400 font-mono" id="round-counter-display">ROUND 1 (PRE-COMBAT)</div>
+              </div>
+              <div class="text-right">
+                <span class="text-[11px] font-mono uppercase text-slate-400 block">Initiative Phase</span>
+                <div class="text-xs font-semibold text-slate-200" id="phase-indicator">Side A Attacks → Side B Defends</div>
+              </div>
+            </div>
+
+            <!-- Force Ratio Gauge -->
+            <div class="space-y-1 mt-2">
+              <div class="flex justify-between text-[11px] font-mono">
+                <span id="ratio-label-a" class="text-sky-400">Side A: 0 Active</span>
+                <span id="outnumber-bonus-pill" class="text-amber-300 font-semibold">Balanced Forces</span>
+                <span id="ratio-label-b" class="text-rose-400">Side B: 0 Active</span>
+              </div>
+              <div class="w-full h-2.5 bg-rose-950 rounded-full overflow-hidden flex border border-slate-800">
+                <div id="force-ratio-bar-a" class="bg-sky-500 h-full bar-fill" style="width: 50%"></div>
+                <div id="force-ratio-bar-b" class="bg-rose-500 h-full bar-fill" style="width: 50%"></div>
+              </div>
+            </div>
+
+            <div class="mt-3 pt-2.5 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2">
+              <button type="button" onclick="loadDefaultSkirmish()" class="text-xs text-amber-400 hover:text-amber-300 font-medium underline">
+                Load Sample Combined-Arms Battle
+              </button>
+              <button type="button" onclick="openBattleSummaryModal()" id="btn-view-report" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700">
+                📊 View After-Action Report
+              </button>
+            </div>
+          </div>
+
+          <!-- Combat Log -->
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-3.5 shadow-lg flex-1 flex flex-col min-h-[500px]">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-2">
+              <h3 class="font-bold text-xs sm:text-sm uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                <span>🎲 Combat Resolution Log</span>
+              </h3>
+              <div class="flex items-center gap-2">
+                <select id="log-filter" onchange="renderCombatLog()" class="bg-slate-950 border border-slate-700 rounded px-2 py-0.5 text-[11px] text-slate-300">
+                  <option value="all">All Events</option>
+                  <option value="rolls">Vigilance &amp; Clashes</option>
+                  <option value="damage">Casualties &amp; Org</option>
+                  <option value="armor">Armor &amp; Piercing</option>
+                  <option value="support">Supply &amp; Support</option>
+                  <option value="error">🚨 System Errors</option>
+                </select>
+                <button type="button" onclick="copyCombatLog()" class="text-[11px] text-amber-300 hover:text-white px-2 py-0.5 rounded bg-slate-800 border border-slate-700">📋 Copy</button>
+                <button type="button" onclick="clearCombatLog()" class="text-[11px] text-slate-400 hover:text-white px-1.5 py-0.5 rounded bg-slate-800">Clear</button>
+              </div>
+            </div>
+            <div id="combat-log-container" class="flex-1 overflow-y-auto custom-scroll space-y-1.5 font-mono text-xs pr-1 max-h-[560px]"></div>
+          </div>
+        </div>
+
+        <!-- SIDE B COLUMN -->
+        <div class="lg:col-span-4 space-y-3">
+          <div class="bg-slate-900 border border-rose-900/60 rounded-xl p-3.5 shadow-lg">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2.5 mb-3">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span>
+                <h2 class="font-bold text-sm sm:text-base text-rose-300 uppercase tracking-wider">Side B — Opposing Force</h2>
+              </div>
+              <span id="sideB-role-badge" class="text-[11px] font-mono px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40 font-semibold">DEFENDING THIS ROUND</span>
+            </div>
+
+            <!-- Commander & Tactic Selection -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-3">
+              <div>
+                <label class="block text-[10px] font-mono uppercase text-slate-400 mb-1">Commander</label>
+                <select id="sideB-commander" onchange="updateSideConfig('B')" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white"></select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-mono uppercase text-slate-400 mb-1">Tactic Selection</label>
+                <select id="sideB-tactic" onchange="updateSideConfig('B')" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white"></select>
+              </div>
+            </div>
+
+            <!-- Side B Telemetry Banner -->
+            <div id="sideB-summary" class="bg-slate-950/80 border border-slate-800 rounded-lg p-2.5 mb-3 text-xs grid grid-cols-3 gap-2 text-center"></div>
+
+            <!-- Deploy Unit Picker -->
+            <div class="flex gap-1.5 mb-3">
+              <select id="sideB-add-select" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white"></select>
+              <button type="button" onclick="deployUnitToSide('B')" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white font-semibold rounded-lg text-xs transition shrink-0">
+                + Deploy Unit
+              </button>
+            </div>
+
+            <!-- Deployed Units Roster -->
+            <div id="sideB-units-list" class="space-y-2.5 max-h-[620px] overflow-y-auto custom-scroll pr-1"></div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==================== TAB 2: UNIT DESIGNER ==================== -->
+    <section id="view-units" class="hidden space-y-4">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <!-- Form -->
+        <div class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-lg">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
+            <h2 class="font-bold text-base text-amber-400" id="unit-form-title">Create / Edit Unit Template</h2>
+            <button type="button" onclick="resetUnitForm()" class="text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300">+ New Blank</button>
+          </div>
+          <input type="hidden" id="unit-edit-id">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div class="sm:col-span-2">
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Unit Name</label>
+              <input type="text" id="unit-name" placeholder="e.g. 1st Panzer Grenadiers" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Unit Category (Combat Die)</label>
+              <select id="unit-category" onchange="onUnitCategoryChange()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-white">
+                <option value="infantry">Infantry (Atk d12 / Def d12)</option>
+                <option value="armored_vehicle">Armored Vehicle [Non-Tank] (Atk d16 / Def d16, +20 Pur/Ret)</option>
+                <option value="tank">Tank (Atk d20 / Def d20, +10 Pur/Ret)</option>
+                <option value="artillery">Artillery (Atk d20 / Def d8)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Armor Class (Hard/Soft Split)</label>
+              <select id="unit-armor-tier" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-white">
+                <option value="unarmored">Unarmored (0% Hard / 100% Soft)</option>
+                <option value="light">Light Armor (25% Hard / 75% Soft)</option>
+                <option value="medium">Medium Armor (50% Hard / 50% Soft)</option>
+                <option value="heavy">Heavy Armor (75% Hard / 25% Soft)</option>
+                <option value="super">Super Heavy Armor (100% Hard / 0% Soft)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Total Personnel (HP)</label>
+              <input type="number" id="unit-personnel" min="10" max="50000" value="1000" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Max Organization (HP)</label>
+              <input type="number" id="unit-org" min="10" max="500" value="60" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Combat-Ready Armor Vehicles</label>
+              <input type="number" id="unit-armor-count" min="0" max="1000" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Max Supply Stat</label>
+              <input type="number" id="unit-supply" min="10" max="500" value="40" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Soft Attack</label>
+              <input type="number" id="unit-soft-atk" min="0" max="500" value="18" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Hard Attack</label>
+              <input type="number" id="unit-hard-atk" min="0" max="500" value="6" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Defense Stat</label>
+              <input type="number" id="unit-defense" min="0" max="500" value="20" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Piercing</label>
+              <input type="number" id="unit-piercing" min="0" max="500" value="8" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Hardness</label>
+              <input type="number" id="unit-hardness" min="0" max="500" value="4" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Experience Tier</label>
+              <select id="unit-exp" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-white">
+                <option value="Green">Green (-10% Atk/Def, -10 Ret, -1 Org/t, d2 Repair)</option>
+                <option value="Trained">Trained (+10% Atk/Def, d4 Repair)</option>
+                <option value="Regular" selected>Regular (+20% Atk/Def, d6 Repair)</option>
+                <option value="Seasoned">Seasoned (+30% Atk/Def, +1 Org/t, d8 Repair)</option>
+                <option value="Veteran">Veteran (+40% Atk/Def, +2 Org/t, +10 Rec/Ret/Pur, d10 Repair)</option>
+                <option value="Elite">Elite (+50% Atk/Def, +3 Org/t, +20 Rec/Ret/Pur, d12 Repair)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mt-3">
+            <label class="block text-xs text-slate-400 mb-1.5 font-mono uppercase">Assigned Unit Traits &amp; Support Modules</label>
+            <div id="unit-traits-checkboxes" class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-56 overflow-y-auto custom-scroll p-2 bg-slate-950 border border-slate-800 rounded-lg text-xs"></div>
+          </div>
+
+          <div class="mt-4 flex items-center gap-2">
+            <button type="button" onclick="saveUnitTemplate()" class="flex-1 py-2.5 px-4 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs sm:text-sm transition">
+              💾 Save Template
+            </button>
+            <button type="button" onclick="deploySavedUnitQuick('A')" class="py-2.5 px-3 rounded-lg bg-sky-700 hover:bg-sky-600 text-white font-semibold text-xs transition">+ Side A</button>
+            <button type="button" onclick="deploySavedUnitQuick('B')" class="py-2.5 px-3 rounded-lg bg-rose-700 hover:bg-rose-600 text-white font-semibold text-xs transition">+ Side B</button>
+          </div>
+        </div>
+
+        <!-- Library Grid -->
+        <div class="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-lg">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3 mb-3">
+            <div>
+              <h2 class="font-bold text-base text-white">Unit Templates Library</h2>
+              <p class="text-xs text-slate-400">Includes all standard sample templates plus your custom saved units.</p>
+            </div>
+            <button type="button" onclick="restoreDefaultUnits()" class="text-xs px-2.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">
+              Restore Sample Templates
+            </button>
+          </div>
+          <div id="unit-templates-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[680px] overflow-y-auto custom-scroll pr-1"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 3: TRAITS & SUPPORT ==================== -->
+    <section id="view-traits" class="hidden space-y-4">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <!-- Form -->
+        <div class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-lg">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
+            <h2 class="font-bold text-base text-amber-400" id="trait-form-title">Create / Edit Custom Trait</h2>
+            <button type="button" onclick="resetTraitForm()" class="text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300">+ New Trait</button>
+          </div>
+          <input type="hidden" id="trait-edit-id">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+            <div class="sm:col-span-2">
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Trait Name</label>
+              <input type="text" id="trait-name" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-white">
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Description</label>
+              <input type="text" id="trait-desc" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-white">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Attack (%)</label>
+              <input type="number" id="trait-atk-pct" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Attack (Flat)</label>
+              <input type="number" id="trait-atk-flat" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Defense (%)</label>
+              <input type="number" id="trait-def-pct" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Defense (Flat)</label>
+              <input type="number" id="trait-def-flat" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Soft Attack (Flat)</label>
+              <input type="number" id="trait-soft-flat" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Hard Attack (Flat)</label>
+              <input type="number" id="trait-hard-flat" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Piercing (Flat)</label>
+              <input type="number" id="trait-pierce-flat" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Hardness (Flat)</label>
+              <input type="number" id="trait-hardness-flat" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Vigilance Roll</label>
+              <input type="number" id="trait-vigilance" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Org Regen/Turn</label>
+              <input type="number" id="trait-org-regen" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Supply Regen/Turn</label>
+              <input type="number" id="trait-supply-regen" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Supply Steal</label>
+              <input type="number" id="trait-supply-steal" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Personnel Rec Bonus</label>
+              <input type="number" id="trait-rec-bonus" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Armor Rec Bonus</label>
+              <input type="number" id="trait-armor-rec" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Pursuing Bonus</label>
+              <input type="number" id="trait-pursue-bonus" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Retreat Bonus</label>
+              <input type="number" id="trait-retreat-bonus" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Enemy Def Malus</label>
+              <input type="number" id="trait-enemy-def-malus" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Enemy Hardness Malus</label>
+              <input type="number" id="trait-enemy-hard-malus" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Terrain Synergy</label>
+              <select id="trait-terrain-target" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-white">
+                <option value="">None</option>
+                <option value="Mountain">Mountain</option>
+                <option value="Hills">Hills</option>
+                <option value="Forest">Forest</option>
+                <option value="Jungle">Jungle</option>
+                <option value="Marsh">Marsh</option>
+                <option value="Urban">Urban</option>
+                <option value="Desert">Desert</option>
+                <option value="Plains">Plains</option>
+                <option value="Amphibious">Amphibious / River</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Terrain Atk/Def (%)</label>
+              <input type="number" id="trait-terrain-bonus" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Anti-Unit Priority</label>
+              <select id="trait-anti-category" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-white">
+                <option value="">None</option>
+                <option value="tank">Anti-Tank (Tanks)</option>
+                <option value="armored_vehicle">Anti-Armor (Vehicles)</option>
+                <option value="infantry">Anti-Infantry (Infantry)</option>
+                <option value="artillery">Counter-Battery (Artillery)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Anti-Unit Atk (%)</label>
+              <input type="number" id="trait-anti-bonus" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+            </div>
+          </div>
+
+          <div class="mt-3 pt-2.5 border-t border-slate-800 grid grid-cols-2 gap-2 text-xs">
+            <label class="flex items-center gap-1.5"><input type="checkbox" id="trait-flag-highcal" class="accent-amber-500"> <span>Grants High-Caliber</span></label>
+            <label class="flex items-center gap-1.5"><input type="checkbox" id="trait-flag-explosive" class="accent-amber-500"> <span>Grants Explosive</span></label>
+            <label class="flex items-center gap-1.5"><input type="checkbox" id="trait-flag-frontliner" class="accent-amber-500"> <span>Frontliner / Defender</span></label>
+            <label class="flex items-center gap-1.5"><input type="checkbox" id="trait-flag-repair" class="accent-amber-500"> <span>Repair Crew</span></label>
+          </div>
+
+          <button type="button" onclick="saveTrait()" class="mt-4 w-full py-2.5 px-4 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs sm:text-sm transition">
+            💾 Save Trait
+          </button>
+        </div>
+
+        <div class="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-lg">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
+            <div>
+              <h2 class="font-bold text-base text-white">Traits &amp; Support Modules Directory</h2>
+              <p class="text-xs text-slate-400">Click any trait to edit its numerical values.</p>
+            </div>
+          </div>
+          <div id="traits-list-container" class="grid grid-cols-1 md:grid-cols-2 gap-2.5 max-h-[680px] overflow-y-auto custom-scroll pr-1"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 4: COMMANDERS ==================== -->
+    <section id="view-commanders" class="hidden space-y-4">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <!-- Commander Form -->
+        <div class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-lg space-y-4">
+          <div class="border-b border-slate-800 pb-3">
+            <div class="flex items-center justify-between">
+              <h2 class="font-bold text-base text-amber-400" id="cmd-form-title">Add / Edit Commander</h2>
+              <button type="button" onclick="resetCommanderForm()" class="text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300">+ New General</button>
+            </div>
+          </div>
+          <input type="hidden" id="cmd-edit-id">
+
+          <div class="space-y-3 text-xs">
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Name &amp; Rank</label>
+              <input type="text" id="cmd-name" placeholder="e.g. Field Marshal Zhukov" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Tactical Doctrine Personality</label>
+              <select id="cmd-personality" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
+                <option value="Aggressive">Aggressive (Assault, Shock, Blitz, Mass Charge, Counterattack)</option>
+                <option value="Balanced">Balanced (Attack, Breakthrough, Well-Planned Attack, Defend)</option>
+                <option value="Cautious">Cautious (Delay, Tactical Withdrawal, Ambush, Fortified Defense)</option>
+              </select>
+            </div>
+
+            <!-- 4 CORE COMMANDER ATTRIBUTES (+2.5% each) -->
+            <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
+              <div class="font-mono text-xs text-amber-300 font-bold uppercase tracking-wider mb-1">Commander Attributes (+2.5% per Level)</div>
+              <div class="grid grid-cols-2 gap-2.5">
+                <div>
+                  <div class="flex justify-between text-[11px] mb-0.5">
+                    <span class="text-slate-400">⚔ Attack</span>
+                    <span id="cmd-atk-lvl-val" class="font-bold text-amber-400">Lvl 3 (+7.5%)</span>
+                  </div>
+                  <input type="range" id="cmd-atk-lvl" min="0" max="10" value="3" oninput="updateCmdStatDisplay()" class="w-full accent-amber-500">
+                </div>
+                <div>
+                  <div class="flex justify-between text-[11px] mb-0.5">
+                    <span class="text-slate-400">🛡 Defense</span>
+                    <span id="cmd-def-lvl-val" class="font-bold text-sky-400">Lvl 3 (+7.5%)</span>
+                  </div>
+                  <input type="range" id="cmd-def-lvl" min="0" max="10" value="3" oninput="updateCmdStatDisplay()" class="w-full accent-sky-500">
+                </div>
+                <div>
+                  <div class="flex justify-between text-[11px] mb-0.5">
+                    <span class="text-slate-400">🎖 Command (Org)</span>
+                    <span id="cmd-cmd-lvl-val" class="font-bold text-emerald-400">Lvl 3 (+7.5%)</span>
+                  </div>
+                  <input type="range" id="cmd-cmd-lvl" min="0" max="10" value="3" oninput="updateCmdStatDisplay()" class="w-full accent-emerald-500">
+                </div>
+                <div>
+                  <div class="flex justify-between text-[11px] mb-0.5">
+                    <span class="text-slate-400">📦 Logistics</span>
+                    <span id="cmd-log-lvl-val" class="font-bold text-purple-400">Lvl 3 (+7.5%)</span>
+                  </div>
+                  <input type="range" id="cmd-log-lvl" min="0" max="10" value="3" oninput="updateCmdStatDisplay()" class="w-full accent-purple-500">
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <label class="block text-slate-400 font-mono uppercase">Assigned Commander Traits</label>
+                <button type="button" onclick="openCmdTraitModal()" class="text-[11px] text-amber-400 hover:text-amber-300 font-mono underline">+ Create New Trait</button>
+              </div>
+              <div id="cmd-traits-checkboxes" class="space-y-1.5 bg-slate-950 border border-slate-800 rounded-lg p-2.5 max-h-56 overflow-y-auto custom-scroll"></div>
+            </div>
+
+            <button type="button" onclick="saveCommander()" class="w-full py-2.5 px-4 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs sm:text-sm transition">
+              💾 Save Commander
+            </button>
+          </div>
+        </div>
+
+        <!-- Roster Column -->
+        <div class="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-lg">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
+            <div>
+              <h2 class="font-bold text-base text-white">Active Commanders Roster</h2>
+              <p class="text-xs text-slate-400">Assign generals to Side A or Side B on the Battlefield tab.</p>
+            </div>
+            <button type="button" onclick="restoreDefaultCommanders()" class="text-xs px-2.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">Restore Defaults</button>
+          </div>
+          <div id="commanders-list-container" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[680px] overflow-y-auto custom-scroll pr-1"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== ROBUST COMMANDER TRAIT CUSTOMIZER MODAL ==================== -->
+    <div id="cmd-trait-modal" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm hidden items-center justify-center p-3 sm:p-4">
+      <div class="bg-slate-900 border border-amber-500/50 rounded-2xl max-w-3xl w-full max-h-[92vh] overflow-y-auto custom-scroll p-4 sm:p-5 shadow-2xl space-y-3">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
+          <div>
+            <span class="text-[10px] font-mono uppercase text-amber-400 tracking-wider">Officer Doctrine &amp; Leadership Engine</span>
+            <h3 class="font-bold text-sm sm:text-base text-white" id="cmd-trait-modal-title">Create / Edit Commander Trait</h3>
+          </div>
+          <button type="button" onclick="closeCmdTraitModal()" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold">✕</button>
+        </div>
+        <input type="hidden" id="cmd-trait-edit-id">
+
+        <div class="space-y-3 text-xs">
+          <!-- Identity & Scope -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <div class="sm:col-span-2">
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Trait Name</label>
+              <input type="text" id="cmd-trait-name" placeholder="e.g. Master of Armored Maneuver" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-white">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Formation Scope</label>
+              <select id="cmd-trait-target-cat" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+                <option value="">All Formations (Army-Wide)</option>
+                <option value="infantry">Infantry Only</option>
+                <option value="tank">Tanks Only</option>
+                <option value="armored_vehicle">Armored Vehicles Only</option>
+                <option value="artillery">Artillery Only</option>
+              </select>
+            </div>
+            <div class="sm:col-span-3">
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Description / Operational Notes</label>
+              <input type="text" id="cmd-trait-desc" placeholder="Operational doctrine notes &amp; commander background" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-white">
+            </div>
+          </div>
+
+          <!-- Section 1: Firepower & Protection -->
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
+            <span class="text-[10px] font-mono uppercase font-bold text-amber-400 block border-b border-slate-800/80 pb-1">1. Firepower &amp; Combat Protection</span>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div>
+                <label class="block text-slate-400 mb-1">Attack (%)</label>
+                <input type="number" id="cmd-trait-atk-pct" value="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-white">
+              </div>
+              <div>
+                <label class="block text-slate-400 mb-1">Attack (Flat)</label>
+                <input type="number" id="cmd-trait-atk-flat" value="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-white">
+              </div>
+              <div>
+                <label class="block text-slate-400 mb-1">Defense (%)</label>
+                <input type="number" id="cmd-trait-def-pct" value="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-white">
+              </div>
+              <div>
+                <label class="block text-slate-400 mb-1">Defense (Flat)</label>
+                <input type="number" id="cmd-trait-def-flat" value="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-white">
+              </div>
+              <div>
+                <label class="block text-slate-400 mb-1">Soft Atk (Flat)</label>
+                <input type="number" id="cmd-trait-soft-flat" value="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-white">
+              </div>
+              <div>
+                <label class="block text-slate-400 mb-1">Hard Atk (Flat)</label>
+                <input type="number" id="cmd-trait-hard-flat" value="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-white">
+              </div>
+              <div>
+                <label class="block text-slate-400 mb-1">Piercing (Flat)</label>
+                <input type="number" id="cmd-trait-pierce-flat" value="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-white">
+              </div>
+              <div>
+                <label class="block text-slate-400 mb-1">Hardness (Flat)</label>
+                <input type="number" id="cmd-trait-hardness-flat" value="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-white">
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 2: Operations, Recon & Maneuver -->
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
+            <span class="text-[10px] font-mono uppercase font-bold text-sky-400 block border-b border-slate-800/80 pb-1">2. Recon, Tactics &amp; Pursuit Maneuver</span>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div>
+                <label class="block text-slate-400 mb-1">Vigilance Roll</label>
+                <input type="number" id="cmd-trait-vigilance" value="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-white">
+              </div>
+              <div>
+                <label class="block text-slate-400 mb-1">Pursuit Bonus</label>
+                <input type="number" id="cmd-trait-pursue-bonus" value="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-white">
+              </div>
+              <div>
+                <label class="block text-slate-400 mb-1">Retreat Bonus</label>
+                <input type="number" id="cmd-trait-retreat-bonus" value="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-white">
+              </div>
+              <div>
+                <label class="block text-slate-400 mb-1">Tactic Boost (%)</label>
+                <input type="number" id="cmd-trait-tactic-boost" value="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-white" title="Increases effectiveness of chosen battle tactics">
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 3: Endurance, Logistics & Triage -->
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
+            <span class="text-[10px] font-mono uppercase font-bold text-emerald-400 block border-b border-slate-800/80 pb-1">3. Morale, Logistics &amp; Field Triage</span>
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
+              <div>
+                <label class="block text-slate-400 mb-1">Max Org (%)</label>
+                <input type="number" id="cmd-trait-max-org-pct" value="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-white">
+              </div>
+              <div>
+                <label class="block text-slate-400 mb-1">Org Regen/Rd</label>
+                <input type="number" id="cmd-trait-org-regen" value="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-white">
+              </div>
+              <div>
+                <label class="block text-slate-400 mb-1">Supply Drain Cut</label>
+                <input type="number" id="cmd-trait-supply-cut" value="0" min="0" max="3" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-white" title="Reduces base round supply consumption">
+              </div>
+              <div>
+                <label class="block text-slate-400 mb-1">Personnel Triage</label>
+                <input type="number" id="cmd-trait-rec-bonus" value="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-white" title="Bonus to 50+d50 casualty recovery roll">
+              </div>
+              <div>
+                <label class="block text-slate-400 mb-1">Armor Repair</label>
+                <input type="number" id="cmd-trait-armor-rec" value="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-white" title="Bonus to disabled vehicle recovery roll">
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 4: Rallying & Terrain Synergy -->
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
+            <span class="text-[10px] font-mono uppercase font-bold text-purple-400 block border-b border-slate-800/80 pb-1">4. Rally Operations &amp; Terrain Mastery</span>
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
+              <div>
+                <label class="block text-slate-400 mb-1">Rally Roll Bonus</label>
+                <input type="number" id="cmd-trait-rally-bonus" value="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-white">
+              </div>
+              <div>
+                <label class="block text-slate-400 mb-1">Rally Cooldown Cut</label>
+                <input type="number" id="cmd-trait-duration-red" value="0" min="0" max="3" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-white">
+              </div>
+              <div>
+                <label class="block text-slate-400 mb-1">Extra Rallied Org</label>
+                <input type="number" id="cmd-trait-extra-org" value="0" min="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-white">
+              </div>
+              <div>
+                <label class="block text-slate-400 mb-1">Terrain Synergy</label>
+                <select id="cmd-trait-terrain-target" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-white">
+                  <option value="">None</option>
+                  <option value="Urban">Urban</option>
+                  <option value="Mountain">Mountain</option>
+                  <option value="Forest">Forest</option>
+                  <option value="Hills">Hills</option>
+                  <option value="Desert">Desert</option>
+                  <option value="Plains">Plains</option>
+                  <option value="Jungle">Jungle</option>
+                  <option value="Marsh">Marsh</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-slate-400 mb-1">Terrain Atk/Def %</label>
+                <input type="number" id="cmd-trait-terrain-bonus" value="0" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-white">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-slate-800 flex items-center justify-between">
+          <button type="button" onclick="deleteCurrentCommanderTrait()" id="btn-delete-cmd-trait" class="px-3 py-1.5 rounded bg-rose-950 hover:bg-rose-900 text-rose-300 text-xs hidden">
+            Delete Trait
+          </button>
+          <div class="flex items-center gap-2 ml-auto">
+            <button type="button" onclick="closeCmdTraitModal()" class="px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs">Cancel</button>
+            <button type="button" onclick="saveCustomCommanderTrait()" class="px-4 py-1.5 rounded bg-amber-500 hover:bg-amber-400 font-bold text-slate-950 text-xs">💾 Save Commander Trait</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== TAB 5: TERRAIN & WEATHER ==================== -->
+    <section id="view-terrain" class="hidden space-y-4">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <div class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-lg">
+          <h2 class="font-bold text-base text-amber-400 border-b border-slate-800 pb-3 mb-3">Customize Base Terrain</h2>
+          <div class="space-y-2.5 text-xs">
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Select Terrain to Edit</label>
+              <select id="terrain-edit-select" onchange="loadTerrainIntoForm()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white"></select>
+            </div>
+            <div class="grid grid-cols-2 gap-2.5">
+              <div class="col-span-2">
+                <label class="block text-slate-400 mb-1 font-mono uppercase">Terrain Name</label>
+                <input type="text" id="terr-name" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-white">
+              </div>
+              <div>
+                <label class="block text-slate-400 mb-1 font-mono uppercase">Infantry Atk (%)</label>
+                <input type="number" id="terr-inf-atk" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+              </div>
+              <div>
+                <label class="block text-slate-400 mb-1 font-mono uppercase">Infantry Def (%)</label>
+                <input type="number" id="terr-inf-def" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+              </div>
+              <div>
+                <label class="block text-slate-400 mb-1 font-mono uppercase">Tank Atk (%)</label>
+                <input type="number" id="terr-tank-atk" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+              </div>
+              <div>
+                <label class="block text-slate-400 mb-1 font-mono uppercase">Tank Def (%)</label>
+                <input type="number" id="terr-tank-def" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+              </div>
+              <div>
+                <label class="block text-slate-400 mb-1 font-mono uppercase">Armored Veh Atk (%)</label>
+                <input type="number" id="terr-av-atk" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+              </div>
+              <div>
+                <label class="block text-slate-400 mb-1 font-mono uppercase">Armored Veh Def (%)</label>
+                <input type="number" id="terr-av-def" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+              </div>
+              <div>
+                <label class="block text-slate-400 mb-1 font-mono uppercase">Artillery Atk (%)</label>
+                <input type="number" id="terr-art-atk" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+              </div>
+              <div>
+                <label class="block text-slate-400 mb-1 font-mono uppercase">Artillery Def (%)</label>
+                <input type="number" id="terr-art-def" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+              </div>
+              <div>
+                <label class="block text-slate-400 mb-1 font-mono uppercase">Vigilance (Flat)</label>
+                <input type="number" id="terr-vig" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+              </div>
+              <div>
+                <label class="block text-slate-400 mb-1 font-mono uppercase">Extra Supply Drain</label>
+                <input type="number" id="terr-supply" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+              </div>
+              <div class="col-span-2">
+                <label class="flex items-center gap-2 mt-1">
+                  <input type="checkbox" id="terr-urban-flag" class="accent-amber-500">
+                  <span>Allows Urban Tactics</span>
+                </label>
+              </div>
+            </div>
+            <button type="button" onclick="saveTerrainConfig()" class="w-full py-2.5 px-4 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs sm:text-sm transition">
+              💾 Save Terrain
+            </button>
+          </div>
+        </div>
+
+        <div class="lg:col-span-7 space-y-4">
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-lg">
+            <h3 class="font-bold text-sm sm:text-base text-white mb-2">Base Terrains Matrix</h3>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr class="border-b border-slate-800 text-slate-400 font-mono">
+                    <th class="py-2 px-2">Terrain</th>
+                    <th class="py-2 px-2">Inf Atk/Def</th>
+                    <th class="py-2 px-2">ArmVeh Atk/Def</th>
+                    <th class="py-2 px-2">Tank Atk/Def</th>
+                    <th class="py-2 px-2">Art Atk/Def</th>
+                    <th class="py-2 px-2">Vig / Supply</th>
+                  </tr>
+                </thead>
+                <tbody id="terrain-matrix-tbody" class="divide-y divide-slate-800/60"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-lg">
+              <h3 class="font-bold text-sm text-amber-400 mb-2">Features Matrix</h3>
+              <div id="features-matrix-list" class="space-y-2 text-xs"></div>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-lg">
+              <h3 class="font-bold text-sm text-sky-400 mb-2">Weather Matrix</h3>
+              <div id="weather-matrix-list" class="space-y-2 text-xs"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 6: TACTICS GUIDE ==================== -->
+    <section id="view-tactics" class="hidden space-y-4">
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-lg">
+        <h2 class="font-bold text-base sm:text-lg text-white mb-1">Tactical Doctrine Reference (25 Tactics)</h2>
+        <p class="text-xs text-slate-400 mb-4">Tactics chosen independently each round. Urban tactics unlock in Urban terrain or Fortifications.</p>
+        <div id="tactics-reference-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==================== POST-BATTLE AAR MODAL ==================== -->
+  <div id="battle-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-slate-900 border border-amber-500/50 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto custom-scroll p-5 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+        <div>
+          <span class="text-xs font-mono uppercase text-amber-400 tracking-wider">After-Action Report &amp; Retreat / Pursuit Resolution</span>
+          <h2 id="modal-winner-title" class="text-xl sm:text-2xl font-extrabold text-white mt-0.5">Battle Concluded</h2>
+        </div>
+        <button type="button" onclick="closeBattleSummaryModal()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold">✕</button>
+      </div>
+
+      <div id="modal-report-body" class="space-y-4 text-xs sm:text-sm"></div>
+
+      <div class="mt-5 pt-3 border-t border-slate-800 flex flex-wrap justify-end gap-2">
+        <button type="button" onclick="resetCurrentBattle(); closeBattleSummaryModal();" class="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs sm:text-sm">
+          ↺ Reset Current Battle
+        </button>
+        <button type="button" onclick="closeBattleSummaryModal()" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs sm:text-sm">
+          Close Report
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODULAR SCRIPTS (Loaded in Strict Dependency Order)                       -->
+  <!-- ========================================================================= -->
+
+  <!-- 1. Diagnostic Boundary (Catches all browser & script errors) -->
+  <script src="js/diagnostics.js"></script>
+
+  <!-- 2. Static Game Databases (Tactics, Traits, Commanders, Terrains, Templates) -->
+  <script src="js/data.js"></script>
+
+  <!-- 3. Math & Core Rule Helpers (Dice, Cover, Distance, Grazing, Overwatch) -->
+  <script src="js/engine-helpers.js"></script>
+
+  <!-- 4. Combat Simulation Loop (Targeting, Piercing, Clashes, DOW, Rallying) -->
+  <script src="js/engine-combat.js"></script>
+
+  <!-- 5. Operational Pursuit & Salvage (Overruns, Towing, Equipment Spoils) -->
+  <script src="js/engine-pursuit.js"></script>
+
+  <!-- 6. UI & DOM Rendering (Unit Cards, Telemetry, Designer, Modals) -->
+  <script src="js/ui-render.js"></script>
+
+  <!-- 7. Application State & Controller Bootstrap -->
+  <script src="js/app.js"></script>
+
+</body>
+</html>

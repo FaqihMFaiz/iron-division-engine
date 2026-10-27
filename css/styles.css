@@ -1,0 +1,137 @@
+/* ==========================================================================
+   IRON DIVISION ENGINE — CUSTOM STYLESHEET
+   File: css/styles.css
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Base & Global Styles
+   -------------------------------------------------------------------------- */
+html {
+  color-scheme: dark;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: #0b0f17;
+  color: #e2e8f0;
+  overflow-x: hidden;
+}
+
+/* Custom Text Selection Highlight */
+::selection {
+  background-color: #f59e0b;
+  color: #020617;
+}
+
+/* --------------------------------------------------------------------------
+   2. Cross-Browser Custom Scrollbars
+   -------------------------------------------------------------------------- */
+/* Standard W3C for Firefox */
+.custom-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #334155 #111827;
+}
+
+/* WebKit (Chrome, Safari, Edge) */
+.custom-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scroll::-webkit-scrollbar-track {
+  background: #111827;
+  border-radius: 3px;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 3px;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* --------------------------------------------------------------------------
+   3. Telemetry & Progress Bars
+   -------------------------------------------------------------------------- */
+.bar-fill {
+  transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: width;
+}
+
+/* --------------------------------------------------------------------------
+   4. Header Navigation Tabs
+   -------------------------------------------------------------------------- */
+.tab-btn {
+  transition: all 0.2s ease-in-out;
+  border-bottom: 2px solid transparent;
+}
+
+.tab-btn:hover {
+  background-color: #1e293b;
+  color: #ffffff;
+}
+
+.tab-btn.active {
+  background-color: #1e293b;
+  border-bottom: 2px solid #f59e0b;
+  color: #fbbf24;
+  font-weight: 600;
+}
+
+/* --------------------------------------------------------------------------
+   5. Combat Log & Notification Badges
+   -------------------------------------------------------------------------- */
+/* Subtle flash for high-impact combat log events */
+@keyframes flash-in {
+  0% {
+    opacity: 0.4;
+    transform: translateY(-2px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+#combat-log-container > div {
+  animation: flash-in 0.2s ease-out;
+}
+
+/* Pulsing alert for low supply & critical damage */
+@keyframes warning-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.status-pulse-danger {
+  animation: warning-pulse 1.8s infinite ease-in-out;
+}
+
+/* --------------------------------------------------------------------------
+   6. After-Action Report (AAR) Modal Adjustments
+   -------------------------------------------------------------------------- */
+#battle-modal {
+  transition: opacity 0.2s ease-in-out;
+}
+
+#battle-modal table tr:hover {
+  background-color: rgba(30, 41, 59, 0.4);
+}
+
+/* Print Optimization (for saving reports to PDF) */
+@media print {
+  header, #toast-container, button {
+    display: none !important;
+  }
+  
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+}
