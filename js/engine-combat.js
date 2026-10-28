@@ -145,7 +145,6 @@ function triggerUnitRally(u, reason) {
   const cmd = getSideCommander(u.side);
   const baseCooldown = 2 + rollDie(2);
 
-  // Calculate Commander Rally Duration Reduction
   let durationRed = 0;
   if (cmd) {
     const cmdTraitObjs = (cmd.traits || []).map(tid => getCommanderTraitById(tid)).filter(Boolean);
@@ -153,7 +152,21 @@ function triggerUnitRally(u, reason) {
   }
 
   u.rallyRoundsLeft = Math.max(1, baseCooldown - durationRed);
-  u.ralliedPersonnel = Math.max(15, Math.round(u.personnel * 0.75));
+
+  // --- SCATTERED TROOPS JOIN THE "ESCAPED" POOL ---
+  // 75% hold together to regroup; 25% scatter and flee the battle zone
+  const retainedCount = Math.max(15, Math.round(u.personnel * 0.75));
+  const scatteredCount = u.personnel - retainedCount;
+
+  if (scatteredCount > 0) {
+    u.escaped = (u.escaped || 0) + scatteredCount;
+    u.personnel = retainedCount;
+    u.ralliedPersonnel = retainedCount;
+    addLog('damage', `🏃 [Rout & Scatter] ${u.name} broke (${reason})! ${scatteredCount} troops scattered and escaped the battlefield; ${retainedCount} disciplined soldiers fall back to regroup (${u.rallyRoundsLeft} rds to rally).`);
+  } else {
+    u.ralliedPersonnel = u.personnel;
+    addLog('damage', `🏳 [Rout & Fallback] ${u.name} broke (${reason})! Surviving ${u.personnel} troops fall back in order to regroup (${u.rallyRoundsLeft} rds to rally).`);
+  }
 
   if (u.originalMaxArmor > 0) {
     if (u.armor <= 0) {
@@ -167,7 +180,6 @@ function triggerUnitRally(u, reason) {
   }
 
   u.entrenchmentLevel = 0;
-  addLog('damage', `🏳 [Rout & Fallback] ${u.name} broke (${reason})! Surviving troops fall back to regroup (${u.rallyRoundsLeft} rounds until rally).`);
 }
 
 function checkAndMarkUnitDefeat(u) {

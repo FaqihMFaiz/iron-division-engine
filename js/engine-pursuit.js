@@ -64,8 +64,8 @@ function resolveRetreatAndPursuit(winnerSide, loserSide) {
 
   for (const u of loseState.units) {
     if (u.personnel <= 0) {
-      u.captured = u.wounded;
-      u.escaped = 0;
+      u.captured = (u.captured || 0) + u.wounded;
+      // Do not overwrite u.escaped — preserve troops that scattered earlier!
       continue;
     }
 
@@ -91,7 +91,7 @@ function resolveRetreatAndPursuit(winnerSide, loserSide) {
         addLog('rolls', `🚨 [AUTOMATIC OVERRUN] ${u.name} overrun across open ground! 90% (${capturedActive}) captured, 10% scattered.`);
       }
     } else {
-      // RULE 2: Contested pursuit with mobility differential & operational terrain mods
+      // RULE 2: Contested pursuit
       const opMods = getTerrainOperationalMods(u.category);
       let pursueMod = (winTactic.pursueBonus || 0) + (deltaMob > 0 ? deltaMob * 25 : 0);
       let retreatMod = getUnitRetreatBonus(u) + (loseTactic.retreatBonus || 0) + (deltaMob < 0 ? Math.abs(deltaMob) * 25 : 0) + opMods.retreatMod;
@@ -126,7 +126,8 @@ function resolveRetreatAndPursuit(winnerSide, loserSide) {
       }
     }
 
-    u.escaped = escapedActive;
+    // ACCUMULATE: Add newly escaping troops to troops that scattered during the rout
+    u.escaped = (u.escaped || 0) + escapedActive;
 
     // RULE 3: No Prisoners Rule for Monsters and Zombies
     if (victorIsMonstersOrZombies) {
@@ -138,10 +139,10 @@ function resolveRetreatAndPursuit(winnerSide, loserSide) {
         addLog('damage', `💀 [Devoured / Slaughtered] ${u.name}: ${slaughtered} captured & wounded troops are devoured by the horde (Converted to KIA)!`);
       }
     } else {
-      u.captured = capturedActive + u.wounded;
+      u.captured = (u.captured || 0) + capturedActive + u.wounded;
     }
 
-    // RULE 4: Vehicle Towing on disciplined retreats
+    // RULE 4: Vehicle Towing
     if (u.recoverableArmor > 0 && escapePct >= 60) {
       const towedPct = escapePct >= 80 ? 0.50 : 0.25;
       const towedArmor = Math.floor(u.recoverableArmor * towedPct);
