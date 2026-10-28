@@ -9,14 +9,14 @@ function renderSimulationGuide() {
 
   container.innerHTML = `
     <!-- Guide Master Header Banner -->
-    <div class="bg-gradient-to-r from-slate-900 via-slate-900 to-amber-950/40 border border-amber-500/40 rounded-2xl p-6 shadow-2xl space-y-3">
+    <div class="bg-gradient-to-r from-slate-900 via-slate-900 to-amber-950/40 border border-amber-500/40 rounded-2xl p-5 sm:p-6 shadow-2xl space-y-3">
       <div class="flex flex-wrap items-center justify-between gap-4">
         <div>
           <div class="flex items-center gap-2">
             <span class="text-xs font-mono uppercase px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold">
               Iron Division Field Manual
             </span>
-            <span class="text-xs font-mono text-slate-400">DOC-ID-904-REV3</span>
+            <span class="text-xs font-mono text-slate-400">DOC-ID-904-REV4</span>
           </div>
           <h2 class="text-2xl sm:text-3xl font-black text-white mt-1 tracking-tight">
             Combined-Arms Operational Doctrine
@@ -34,14 +34,14 @@ function renderSimulationGuide() {
 
       <!-- Quick Navigation Matrix -->
       <div class="pt-3 border-t border-slate-800 flex flex-wrap gap-2 text-xs font-mono">
-        <a href="#guide-lifecycle" class="px-3 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 transition">🔄 7-Phase Round Lifecycle</a>
-        <a href="#guide-categories" class="px-3 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 text-sky-300 border border-slate-800 transition">🎲 Combat Dice &amp; Speed</a>
+        <a href="#guide-lifecycle" class="px-3 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 transition">🔄 7-Phase Lifecycle</a>
+        <a href="#guide-categories" class="px-3 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 text-sky-300 border border-slate-800 transition">🎲 Combat Dice</a>
         <a href="#guide-armor" class="px-3 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 text-orange-300 border border-slate-800 transition">🛡 Armor &amp; Hardness</a>
         <a href="#guide-dispersion" class="px-3 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 text-emerald-300 border border-slate-800 transition">🕳️ Cover &amp; Grazing</a>
         <a href="#guide-melee" class="px-3 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 text-rose-300 border border-slate-800 transition">⚔ Melee &amp; Overwatch</a>
         <a href="#guide-logistics" class="px-3 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 text-amber-300 border border-slate-800 transition">📦 Shared Supply Depot</a>
         <a href="#guide-artillery" class="px-3 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 text-red-300 border border-slate-800 transition">🎆 Inherent Artillery</a>
-        <a href="#guide-medical" class="px-3 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 text-teal-300 border border-slate-800 transition">🏥 Medical Triage (DOW)</a>
+        <a href="#guide-medical" class="px-3 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 text-teal-300 border border-slate-800 transition">🏥 Medical Triage</a>
         <a href="#guide-rally" class="px-3 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 text-cyan-300 border border-slate-800 transition">🚩 Rallying &amp; Stragglers</a>
         <a href="#guide-pursuit" class="px-3 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 text-purple-300 border border-slate-800 transition">🚜 Pursuit &amp; Salvage</a>
       </div>
@@ -64,7 +64,7 @@ function renderSimulationGuide() {
           <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
             <span class="text-amber-400 font-bold block">PHASE 1: Tactic Selection</span>
             <p class="text-[11px] text-slate-400 font-sans">
-              Both sides choose 1 of 25 tactical doctrines matching their role (Attacker chooses Attack tactics; Defender chooses Defense tactics). Commander personality (Aggressive, Balanced, Cautious) guides AI picks.
+              Both sides choose 1 of 25 tactical doctrines matching their role (Attacker chooses Attack tactics; Defender chooses Defense tactics). Commander personality guides AI picks.
             </p>
           </div>
           <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
@@ -185,7 +185,7 @@ function renderSimulationGuide() {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs font-mono">
           <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1.5">
             <span class="text-orange-400 font-bold block">Armor Tier Partitions</span>
-            <div class="text-[11px] text-slate-300 space-y-0.5">
+            <div class="text-[11px] text-slate-300 space-y-0.5 font-sans">
               <div>• <b>Unarmored:</b> 0% Hard / 100% Soft (Foot Infantry, Towed Artillery)</div>
               <div>• <b>Light Armor:</b> 25% Hard / 75% Soft (Armored Cars, Light APCs)</div>
               <div>• <b>Medium Armor:</b> 50% Hard / 50% Soft (Medium Tanks, Heavy Mech)</div>
@@ -193,42 +193,52 @@ function renderSimulationGuide() {
               <div>• <b>Super Heavy:</b> 100% Hard / 0% Soft (Behemoths, Super Tanks)</div>
             </div>
           </div>
-          <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1.5">
+
+          <!-- Dynamic Hardness Formula Card -->
+          <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-2">
             <span class="text-amber-400 font-bold block">Dynamic Hardness Formula</span>
-            <div class="text-[11px] text-slate-300 font-sans leading-relaxed">
-              $$\\text{Effective Hardness} = \\max(0, (\\text{Hardness} + \\text{Traits}) \\times \\text{clamp}(\\frac{\\text{Armor}}{\\text{Max Armor}}, 0.25, 1.0) - \\text{Maluses})$$
-              <span class="text-slate-400 text-[10px] block mt-1 font-mono">
-                *Close-Assault Rule: Attacking infantry in Urban, Forest, Jungle, or Mountain terrain bypass 35% of target hardness automatically.*
-              </span>
+            <div class="p-2.5 rounded bg-slate-900 border border-slate-800 text-center font-mono text-xs sm:text-sm text-slate-200">
+              Effective Hardness = <span class="text-sky-300">max</span>(0, (<span class="text-amber-300">Base Hardness</span> + <span class="text-emerald-300">Traits</span>) &times; <span class="text-purple-300">Vehicle Ratio</span> - <span class="text-rose-400">Maluses</span>)
+            </div>
+            <div class="text-[11px] text-slate-400 font-sans">
+              Where <code class="text-purple-300 font-mono">Vehicle Ratio = clamp(Current Armor / Max Armor, 0.25, 1.0)</code>
+            </div>
+            <div class="text-[11px] text-amber-300/90 font-sans italic border-t border-slate-800/80 pt-1">
+              Close-Assault Rule: Attacking infantry in Urban, Forest, Jungle, or Mountain terrain bypass 35% of target hardness automatically.
             </div>
           </div>
         </div>
 
         <!-- Overmatch Brackets -->
         <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-2">
-          <span class="text-orange-300 font-mono font-bold text-xs block">
-            Penetration Loss Brackets: Ratio = (Penetration Roll - Hardness Roll) / Effective Hardness
-          </span>
+          <div class="flex flex-wrap items-center justify-between gap-1 border-b border-slate-800 pb-1.5">
+            <span class="text-orange-300 font-mono font-bold text-xs">
+              Penetration Loss Brackets
+            </span>
+            <span class="font-mono text-[11px] text-slate-400">
+              Overmatch Margin = (Penetration Roll - Hardness Roll) / Effective Hardness
+            </span>
+          </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-xs font-mono">
             <div class="p-2 rounded bg-slate-900 border border-slate-800">
-              <span class="text-yellow-400 font-bold block">Ratio &le; 0.25 (Minor)</span>
+              <span class="text-yellow-400 font-bold block">Margin &le; 0.25 (Minor)</span>
               <span class="text-slate-300 text-[11px]">Knocks out <b>d3</b> vehicles.</span>
             </div>
             <div class="p-2 rounded bg-slate-900 border border-slate-800">
-              <span class="text-amber-400 font-bold block">0.25 &lt; Ratio &le; 0.50</span>
+              <span class="text-amber-400 font-bold block">0.25 &lt; Margin &le; 0.50</span>
               <span class="text-slate-300 text-[11px]">Knocks out <b>1 + d6</b> vehicles.</span>
             </div>
             <div class="p-2 rounded bg-slate-900 border border-slate-800">
-              <span class="text-orange-400 font-bold block">0.50 &lt; Ratio &le; 0.75</span>
+              <span class="text-orange-400 font-bold block">0.50 &lt; Margin &le; 0.75</span>
               <span class="text-slate-300 text-[11px]">Knocks out <b>3 + d8</b> vehicles.</span>
             </div>
             <div class="p-2 rounded bg-slate-900 border border-slate-800">
-              <span class="text-rose-400 font-bold block">Ratio &gt; 0.75 (Catastrophic)</span>
+              <span class="text-rose-400 font-bold block">Margin &gt; 0.75 (Catastrophic)</span>
               <span class="text-slate-300 text-[11px]">Knocks out <b>6 + d12</b> vehicles.</span>
             </div>
           </div>
-          <div class="text-[11px] text-slate-400 font-sans">
-            <b>Crew Casualties:</b> Destroyed vehicles inflict <b>1 + d4</b> crew casualties; recoverable hulls inflict <b>d2</b> crew casualties. If $\ge 20\%$ of vehicles are disabled in 1 round, unit suffers <b>-(2 + d8) Org shock</b>.
+          <div class="text-[11px] text-slate-400 font-sans pt-1">
+            <b>Crew Casualties:</b> Destroyed vehicles inflict <b>1 + d4</b> crew casualties; recoverable hulls inflict <b>d2</b> crew casualties. If &ge; 20% of vehicles are disabled in 1 round, unit suffers <b>-(2 + d8) Org shock</b>.
           </div>
         </div>
       </div>
@@ -244,27 +254,30 @@ function renderSimulationGuide() {
         </p>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs font-mono">
-          <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1.5">
+          <!-- Cover Save Formula Card -->
+          <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-2">
             <span class="text-emerald-400 font-bold block">Entrenchment &amp; Dispersion Save</span>
-            <div class="text-slate-300 text-[11px] leading-relaxed font-sans">
-              $$\\text{Cover Save} = d20 + \\text{Terrain Cover} + \\text{Entrenchment Lvl} \\ge \\text{DC } (12 + \\text{Attacker Spotting})$$
-              <ul class="list-disc list-inside mt-1 text-slate-300 text-[11px] space-y-0.5 font-sans">
-                <li><b>Dug-In (Success):</b> Soft damage halved; High-Caliber bonus negated; Explosives halved.</li>
-                <li><b>Caught in Open (Failure):</b> Full damage taken + <b>-(1 + d4) Org suppression shock</b>.</li>
-              </ul>
+            <div class="p-2.5 rounded bg-slate-900 border border-slate-800 text-center font-mono text-xs sm:text-sm text-slate-200">
+              Save = <span class="text-amber-300">d20</span> + <span class="text-emerald-300">Terrain Cover</span> + <span class="text-sky-300">Entrenchment Lvl</span> &ge; <span class="text-rose-400">DC (12 + Spotting)</span>
             </div>
+            <ul class="list-disc list-inside text-slate-300 text-[11px] space-y-0.5 font-sans pt-1">
+              <li><b>Dug-In (Success):</b> Soft damage halved; High-Caliber bonus negated; Explosives halved.</li>
+              <li><b>Caught in Open (Failure):</b> Full damage taken + <b>-(1 + d4) Org suppression shock</b>.</li>
+            </ul>
           </div>
-          <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1.5">
-            <span class="text-sky-400 font-bold block">Pressure Ratio &amp; Grazing Damage</span>
-            <div class="text-slate-300 text-[11px] leading-relaxed font-sans">
-              When an attack fails to achieve a breakthrough ($\\text{Attack} \\le \\text{Defense}$), damage is filtered by the <b>Pressure Ratio</b> ($\\text{Attack} / \\text{Defense}$):
-              <ul class="list-disc list-inside mt-1 text-slate-300 text-[11px] space-y-0.5 font-sans">
-                <li><b>Pressure &lt; 40% (60% in Forts):</b> Completely absorbed (0 damage).</li>
-                <li><b>Pressure 40%–50%:</b> 1 chip casualty.</li>
-                <li><b>Pressure 50%–75%:</b> 1 + d2 casualties.</li>
-                <li><b>Pressure &ge; 75%:</b> 1 + d3 casualties.</li>
-              </ul>
+
+          <!-- Pressure Ratio Formula Card -->
+          <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-2">
+            <span class="text-sky-400 font-bold block">Pressure Ratio &amp; Grazing Casualties</span>
+            <div class="p-2.5 rounded bg-slate-900 border border-slate-800 text-center font-mono text-xs sm:text-sm text-slate-200">
+              Pressure Ratio = <span class="text-amber-300">Attack Value</span> / <span class="text-sky-300">Defense Value</span>
             </div>
+            <ul class="list-disc list-inside text-slate-300 text-[11px] space-y-0.5 font-sans pt-1">
+              <li><b>Pressure &lt; 40% (60% in Forts):</b> Completely absorbed (0 damage).</li>
+              <li><b>Pressure 40%–50%:</b> 1 chip casualty.</li>
+              <li><b>Pressure 50%–75%:</b> 1 + d2 casualties.</li>
+              <li><b>Pressure &ge; 75%:</b> 1 + d3 casualties.</li>
+            </ul>
           </div>
         </div>
 
@@ -317,8 +330,8 @@ function renderSimulationGuide() {
 
         <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 font-mono text-xs space-y-2">
           <div class="text-amber-300 font-bold">Depot Capacity Formula:</div>
-          <div class="text-slate-300 text-[11px]">
-            Max Depot = <span class="text-white">(100 + Σ Unit Max Supply × 0.5)</span> × <span class="text-sky-300">(1 + Cmd Logistics Lvl × 10%)</span> × <span class="text-emerald-300">(Logistics Wizard ? 1.25 : 1.0)</span>
+          <div class="p-2 rounded bg-slate-900 border border-slate-800 text-center text-slate-200 text-xs sm:text-sm">
+            Max Depot = <span class="text-white">(100 + Σ Unit Max Supply &times; 0.5)</span> &times; <span class="text-sky-300">(1 + Logistics Lvl &times; 10%)</span> &times; <span class="text-emerald-300">(Logistics Wizard ? 1.25 : 1.0)</span>
           </div>
         </div>
 
@@ -360,20 +373,41 @@ function renderSimulationGuide() {
         </div>
       </div>
 
-      <!-- ==================== PART 7: MEDICAL TRIAGE & DOW ==================== -->
+      <!-- ==================== PART 7: INHERENT ARTILLERY ==================== -->
+      <div id="guide-artillery" class="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5 shadow-lg space-y-3">
+        <div class="flex items-center gap-2 border-b border-slate-800 pb-2.5">
+          <span class="w-7 h-7 rounded-lg bg-red-500/20 text-red-400 font-bold flex items-center justify-center font-mono text-sm">7</span>
+          <h3 class="font-bold text-base text-white">Inherent Artillery Battery Barrages</h3>
+        </div>
+        <p class="text-xs text-slate-300 leading-relaxed">
+          Formations categorized as <b>Artillery</b> do not need external traits to conduct fire support missions—the battery barrage is <b>inherent to the unit category</b>:
+        </p>
+        <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 font-mono text-xs space-y-1">
+          <div class="text-rose-400 font-bold">Barrage Execution (Every 1+d2 Rounds, Requires &ge; 50% Supply):</div>
+          <div class="text-slate-300">• Expends: <b>3 + d3 Supply</b></div>
+          <div class="text-slate-300">• Defense Reduction: <b>-(4 + d12)</b></div>
+          <div class="text-slate-300">• Hardness Reduction: <b>-(2 + d6)</b></div>
+          <div class="text-slate-300">• Direct Impact: Roll 8–10: <b>+d6 casualties</b> | Roll 11–12: <b>+(2+d12) casualties &amp; +(1+d3) disabled armor</b></div>
+        </div>
+        <p class="text-[11px] text-slate-400 font-sans">
+          <i>Note: Non-artillery formations (such as infantry regiments or tank brigades) can still equip the "Heavy Artillery Support" trait to simulate attached off-map corps artillery.</i>
+        </p>
+      </div>
+
+      <!-- ==================== PART 8: MEDICAL TRIAGE & DOW ==================== -->
       <div id="guide-medical" class="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5 shadow-lg space-y-3">
         <div class="flex items-center gap-2 border-b border-slate-800 pb-2.5">
-          <span class="w-7 h-7 rounded-lg bg-teal-500/20 text-teal-400 font-bold flex items-center justify-center font-mono text-sm">7</span>
+          <span class="w-7 h-7 rounded-lg bg-teal-500/20 text-teal-400 font-bold flex items-center justify-center font-mono text-sm">8</span>
           <h3 class="font-bold text-base text-white">Medical Triage, Evacuation &amp; Died of Wounds (DOW)</h3>
         </div>
         <p class="text-xs text-slate-300 leading-relaxed">
           Starting in <b>Round 4+</b>, untreated wounded personnel (WIA) risk succumbing to trauma, blood loss, and environmental exposure:
         </p>
 
-        <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 font-mono text-xs space-y-1.5">
-          <div class="text-teal-300 font-bold">DOW Mortality Formula:</div>
-          <div class="text-slate-300 text-[11px] leading-relaxed">
-            DOW Rate = clamp(Supply Deficit [0–10%] + Weather Exposure [0–3%] - Medical Traits [Field Medic -3%, First Aid -4%], 0, 15)%
+        <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 font-mono text-xs space-y-2">
+          <span class="text-teal-300 font-bold block">DOW Mortality Formula</span>
+          <div class="p-2 rounded bg-slate-900 border border-slate-800 text-center text-slate-200 text-xs sm:text-sm">
+            DOW Rate = <span class="text-sky-300">clamp</span>(<span class="text-amber-300">Supply Deficit</span> + <span class="text-rose-400">Weather Exposure</span> - <span class="text-emerald-300">Medical Traits</span>, 0, 15)%
           </div>
         </div>
 
@@ -393,10 +427,10 @@ function renderSimulationGuide() {
         </div>
       </div>
 
-      <!-- ==================== PART 8: RALLYING & ESCAPED STRAGGLERS ==================== -->
+      <!-- ==================== PART 9: RALLYING & ESCAPED STRAGGLERS ==================== -->
       <div id="guide-rally" class="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5 shadow-lg space-y-3">
         <div class="flex items-center gap-2 border-b border-slate-800 pb-2.5">
-          <span class="w-7 h-7 rounded-lg bg-cyan-500/20 text-cyan-400 font-bold flex items-center justify-center font-mono text-sm">8</span>
+          <span class="w-7 h-7 rounded-lg bg-cyan-500/20 text-cyan-400 font-bold flex items-center justify-center font-mono text-sm">9</span>
           <h3 class="font-bold text-base text-white">The Rallying Engine, Rear Staging &amp; Escaped Stragglers</h3>
         </div>
         <p class="text-xs text-slate-300 leading-relaxed">
@@ -419,16 +453,16 @@ function renderSimulationGuide() {
           <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
             <span class="text-amber-400 font-bold block">3. 60% Manpower Safety Net</span>
             <p class="text-[11px] text-slate-400 font-sans">
-              On the d20 Rally Check vs DC 10: any formation with &ge;60% personnel remaining <b>never dissolves</b>. Officers delay the rally by 1 round to continue dressing lines.
+              On the d20 Rally Check vs DC 10: any formation with &ge; 60% personnel remaining <b>never dissolves</b>. Officers delay the rally by 1 round to continue dressing lines.
             </p>
           </div>
         </div>
       </div>
 
-      <!-- ==================== PART 9: POST-BATTLE PURSUIT & SALVAGE ==================== -->
+      <!-- ==================== PART 10: POST-BATTLE PURSUIT & SALVAGE ==================== -->
       <div id="guide-pursuit" class="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5 shadow-lg space-y-3">
         <div class="flex items-center gap-2 border-b border-slate-800 pb-2.5">
-          <span class="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-400 font-bold flex items-center justify-center font-mono text-sm">9</span>
+          <span class="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-400 font-bold flex items-center justify-center font-mono text-sm">10</span>
           <h3 class="font-bold text-base text-white">Post-Battle Pursuit, Overruns, Towing &amp; Field Salvage</h3>
         </div>
         <p class="text-xs text-slate-300 leading-relaxed">
@@ -439,13 +473,13 @@ function renderSimulationGuide() {
           <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
             <span class="text-purple-400 font-bold block">Automatic Overrun</span>
             <p class="text-[11px] text-slate-400 font-sans">
-              If $\Delta \text{Mobility} \ge 3$ on open terrain, retreating formations are caught by mechanized vanguards: <b>90% are captured as POWs</b> (unless critical 100 scatter roll).
+              If &Delta;Mobility &ge; 3 on open terrain, retreating formations are caught by mechanized vanguards: <b>90% are captured as POWs</b> (unless critical 100 scatter roll).
             </p>
           </div>
           <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
             <span class="text-sky-400 font-bold block">Recovery Towing</span>
             <p class="text-[11px] text-slate-400 font-sans">
-              On disciplined retreats (Retreat score &ge;60%), recovery tractors tow <b>25% to 50%</b> of recoverable disabled hulls back to army depots for refitting.
+              On disciplined retreats (Retreat score &ge; 60%), recovery tractors tow <b>25% to 50%</b> of recoverable disabled hulls back to army depots for refitting.
             </p>
           </div>
           <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
