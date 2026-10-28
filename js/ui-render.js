@@ -4,7 +4,8 @@
    ========================================================================== */
 
 function switchTab(tabName) {
-  const tabs = ['battlefield', 'units', 'traits', 'commanders', 'terrain', 'tactics'];
+  // Added 'guide' to the registered tabs array
+  const tabs = ['battlefield', 'units', 'traits', 'commanders', 'terrain', 'tactics', 'guide'];
   tabs.forEach(t => {
     const view = document.getElementById(`view-${t}`);
     const btn = document.getElementById(`tab-${t}`);
@@ -690,4 +691,7 @@ function renderAll() {
   renderCommandersTab();
   renderTerrainTab();
   renderTacticsGuide();
+  if (typeof renderSimulationGuide === 'function') {
+    renderSimulationGuide();
+  }
 }

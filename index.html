@@ -63,6 +63,10 @@
         <button type="button" onclick="switchTab('tactics')" id="tab-tactics" class="tab-btn px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold text-slate-300 hover:text-white transition">
           📋 Tactics Guide
         </button>
+        <!-- NEW SIMULATION GUIDE TAB (TOP RIGHT) -->
+        <button type="button" onclick="switchTab('guide')" id="tab-guide" class="tab-btn px-3 py-1.5 rounded-md text-xs sm:text-sm font-bold text-amber-300 hover:text-amber-200 transition border border-amber-500/40 bg-amber-500/10">
+          📖 Simulation Guide
+        </button>
       </nav>
     </div>
   </header>
@@ -914,6 +918,9 @@
       </div>
     </section>
 
+    <!-- ==================== TAB 7: SIMULATION GUIDE ==================== -->
+    <section id="view-guide" class="hidden space-y-4"></section>
+
   </main>
 
   <!-- ==================== POST-BATTLE AAR MODAL ==================== -->
@@ -959,10 +966,13 @@
   <!-- 5. Operational Pursuit & Salvage (Overruns, Towing, Equipment Spoils) -->
   <script src="js/engine-pursuit.js"></script>
 
-  <!-- 6. UI & DOM Rendering (Unit Cards, Telemetry, Designer, Modals) -->
-  <script src="js/ui-render.js?v=2"></script>
+  <!-- 6. UI & DOM Rendering -->
+  <script src="js/ui-render.js"></script>
 
-  <!-- 7. Application State & Controller Bootstrap -->
+  <!-- 7. Simulation Field Guide -->
+  <script src="js/guide.js"></script>
+
+  <!-- 8. Application State & Controller Bootstrap -->
   <script src="js/app.js"></script>
 
 </body>
