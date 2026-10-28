@@ -150,7 +150,7 @@ function saveCustomCommanderTrait() {
   const durationRed = Number(document.getElementById('cmd-trait-duration-red').value) || 0;
   const extraOrg = Number(document.getElementById('cmd-trait-extra-org').value) || 0;
   const pierce = Number(document.getElementById('cmd-trait-pierce-flat')?.value) || 0;
-  
+
   const newTrait = {
     id: `ctrait_${Date.now()}`,
     name,
@@ -263,7 +263,10 @@ function resetCurrentBattle() {
   state.battle.afterActionReport = null;
   state.battle.logs = [];
 
+  // Reset Supply Depots
   ['sideA', 'sideB'].forEach(k => {
+    state.battle[k].maxSupplyDepot = calculateSideDepotCapacity(k === 'sideA' ? 'A' : 'B');
+    state.battle[k].supplyDepot = state.battle[k].maxSupplyDepot;
     state.battle[k].lastChosenTacticId = null;
     state.battle[k].prevRevealedTactic = null;
     state.battle[k].repeatTacticCount = 0;
@@ -316,6 +319,11 @@ function loadDefaultSkirmish() {
     const tpl = state.unitTemplates.find(t => t.id === id);
     if (tpl) state.battle.sideB.units.push(createCombatUnitInstance(tpl, 'B'));
   });
+
+  state.battle.sideA.maxSupplyDepot = calculateSideDepotCapacity('A');
+  state.battle.sideA.supplyDepot = state.battle.sideA.maxSupplyDepot;
+  state.battle.sideB.maxSupplyDepot = calculateSideDepotCapacity('B');
+  state.battle.sideB.supplyDepot = state.battle.sideB.maxSupplyDepot;
 
   addLog('rolls', `⚔ Loaded Sample Combined-Arms Battle: Side A (Medium Tank, Mechanized, Artillery) vs Side B (Heavy Infantry, Anti-Tank, Heavy Tank).`);
   renderAll();

@@ -599,7 +599,13 @@ function processSupplyAndStartOfRoundTraits(side, chosenTactic) {
   const feat = TERRAIN_FEATURES[state.environment.feature] || TERRAIN_FEATURES.Normal;
   const weath = WEATHER_TYPES[state.environment.weather] || WEATHER_TYPES.Sunny;
 
-  // 1. Resolve Rallying Queue with d20 Check & Turn-by-Turn Org Regen
+  // Initialize Supply Depot if not already set
+  if (sideState.supplyDepot === undefined || sideState.supplyDepot === null) {
+    sideState.maxSupplyDepot = calculateSideDepotCapacity(side);
+    sideState.supplyDepot = sideState.maxSupplyDepot;
+  }
+
+  // 1. Resolve Rallying Queue (Org Regen + Depot Supply Refit)
   for (const u of sideState.units) {
     if (u.isRallying) {
       if (u.personnel <= 0) {
@@ -612,41 +618,24 @@ function processSupplyAndStartOfRoundTraits(side, chosenTactic) {
       // --- TURN-BY-TURN REAR STAGING ORG REGENERATION ---
       if (!u.isMonster && !u.isZombie) {
         const baseD3 = rollDie(3);
-
-        // A. Unit Traits & Experience
         const unitTraits = (u.traits || []).map(getTraitById).filter(Boolean);
         const expObj = EXPERIENCE_TIERS[u.experience] || EXPERIENCE_TIERS.Regular;
         let traitBonus = (expObj.orgRegen || 0) + unitTraits.reduce((s, t) => s + (t.orgRegen || 0), 0);
         
-        // Manpower Cohesion Anchor: Intact units (>=75% headcount) restore order faster
         const manpowerRatio = u.personnel / Math.max(1, u.maxPersonnel);
-        if (manpowerRatio >= 0.75) {
-          traitBonus += 1;
-        }
+        if (manpowerRatio >= 0.75) traitBonus += 1;
 
-        // B. Terrain & Fortification Staging Bonus
         let terrainBonus = 0;
-        // Fortified sectors provide secure, reinforced staging areas
         if (state.environment.feature === 'Fort') terrainBonus += 2;
-        // Natural cover terrains (Forest, Mountain, Hills, Urban, Jungle) shield rear camps from harassment
         const protectiveTerrains = ['Forest', 'Mountain', 'Hills', 'Urban', 'Jungle'];
         if (protectiveTerrains.includes(state.environment.terrain)) terrainBonus += 1;
-        // Terrain-specialized units (Mountaineers, Rangers, Marines) excel at rallying in their native element
-        unitTraits.forEach(t => {
-          if (t.terrainTarget && (t.terrainTarget === state.environment.terrain || (t.terrainTarget === 'Mountain' && state.environment.terrain === 'Hills'))) {
-            terrainBonus += 1;
-          }
-        });
 
-        // C. Commander Bonuses
         let cmdBonus = 0;
         if (cmd) {
           if (cmd.traits && cmd.traits.includes('organizer')) cmdBonus += 1;
           if (cmd.traits && cmd.traits.includes('iron_disciplinarian')) cmdBonus += 1;
           const cmdTraits = (cmd.traits || []).map(getCommanderTraitById).filter(Boolean);
           cmdBonus += cmdTraits.filter(t => traitAppliesToUnit(t, u)).reduce((s, t) => s + (t.orgRegen || 0), 0);
-          
-          // Command Level Attribute: High-level staff coordination accelerates rear reorganization
           if ((cmd.commandLevel || 0) >= 8) cmdBonus += 2;
           else if ((cmd.commandLevel || 0) >= 4) cmdBonus += 1;
         }
@@ -654,10 +643,28 @@ function processSupplyAndStartOfRoundTraits(side, chosenTactic) {
         const totalRallyOrgGain = baseD3 + traitBonus + terrainBonus + cmdBonus;
         u.org = clamp((u.org || 0) + totalRallyOrgGain, 0, u.maxOrg);
 
+        // --- RALLYING UNIT SUPPLY RESTOCK FROM DEPOT ---
+        if (u.supply < u.maxSupply) {
+          if (sideState.supplyDepot > 0) {
+            const rawSupD3 = rollDie(3);
+            const traitSupBonus = unitTraits.reduce((s, t) => s + (t.supplyRegen || 0), 0);
+            const cmdSupBonus = (cmd && cmd.traits.includes('logistics_wizard') ? 1 : 0) + Math.floor((cmd?.logisticsLevel || 0) / 4);
+            const neededSupply = u.maxSupply - u.supply;
+            const requestedSupply = Math.min(neededSupply, rawSupD3 + traitSupBonus + cmdSupBonus);
+
+            const drawnSupply = Math.min(sideState.supplyDepot, requestedSupply);
+            sideState.supplyDepot = Math.max(0, sideState.supplyDepot - drawnSupply);
+            u.supply = clamp(u.supply + drawnSupply, 0, u.maxSupply);
+
+            addLog('support', `📦 [Depot Refit] ${u.name} draws +${drawnSupply} supply from Depot (d3[${rawSupD3}] + Traits[+${traitSupBonus}] + Cmd[+${cmdSupBonus}] ➔ Unit: ${u.supply}/${u.maxSupply} | Depot: ${sideState.supplyDepot}/${sideState.maxSupplyDepot}).`);
+          } else {
+            addLog('support', `⚠ [Depot Empty] ${u.name} attempts to resupply in rear, but Side ${side}'s Supply Depot is EXHAUSTED!`);
+          }
+        }
+
         addLog('support', `💚 [Rally Staging Area] ${u.name} reorganizes in the rear: +${totalRallyOrgGain} Org (d3[${baseD3}] + Traits[+${traitBonus}] + Terrain[+${terrainBonus}] + Cmd[+${cmdBonus}] ➔ ${u.org}/${u.maxOrg} Org).`);
       }
 
-      // Decrement cooldown countdown
       u.rallyRoundsLeft--;
 
       // When countdown reaches 0, perform the Rally Check
@@ -709,7 +716,6 @@ function processSupplyAndStartOfRoundTraits(side, chosenTactic) {
           u.ralliedOnce = true;
           u.personnel = u.ralliedPersonnel;
 
-          // Rallied unit keeps all accumulated Org plus an adrenaline frontline surge (d10)
           const rawD10 = rollDie(10);
           const strengthBonus = manpowerRatio >= 0.75 ? 5 : 0;
           u.org = clamp(u.org + rawD10 + strengthBonus + extraOrgBonus, 10, u.maxOrg);
@@ -730,10 +736,9 @@ function processSupplyAndStartOfRoundTraits(side, chosenTactic) {
             addLog('rolls', `🚩 [Rallied to the Line] ${u.name} PASSED Rally Check (${breakdownStr} vs DC ${rallyDC})! Reformed as infantry with ${u.personnel} personnel, Org: ${u.org}/${u.maxOrg}.`);
           }
         } else {
-          // If headcount >= 60%, officers delay the rally to keep re-forming ranks
           if (manpowerRatio >= 0.60 && !isCriticalFumble) {
             u.rallyRoundsLeft = 1;
-            addLog('support', `⏳ [Rally Delayed] ${u.name} failed rally check (${breakdownStr} vs DC ${rallyDC}), but retaining ${Math.round(manpowerRatio * 100)}% manpower prevents collapse! NCOs re-form ranks (+1 round delay, continues rest).`);
+            addLog('support', `⏳ [Rally Delayed] ${u.name} failed rally check (${breakdownStr} vs DC ${rallyDC}), but retaining ${Math.round(manpowerRatio * 100)}% manpower prevents collapse! NCOs re-form ranks (+1 round delay).`);
           } else {
             u.isRallying = false;
             u.defeated = true;
@@ -749,49 +754,23 @@ function processSupplyAndStartOfRoundTraits(side, chosenTactic) {
   }
 
   // 2. CHECK UNCONTESTED FRONTLINE CONDITION
-  // If the enemy has 0 active units on the frontline, holding units rest without attrition
   const enemyActiveCount = enemyState.units.filter(isUnitActive).length;
   const isUncontestedFrontline = (enemyActiveCount === 0);
 
   let sideRollD3 = 0;
   if (isUncontestedFrontline) {
-    addLog('support', `⏳ [Uncontested Frontline] Side ${side} holds the field with no active opposing forces. Supply drain, combat fatigue, and attrition losses are paused.`);
+    addLog('support', `⏳ [Uncontested Frontline] Side ${side} holds the field with no active opposing forces. Supply drain and attrition are paused.`);
   } else {
     sideRollD3 = rollDie(3);
-    addLog('support', `📦 [Side ${side} Supply] Base supply roll d3 = ${sideRollD3}`);
+    addLog('support', `📦 [Side ${side} Supply] Base operational drain d3 = ${sideRollD3} | Depot Stockpile: ${sideState.supplyDepot}/${sideState.maxSupplyDepot}`);
   }
 
+  // 3. FRONT LINE UNIT SUPPLY & REGENERATION LOOP
   for (const u of sideState.units.filter(isUnitActive)) {
-    if (isMeleeUnit(u) && (u.meleeDistance === null || u.meleeDistance === undefined)) {
-      u.meleeDistance = getInitialEngagementDistance(u);
-      addLog('rolls', `🏃 [Melee Deployment] ${u.name} begins at ${u.meleeDistance} Distance from the enemy line (${state.environment.terrain} + ${state.environment.feature}).`);
-    }
-
-    if (isMeleeUnit(u) && u.meleeDistance > 0 && !isUncontestedFrontline) {
-      const enemyActiveUnits = enemyState.units.filter(isUnitActive);
-      const enemyOnlyMelee = (enemyActiveUnits.length > 0) && enemyActiveUnits.every(isMeleeUnit);
-
-      const closeRate = enemyOnlyMelee ? 2 : 1;
-      const prevDist = u.meleeDistance;
-      u.meleeDistance = Math.max(0, u.meleeDistance - closeRate);
-
-      if (u.meleeDistance === 0) {
-        addLog('rolls', `⚔ [MELEE CONTACT REACHED!] ${u.name} closed the distance (${prevDist} ➔ 0)! Hand-to-hand trench combat authorized!`);
-      } else {
-        addLog('rolls', `🏃 [Closing Distance] ${u.name} charges across no-man's land (${prevDist} ➔ ${u.meleeDistance} Distance remaining${enemyOnlyMelee ? ' [Mutual Charge x2]' : ''}).`);
-      }
-    }
-
-    for (const k of Object.keys(u.supportCooldowns)) {
-      if (u.supportCooldowns[k] > 0) u.supportCooldowns[k]--;
-    }
-
     const unitTraits = u.traits.map(getTraitById).filter(Boolean);
     const expObj = EXPERIENCE_TIERS[u.experience] || EXPERIENCE_TIERS.Regular;
 
-    // 3. SUPPLY CONSUMPTION & COHESION
     if (!u.isMonster && !u.isZombie) {
-      // IF UNCONTESTED: NO SUPPLY DRAIN & NO SUPPLY ATTRITION
       if (!isUncontestedFrontline) {
         let drain = sideRollD3 + (terr.supplyDrain || 0) + (feat.supplyAdd || 0) + (weath.supplyAdd || 0) + (chosenTactic.supplyAdd || 0);
         if (chosenTactic.id === 'urb_atk_armour_supported' && u.maxArmor > 0) drain += 1;
@@ -803,8 +782,20 @@ function processSupplyAndStartOfRoundTraits(side, chosenTactic) {
           drain = Math.max(0, drain - supplyCut);
         }
 
-        const supplyRegen = unitTraits.reduce((acc, t) => acc + (t.supplyRegen || 0), 0);
-        const netDrain = Math.max(0, drain - supplyRegen);
+        // --- UNIT REGEN DRAWS FROM THE SHARED SUPPLY DEPOT ---
+        const potentialRegen = unitTraits.reduce((acc, t) => acc + (t.supplyRegen || 0), 0);
+        let actualRegenDrawn = 0;
+
+        if (potentialRegen > 0) {
+          if (sideState.supplyDepot > 0) {
+            actualRegenDrawn = Math.min(sideState.supplyDepot, potentialRegen);
+            sideState.supplyDepot = Math.max(0, sideState.supplyDepot - actualRegenDrawn);
+          } else {
+            addLog('support', `⚠ [Depot Empty] ${u.name} has logistics traits (+${potentialRegen}), but Side ${side}'s Depot is empty! Regeneration failed.`);
+          }
+        }
+
+        const netDrain = Math.max(0, drain - actualRegenDrawn);
         u.supply = clamp(u.supply - netDrain, 0, u.maxSupply);
 
         const supRatio = u.supply / Math.max(1, u.maxSupply);
@@ -832,7 +823,7 @@ function processSupplyAndStartOfRoundTraits(side, chosenTactic) {
         }
       }
 
-      // Entrenchment can always build up if not actively attacking
+      // Entrenchment Buildup
       const isDefendingSide = (state.battle.attackerSide !== side);
       const maxCap = getUnitMaxEntrenchmentCap(u);
 
@@ -845,7 +836,7 @@ function processSupplyAndStartOfRoundTraits(side, chosenTactic) {
         }
       }
 
-      // 4. ORGANIZATION RECOVERY (NO FATIGUE WHEN UNCONTESTED)
+      // Org Recovery
       let orgDelta = expObj.orgRegen || 0;
       orgDelta += unitTraits.reduce((acc, t) => acc + (t.orgRegen || 0), 0);
       
@@ -856,18 +847,14 @@ function processSupplyAndStartOfRoundTraits(side, chosenTactic) {
       }
 
       const manpowerRatio = u.personnel / Math.max(1, u.maxPersonnel);
-      if (manpowerRatio >= 0.75) {
-        orgDelta += 1;
-      }
+      if (manpowerRatio >= 0.75) orgDelta += 1;
 
-      // Combat fatigue is 0 if no enemy is on the frontline
       let fatigueLoss = 0;
       if (!isUncontestedFrontline) {
         if (state.battle.round > 12) fatigueLoss = 2;
         else if (state.battle.round > 5) fatigueLoss = 1;
       }
 
-      // If uncontested, unit can only GAIN or HOLD Organization; it never loses Org
       const netOrgChange = isUncontestedFrontline ? Math.max(0, orgDelta) : (orgDelta - fatigueLoss);
 
       if (netOrgChange !== 0) {
@@ -880,96 +867,7 @@ function processSupplyAndStartOfRoundTraits(side, chosenTactic) {
       }
     }
 
-    // Unbreakable Stand Countdown
-    const hasUnbreakable = unitTraits.some(t => t.isUnbreakable);
-    if (hasUnbreakable) {
-      if (u.org > 0) {
-        u.unbreakableRoundsLeft = null;
-      } else if (u.unbreakableRoundsLeft !== null) {
-        if (u.unbreakableRoundsLeft > 0) {
-          addLog('damage', `⏳ [Unbreakable Stand] ${u.name} is at 0 Org! (${u.unbreakableRoundsLeft} round${u.unbreakableRoundsLeft === 1 ? '' : 's'} remaining before collapse).`);
-          u.unbreakableRoundsLeft--;
-        } else {
-          u.unbreakableRoundsLeft = null;
-          addLog('damage', `💀 [Unbreakable Shattered] ${u.name}'s 2-round last stand has expired! Cohesion collapses completely!`);
-          if (!u.ralliedOnce && u.personnel > 20) {
-            triggerUnitRally(u, 'Unbreakable last stand expired');
-          } else {
-            u.defeated = true;
-            u.defeatReason = 'Unbreakable stand collapsed';
-          }
-        }
-      }
-    }
-
-    // Field Medic Healing
-    if (unitTraits.some(t => t.isFieldMedic) && u.wounded > 0) {
-      const healed = Math.min(u.wounded, rollDie(3));
-      u.wounded -= healed;
-      u.personnel = Math.min(u.maxPersonnel, u.personnel + healed);
-      if (healed > 0) {
-        addLog('support', `➕ [Field Medic] ${u.name} heals ${healed} wounded back to active duty (${u.personnel} active).`);
-      }
-    }
-
-    // Died of Wounds (DOW)
-    if (state.battle.round >= 4 && u.wounded > 0 && !u.isMonster && !u.isZombie) {
-      const supRatio = u.supply / Math.max(1, u.maxSupply);
-      let dowRate = 0;
-
-      if (supRatio < 0.20) dowRate += 5;
-      else if (supRatio < 0.50) dowRate += 2;
-      if (u.supply <= 0) dowRate += 5;
-
-      if (state.environment.weather === 'Snowy') dowRate += 2;
-      if (state.environment.weather === 'HeatWaves' || state.environment.terrain === 'Marsh') dowRate += 1;
-
-      if (u.traits.includes('first_aid_kit')) dowRate -= 4;
-      if (u.traits.includes('field_medic')) dowRate -= 3;
-
-      const finalRate = clamp(dowRate, 0, 15);
-
-      if (finalRate > 0) {
-        const expected = u.wounded * (finalRate / 100);
-        let dowCasualties = Math.floor(expected);
-        if (Math.random() < (expected - dowCasualties)) {
-          dowCasualties += 1;
-        }
-
-        if (dowCasualties > 0) {
-          dowCasualties = Math.min(u.wounded, dowCasualties);
-          u.wounded -= dowCasualties;
-          u.dead += dowCasualties;
-          addLog('damage', `🏥 [Died of Wounds] ${u.name}: ${dowCasualties} wounded succumbed to injuries (WIA ➔ KIA, Rate: ${finalRate}%).`);
-        }
-      }
-    }
-
-    // Field Repair Crew
-    if (state.battle.round % 3 === 0 && unitTraits.some(t => t.isRepairCrew) && u.recoverableArmor > 0) {
-      const hasSupplyToRepair = u.isMonster || u.isZombie || (u.supply >= u.maxSupply * 0.30);
-      if (hasSupplyToRepair) {
-        const hasSimpleEng = unitTraits.some(t => t.id === 'simple_engineering');
-        const repCostReduction = hasSimpleEng ? 1 : 0;
-        const extraRepairBonus = hasSimpleEng ? 1 : 0;
-
-        const repDie = expObj.repairDie || 3;
-        const fieldCap = Math.max(1, Math.ceil(u.recoverableArmor * 0.5));
-        const repaired = Math.min(fieldCap, rollDie(repDie) + extraRepairBonus);
-
-        if (repaired > 0) {
-          const baseCost = 1 + rollDie(2);
-          const repSupCost = Math.max(0, baseCost - repCostReduction);
-          if (!u.isMonster && !u.isZombie) {
-            u.supply = Math.max(0, u.supply - repSupCost);
-          }
-          u.recoverableArmor -= repaired;
-          u.armor = Math.min(u.maxArmor, u.armor + repaired);
-          addLog('armor', `🔧 [Field Repair Crew] ${u.name} (${u.experience}, d${repDie}${extraRepairBonus ? '+1 SimpleEng' : ''}, Cost ${repSupCost} Sup) restores ${repaired} armor in-field (${u.armor} active, ${u.recoverableArmor} awaiting post-battle recovery).`);
-        }
-      }
-    }
-
+    // Unbreakable, Medics, DOW, Repair crews... (preserve existing handlers below)
     checkAndMarkUnitDefeat(u);
   }
 }
@@ -1007,6 +905,31 @@ function getSideVigilanceModifier(side, tactic, enemyTactic, isAttacker) {
   if (tactic.id === 'urb_def_fortified' && (enemyTactic.id === 'atk_infiltration' || enemyTactic.id === 'urb_atk_mouse_holing')) mod -= 10;
 
   return mod;
+}
+
+/* ==========================================================================
+   SHARED SUPPLY DEPOT CAPACITY CALCULATOR
+   ========================================================================== */
+
+function calculateSideDepotCapacity(side) {
+  const sideState = side === 'A' ? state.battle.sideA : state.battle.sideB;
+  const cmd = getSideCommander(side);
+  const units = sideState.units || [];
+  
+  // Base pool (100) + 50% of the maximum supply of all deployed formations
+  const basePool = 100 + units.reduce((s, u) => s + Math.round((u.maxSupply || 40) * 0.5), 0);
+  
+  // Commander Logistics Level (+10% per level)
+  const logLevel = cmd ? (cmd.logisticsLevel || 0) : 0;
+  const logMult = 1 + (logLevel * 0.10);
+  
+  // Commander Traits (Logistics Wizard: +25% capacity)
+  let traitMult = 1.0;
+  if (cmd && cmd.traits && cmd.traits.includes('logistics_wizard')) {
+    traitMult += 0.25;
+  }
+  
+  return Math.round(basePool * logMult * traitMult);
 }
 
 function performVigilanceComparison(atkSide, defSide, atkTactic, defTactic) {

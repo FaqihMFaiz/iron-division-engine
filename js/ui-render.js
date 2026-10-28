@@ -130,6 +130,10 @@ function renderSidePanel(side) {
 
   const summaryEl = document.getElementById(`side${side}-summary`);
   if (summaryEl) {
+    const curDepot = sideObj.supplyDepot !== undefined ? sideObj.supplyDepot : (sideObj.maxSupplyDepot || 100);
+    const maxDepot = sideObj.maxSupplyDepot || 100;
+    const depotPct = clamp(Math.round((curDepot / Math.max(1, maxDepot)) * 100), 0, 100);
+
     summaryEl.innerHTML = `
       <div>
         <span class="block text-[10px] font-mono uppercase text-slate-400">Active Units</span>
@@ -143,9 +147,19 @@ function renderSidePanel(side) {
         <span class="block text-[10px] font-mono uppercase text-slate-400">Casualties (KIA+WIA)</span>
         <span class="font-bold text-sm text-rose-400 font-mono">${totalDeadWounded.toLocaleString()}</span>
       </div>
+      <div class="col-span-3 pt-2 mt-1 border-t border-slate-800 text-left">
+        <div class="flex justify-between text-[11px] font-mono mb-1">
+          <span class="text-slate-300 font-bold">📦 Army Supply Depot (${getSideCommander(side)?.name?.split(' ')[0] || 'HQ'})</span>
+          <span class="${curDepot <= 0 ? 'text-rose-400 font-extrabold animate-pulse' : (depotPct < 30 ? 'text-amber-400' : 'text-amber-300')}">
+            ${curDepot} / ${maxDepot} pts (${depotPct}%)
+          </span>
+        </div>
+        <div class="w-full h-2 bg-slate-900 rounded-full overflow-hidden border border-slate-800">
+          <div class="h-full bar-fill ${curDepot <= 0 ? 'bg-rose-600' : (depotPct < 30 ? 'bg-amber-500' : 'bg-emerald-500')}" style="width: ${depotPct}%"></div>
+        </div>
+      </div>
     `;
   }
-
   const listEl = document.getElementById(`side${side}-units-list`);
   if (!listEl) return;
 
