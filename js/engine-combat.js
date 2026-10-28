@@ -599,18 +599,69 @@ function processSupplyAndStartOfRoundTraits(side, chosenTactic) {
   const feat = TERRAIN_FEATURES[state.environment.feature] || TERRAIN_FEATURES.Normal;
   const weath = WEATHER_TYPES[state.environment.weather] || WEATHER_TYPES.Sunny;
 
-  // 1. Resolve Rallying Queue with d20 Check
+  // 1. Resolve Rallying Queue with d20 Check & Turn-by-Turn Org Regen
   for (const u of sideState.units) {
     if (u.isRallying) {
-      u.rallyRoundsLeft--;
-      if (u.rallyRoundsLeft <= 0) {
-        if (u.personnel <= 0) {
-          u.isRallying = false;
-          u.defeated = true;
-          u.defeatReason = 'All personnel eliminated';
-          continue;
+      if (u.personnel <= 0) {
+        u.isRallying = false;
+        u.defeated = true;
+        u.defeatReason = 'All personnel eliminated';
+        continue;
+      }
+
+      // --- TURN-BY-TURN REAR STAGING ORG REGENERATION ---
+      if (!u.isMonster && !u.isZombie) {
+        const baseD3 = rollDie(3);
+
+        // A. Unit Traits & Experience
+        const unitTraits = (u.traits || []).map(getTraitById).filter(Boolean);
+        const expObj = EXPERIENCE_TIERS[u.experience] || EXPERIENCE_TIERS.Regular;
+        let traitBonus = (expObj.orgRegen || 0) + unitTraits.reduce((s, t) => s + (t.orgRegen || 0), 0);
+        
+        // Manpower Cohesion Anchor: Intact units (>=75% headcount) restore order faster
+        const manpowerRatio = u.personnel / Math.max(1, u.maxPersonnel);
+        if (manpowerRatio >= 0.75) {
+          traitBonus += 1;
         }
 
+        // B. Terrain & Fortification Staging Bonus
+        let terrainBonus = 0;
+        // Fortified sectors provide secure, reinforced staging areas
+        if (state.environment.feature === 'Fort') terrainBonus += 2;
+        // Natural cover terrains (Forest, Mountain, Hills, Urban, Jungle) shield rear camps from harassment
+        const protectiveTerrains = ['Forest', 'Mountain', 'Hills', 'Urban', 'Jungle'];
+        if (protectiveTerrains.includes(state.environment.terrain)) terrainBonus += 1;
+        // Terrain-specialized units (Mountaineers, Rangers, Marines) excel at rallying in their native element
+        unitTraits.forEach(t => {
+          if (t.terrainTarget && (t.terrainTarget === state.environment.terrain || (t.terrainTarget === 'Mountain' && state.environment.terrain === 'Hills'))) {
+            terrainBonus += 1;
+          }
+        });
+
+        // C. Commander Bonuses
+        let cmdBonus = 0;
+        if (cmd) {
+          if (cmd.traits && cmd.traits.includes('organizer')) cmdBonus += 1;
+          if (cmd.traits && cmd.traits.includes('iron_disciplinarian')) cmdBonus += 1;
+          const cmdTraits = (cmd.traits || []).map(getCommanderTraitById).filter(Boolean);
+          cmdBonus += cmdTraits.filter(t => traitAppliesToUnit(t, u)).reduce((s, t) => s + (t.orgRegen || 0), 0);
+          
+          // Command Level Attribute: High-level staff coordination accelerates rear reorganization
+          if ((cmd.commandLevel || 0) >= 8) cmdBonus += 2;
+          else if ((cmd.commandLevel || 0) >= 4) cmdBonus += 1;
+        }
+
+        const totalRallyOrgGain = baseD3 + traitBonus + terrainBonus + cmdBonus;
+        u.org = clamp((u.org || 0) + totalRallyOrgGain, 0, u.maxOrg);
+
+        addLog('support', `💚 [Rally Staging Area] ${u.name} reorganizes in the rear: +${totalRallyOrgGain} Org (d3[${baseD3}] + Traits[+${traitBonus}] + Terrain[+${terrainBonus}] + Cmd[+${cmdBonus}] ➔ ${u.org}/${u.maxOrg} Org).`);
+      }
+
+      // Decrement cooldown countdown
+      u.rallyRoundsLeft--;
+
+      // When countdown reaches 0, perform the Rally Check
+      if (u.rallyRoundsLeft <= 0) {
         const d20 = rollDie(20);
 
         function getThresholdMod(current, max) {
@@ -658,9 +709,10 @@ function processSupplyAndStartOfRoundTraits(side, chosenTactic) {
           u.ralliedOnce = true;
           u.personnel = u.ralliedPersonnel;
 
+          // Rallied unit keeps all accumulated Org plus an adrenaline frontline surge (d10)
           const rawD10 = rollDie(10);
           const strengthBonus = manpowerRatio >= 0.75 ? 5 : 0;
-          u.org = Math.max(5, rawD10 + strengthBonus + extraOrgBonus);
+          u.org = clamp(u.org + rawD10 + strengthBonus + extraOrgBonus, 10, u.maxOrg);
 
           u.name = u.name.includes('(Rallied)') ? u.name : `${u.name} (Rallied)`;
 
@@ -678,9 +730,10 @@ function processSupplyAndStartOfRoundTraits(side, chosenTactic) {
             addLog('rolls', `🚩 [Rallied to the Line] ${u.name} PASSED Rally Check (${breakdownStr} vs DC ${rallyDC})! Reformed as infantry with ${u.personnel} personnel, Org: ${u.org}/${u.maxOrg}.`);
           }
         } else {
+          // If headcount >= 60%, officers delay the rally to keep re-forming ranks
           if (manpowerRatio >= 0.60 && !isCriticalFumble) {
             u.rallyRoundsLeft = 1;
-            addLog('support', `⏳ [Rally Delayed] ${u.name} failed rally check (${breakdownStr} vs DC ${rallyDC}), but retaining ${Math.round(manpowerRatio * 100)}% manpower prevents collapse! NCOs re-form ranks (+1 round delay).`);
+            addLog('support', `⏳ [Rally Delayed] ${u.name} failed rally check (${breakdownStr} vs DC ${rallyDC}), but retaining ${Math.round(manpowerRatio * 100)}% manpower prevents collapse! NCOs re-form ranks (+1 round delay, continues rest).`);
           } else {
             u.isRallying = false;
             u.defeated = true;
