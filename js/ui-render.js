@@ -291,25 +291,18 @@ function renderCenterTelemetry() {
 
 function renderCombatLog() {
   const container = document.getElementById('combat-log-container');
-  const filterEl = document.getElementById('log-filter');
   if (!container) return;
+  
+  // Cap displayed logs to latest 100 entries to prevent DOM bloat
+  const maxLogs = 100;
+  const logsToRender = state.battle.logs.slice(-maxLogs);
+  
+  // Render efficiently
+  const filterEl = document.getElementById('log-filter');
   const filterVal = filterEl ? filterEl.value : 'all';
+  const filtered = logsToRender.filter(item => filterVal === 'all' || item.category === filterVal);
 
-  const filtered = state.battle.logs.filter(item => filterVal === 'all' || item.category === filterVal);
-  if (filtered.length === 0) {
-    container.innerHTML = `<div class="text-slate-500 text-center py-12">No combat events recorded yet. Click "▶ Next Round" or "⏩ Auto Battle" to start simulation.</div>`;
-    return;
-  }
-
-  const colorMap = {
-    rolls: 'text-slate-200 border-slate-800 bg-slate-950/60',
-    damage: 'text-rose-200 border-rose-900/40 bg-rose-950/20',
-    armor: 'text-amber-200 border-amber-900/40 bg-amber-950/20',
-    support: 'text-sky-200 border-sky-900/40 bg-sky-950/20',
-    error: 'text-rose-100 border-rose-500 bg-rose-950/90 font-bold shadow-lg'
-  };
-
-  container.innerHTML = filtered.slice().reverse().map(item => `
+  container.innerHTML = filtered.reverse().map(item => `
     <div class="px-2.5 py-1.5 rounded border text-[11px] leading-relaxed ${colorMap[item.category] || colorMap.rolls}">
       <span class="text-slate-500 mr-1">[R${item.round}]</span> ${item.text}
     </div>

@@ -213,7 +213,7 @@ function buildAfterActionReport() {
     terrain: state.environment.terrain,
     feature: state.environment.feature,
     weather: state.environment.weather,
-    sideA: state.battle.sideA.units.map(u => ({ ...u })),
-    sideB: state.battle.sideB.units.map(u => ({ ...u }))
+    sideA: structuredClone(state.battle.sideA.units),
+    sideB: structuredClone(state.battle.sideB.units)
   };
 }

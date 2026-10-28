@@ -149,8 +149,8 @@ function saveCustomCommanderTrait() {
   const rallyBonus = Number(document.getElementById('cmd-trait-rally-bonus').value) || 0;
   const durationRed = Number(document.getElementById('cmd-trait-duration-red').value) || 0;
   const extraOrg = Number(document.getElementById('cmd-trait-extra-org').value) || 0;
-  const pierce = Number(document.getElementById('cmd-trait-pierce').value) || 0;
-
+  const pierce = Number(document.getElementById('cmd-trait-pierce-flat')?.value) || 0;
+  
   const newTrait = {
     id: `ctrait_${Date.now()}`,
     name,
