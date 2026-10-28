@@ -1031,8 +1031,10 @@ function processSideSupportFire(firingSide, enemySide) {
       }
     }
 
-    // Heavy Artillery Support
-    if (u.traits.includes('heavy_artillery_support') && u.supportCooldowns.heavy_artillery <= 0) {
+    // --- HEAVY ARTILLERY SUPPORT (Inherent to all Artillery units OR via trait) ---
+    const canFireArtillery = (u.category === 'artillery' || u.traits.includes('heavy_artillery_support'));
+
+    if (canFireArtillery && u.supportCooldowns.heavy_artillery <= 0) {
       const cost = 3 + rollDie(3);
       if (!u.isMonster && !u.isZombie) u.supply = Math.max(0, u.supply - cost);
       u.supportCooldowns.heavy_artillery = 1 + rollDie(2);
@@ -1055,7 +1057,9 @@ function processSideSupportFire(firingSide, enemySide) {
       if (cas > 0 || armDis > 0) {
         applySupportCasualtiesAndArmor(target, cas, armDis, 'Heavy Artillery Barrage');
       }
-      addLog('support', `🎆 [Heavy Artillery Support] ${u.name} ➔ ${target.name} (Roll d12=${d12}, Cost ${cost} Sup, CD ${u.supportCooldowns.heavy_artillery}): Def -${defRed}, Hardness -${hardRed}, Cas: ${cas}, Armor Dis: ${armDis}`);
+      
+      const fireSourceLabel = u.category === 'artillery' ? 'Inherent Battery Barrage' : 'Off-Map Artillery Support';
+      addLog('support', `🎆 [${fireSourceLabel}] ${u.name} ➔ ${target.name} (Roll d12=${d12}, Cost ${cost} Sup, CD ${u.supportCooldowns.heavy_artillery}): Def -${defRed}, Hardness -${hardRed}, Cas: ${cas}, Armor Dis: ${armDis}`);
     }
 
     // Air Support

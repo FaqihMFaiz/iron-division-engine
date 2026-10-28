@@ -638,7 +638,9 @@ const DEFAULT_UNIT_TEMPLATES = [
     id: 'tpl_artillery', name: 'Artillery Unit', category: 'artillery', armorTier: 'unarmored',
     personnel: 500, maxOrg: 45, armorCount: 0, maxSupply: 55,
     softAttack: 42, hardAttack: 18, defense: 12, piercing: 14, hardness: 2,
-    experience: 'Regular', traits: ['explosive_weapon', 'heavy_artillery_support', 'logistic_support']
+    experience: 'Regular', 
+    // Removed 'heavy_artillery_support' because artillery fires barrages inherently!
+    traits: ['explosive_weapon', 'logistic_support'] 
   },
   {
     id: 'tpl_special_forces', name: 'Special Forces Unit', category: 'infantry', armorTier: 'unarmored',
