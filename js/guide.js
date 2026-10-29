@@ -109,6 +109,19 @@ function renderSimulationGuide() {
               Once an army breaks, mobility differentials determine overruns (90% captured). Escaping armor tows damaged hulls; the victor salvages battlefield wrecks.
             </p>
           </div>
+          <!-- NEW DYNAMIC TARGETING FORMULA CARD -->
+        <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-2 font-mono text-xs">
+          <span class="text-amber-400 font-bold block">Dynamic Target Value (TV) System</span>
+          <div class="p-2.5 rounded bg-slate-900 border border-slate-800 text-center text-slate-200 text-xs sm:text-sm">
+            TV = (<span class="text-emerald-400">Size &amp; Armor</span> + <span class="text-rose-400">Damage Threat</span> + <span class="text-sky-400">Org &amp; Kill Priority</span>) &times; <span class="text-purple-300">Category Multiplier</span> + <span class="text-amber-300">Entrenchment Mod</span> + <span class="text-yellow-300">Screening</span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-slate-300 font-sans pt-1">
+            <div>• <b>Threat to Opponent:</b> Hard Attack weighted vs armored targets; Soft Attack weighted vs foot troops.</div>
+            <div>• <b>Blood in the Water:</b> Units with &le; 30% Org gain <b>+150 to +250 TV</b> (prime targets to collapse the line).</div>
+            <div>• <b>Unit Category:</b> Artillery (&times;1.35) &gt; Tanks (&times;1.25) &gt; Armored Vehicles (&times;1.15) &gt; Infantry (&times;1.00).</div>
+            <div>• <b>Entrenchment:</b> Open ground grants <b>+60 TV</b>; Level 3–5 bunkers grant <b>-30 to -70 TV</b> (unless using Breakthrough).</div>
+          </div>
+        </div>
         </div>
       </div>
 

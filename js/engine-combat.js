@@ -235,9 +235,91 @@ function checkAndMarkUnitDefeat(u) {
   return false;
 }
 
-function getUnitTargetValue(u) {
-  const orgVal = (u.isMonster || u.isZombie) ? 50 : u.org;
-  return u.personnel + (orgVal * 2);
+/* ==========================================================================
+   REVAMPED DYNAMIC TARGET VALUE (TV) ENGINE
+   ========================================================================== */
+
+function getUnitTargetValue(target, attacker = null, atkTactic = null) {
+  if (!target) return 0;
+
+  // 1. SIZE & MATERIAL FOOTPRINT
+  let sizeScore = target.personnel * 0.6;
+  if (target.maxArmor > 0 && target.armor > 0) {
+    sizeScore += (target.armor * 8); // Armored vehicles present large mechanical targets
+  }
+
+  // 2. TOTAL DAMAGE THREAT TO THE OPPONENT
+  let threatScore = 0;
+  if (attacker) {
+    const isAttackerArmored = (attacker.maxArmor > 0 && attacker.armorTier !== 'unarmored');
+    if (isAttackerArmored) {
+      // Prioritize targets that can pierce and damage our armor
+      threatScore = (target.hardAttack * 5) + (target.softAttack * 2);
+    } else {
+      // Prioritize anti-infantry machine guns and high soft attack
+      threatScore = (target.softAttack * 5) + (target.hardAttack * 1);
+    }
+  } else {
+    // General baseline threat rating (used for default UI card display)
+    threatScore = (target.softAttack * 4) + (target.hardAttack * 3);
+  }
+
+  // 3. ORGANIZATION & "BLOOD IN THE WATER" KILL OPPORTUNITY
+  const currentOrg = (target.isMonster || target.isZombie) ? 50 : target.org;
+  const maxOrg = (target.isMonster || target.isZombie) ? 50 : Math.max(1, target.maxOrg);
+  let orgScore = currentOrg * 3;
+
+  if (!target.isMonster && !target.isZombie) {
+    const orgRatio = currentOrg / maxOrg;
+    if (orgRatio <= 0.15) {
+      orgScore += 250; // Critical opportunity to permanently shatter the unit
+    } else if (orgRatio <= 0.35) {
+      orgScore += 150; // Unit is wobbling; high priority to break cohesion
+    }
+  }
+
+  // 4. UNIT CATEGORY PRIORITY MULTIPLIER
+  let categoryMultiplier = 1.0;
+  if (target.category === 'artillery') {
+    categoryMultiplier = 1.35; // Silence enemy guns before they barrage
+  } else if (target.category === 'tank') {
+    categoryMultiplier = 1.25; // Neutralize high-impact armored spearheads
+  } else if (target.category === 'armored_vehicle') {
+    categoryMultiplier = 1.15; // Mechanized / APC targets
+  } else if (target.category === 'infantry') {
+    categoryMultiplier = 1.00;
+  }
+
+  // 5. ENTRENCHMENT LEVEL (Vulnerability in Open vs Bunkers)
+  const entrenchLvl = target.entrenchmentLevel || 0;
+  let entrenchmentMod = 0;
+
+  const isBunkerBustingTactic = atkTactic && (
+    atkTactic.id === 'atk_breakthrough' ||
+    atkTactic.id === 'atk_assault' ||
+    atkTactic.id === 'urb_atk_barrage'
+  );
+
+  if (isBunkerBustingTactic) {
+    // Siege/Breakthrough doctrines actively hunt down fortified strongpoints
+    entrenchmentMod = entrenchLvl * 25;
+  } else {
+    // Standard combat doctrines avoid digging into heavy bunkers if exposed units exist
+    if (entrenchLvl === 0) entrenchmentMod = +60;      // Caught in open: easy target
+    else if (entrenchLvl === 1) entrenchmentMod = +20;
+    else if (entrenchLvl === 2) entrenchmentMod = 0;
+    else if (entrenchLvl === 3) entrenchmentMod = -30;
+    else if (entrenchLvl >= 4) entrenchmentMod = -70;  // Deep bunkers
+  }
+
+  // 6. FRONTLINER SCREENING MAGNET
+  let frontlinerBonus = 0;
+  if (isFrontlinerActive(target)) {
+    frontlinerBonus = 200; // Actively shields allies and draws fire
+  }
+
+  const rawTV = (sizeScore + threatScore + orgScore) * categoryMultiplier + entrenchmentMod + frontlinerBonus;
+  return Math.max(10, Math.round(rawTV));
 }
 
 function getCategoryPursuitRetreatBonus(category) {
@@ -1216,30 +1298,32 @@ function selectTargetUnit(attacker, defenders, atkTactic, defTactic, attackerWon
   if (bypassChance > 0 && Math.random() * 100 < bypassChance) {
     const backline = defenders.filter(d => !isFrontlinerActive(d) || d.category === 'artillery');
     if (backline.length > 0) {
-      const picked = backline[Math.floor(Math.random() * backline.length)];
-      addLog('rolls', `🥷 [Bypass Success] ${attacker.name} bypasses frontline screening to target ${picked.name}!`);
+      // Sort backline by dynamic Target Value relative to this attacker
+      backline.sort((a, b) => getUnitTargetValue(b, attacker, atkTactic) - getUnitTargetValue(a, attacker, atkTactic));
+      const picked = backline[0];
+      addLog('rolls', `🥷 [Bypass Success] ${attacker.name} bypasses frontline screening to strike high-value ${picked.name} (TV ${getUnitTargetValue(picked, attacker, atkTactic)})!`);
       return picked;
     }
   }
 
-  // Anti-Unit Priority
+  // Anti-Unit Trait Priority (e.g. Anti-Tank guns targeting tanks)
   const antiTraits = attacker.traits.map(getTraitById).filter(t => t && t.antiCategory);
   if (antiTraits.length > 0) {
     const desiredCat = antiTraits[0].antiCategory;
     const desiredTargets = defenders.filter(d => d.category === desiredCat);
     if (desiredTargets.length > 0) {
-      desiredTargets.sort((a, b) => getUnitTargetValue(b) - getUnitTargetValue(a));
+      desiredTargets.sort((a, b) => getUnitTargetValue(b, attacker, atkTactic) - getUnitTargetValue(a, attacker, atkTactic));
       const desiredUnit = desiredTargets[0];
 
       if (activeFrontliners.length > 0 && !activeFrontliners.includes(desiredUnit)) {
-        activeFrontliners.sort((a, b) => getUnitTargetValue(b) - getUnitTargetValue(a));
+        activeFrontliners.sort((a, b) => getUnitTargetValue(b, attacker, atkTactic) - getUnitTargetValue(a, attacker, atkTactic));
         const bestFrontliner = activeFrontliners[0];
-        if (getUnitTargetValue(bestFrontliner) > getUnitTargetValue(desiredUnit)) {
-          addLog('rolls', `🛡 [Frontliner Intercept] ${bestFrontliner.name} (TV ${getUnitTargetValue(bestFrontliner)}) intercepts ${attacker.name}'s Anti-Unit attack aimed at ${desiredUnit.name}!`);
+        if (getUnitTargetValue(bestFrontliner, attacker, atkTactic) > getUnitTargetValue(desiredUnit, attacker, atkTactic)) {
+          addLog('rolls', `🛡 [Frontliner Intercept] ${bestFrontliner.name} (TV ${getUnitTargetValue(bestFrontliner, attacker, atkTactic)}) intercepts Anti-Unit attack aimed at ${desiredUnit.name}!`);
           return bestFrontliner;
         } else {
-          if (Math.random() < 0.5) {
-            addLog('rolls', `🎯 [Anti-Unit Bypass] ${attacker.name} bypasses ${bestFrontliner.name} to strike ${desiredUnit.name}!`);
+          if (Math.random() < 0.6) {
+            addLog('rolls', `🎯 [Anti-Unit Priority] ${attacker.name} bypasses screening to strike high-threat ${desiredUnit.name}!`);
             return desiredUnit;
           } else {
             addLog('rolls', `🛡 [Frontliner Intercept] ${bestFrontliner.name} blocks ${attacker.name} from reaching ${desiredUnit.name}!`);
@@ -1251,25 +1335,32 @@ function selectTargetUnit(attacker, defenders, atkTactic, defTactic, attackerWon
     }
   }
 
+  // If Attacker Lost Vigilance/Recon Contest
   if (!attackerWonVig) {
     if (activeFrontliners.length > 0) {
-      activeFrontliners.sort((a, b) => getUnitTargetValue(b) - getUnitTargetValue(a));
+      activeFrontliners.sort((a, b) => getUnitTargetValue(b, attacker, atkTactic) - getUnitTargetValue(a, attacker, atkTactic));
       return activeFrontliners[0];
     }
     const randTarget = defenders[Math.floor(Math.random() * defenders.length)];
-    addLog('rolls', `🎲 [Failed Vigilance] ${attacker.name} randomly targets ${randTarget.name}.`);
+    addLog('rolls', `🎲 [Failed Vigilance] ${attacker.name} acquires targets blindly, firing at ${randTarget.name}.`);
     return randTarget;
   }
 
+  // If Frontliners Screen the Army
   if (activeFrontliners.length > 0) {
-    activeFrontliners.sort((a, b) => getUnitTargetValue(b) - getUnitTargetValue(a));
+    activeFrontliners.sort((a, b) => getUnitTargetValue(b, attacker, atkTactic) - getUnitTargetValue(a, attacker, atkTactic));
     return activeFrontliners[0];
   }
 
-  const sorted = [...defenders].sort((a, b) => getUnitTargetValue(b) - getUnitTargetValue(a));
+  // Sort All Defenders by Dynamic TV relative to this attacker
+  const sorted = [...defenders].sort((a, b) => getUnitTargetValue(b, attacker, atkTactic) - getUnitTargetValue(a, attacker, atkTactic));
+  
   if (atkTactic.id === 'atk_blitz') {
-    return sorted[sorted.length - 1];
+    // Blitz tactic actively pounces on wobbling units with lowest remaining Org
+    const lowOrgTargets = [...defenders].sort((a, b) => a.org - b.org);
+    return lowOrgTargets[0];
   }
+
   return sorted[0];
 }
 
