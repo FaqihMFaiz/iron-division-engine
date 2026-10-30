@@ -131,10 +131,10 @@ const DEFAULT_TRAITS = [
   // Melee & Close-Quarters Combat Trait
   {
     id: 'melee_attack', name: 'Melee / Close Combat',
-    desc: 'Trench knives, bayonets, and close-quarters weapons (+5% Soft Atk, +2 Flat Atk). Uses Distance mechanic to close the gap. When engaging Zombies or Monsters, disrupts their reach: -20 Return Fire Vigilance and -30% Return Fire Attack.',
-    atkPct: 5, atkFlat: 2, defPct: 0, defFlat: 0, softFlat: 3, hardFlat: 0, pierceFlat: 0, hardnessFlat: 0,
+    desc: 'Rapidly charges 2 distance/turn when out of range and steps into Total Distance 1 after firing. At Total Distance <= 1: +30% Atk, +4 Flat Atk, ignores 50% enemy Entrenchment, and inflicts -20 Return Fire Vig & -30% Return Fire Atk.',
+    atkPct: 5, atkFlat: 2, defPct: 0, defFlat: 0, softFlat: 3, hardFlat: 0, pierceFlat: 4, hardnessFlat: 0,
     vigilance: 5, orgRegen: 0, supplyRegen: 0, supplySteal: 0, recBonus: 0, armorRecBonus: 0,
-    pursueBonus: 5, retreatBonus: 0, enemyDefMalus: 0, enemyHardMalus: 0, terrainTarget: 'Urban', terrainBonus: 10,
+    pursueBonus: 10, retreatBonus: 0, enemyDefMalus: 0, enemyHardMalus: 0, terrainTarget: 'Urban', terrainBonus: 15,
     antiCategory: '', antiBonus: 0, grantsHighCaliber: false, grantsExplosive: false, isFrontliner: false,
     isRepairCrew: false, isMeleeAttack: true
   },

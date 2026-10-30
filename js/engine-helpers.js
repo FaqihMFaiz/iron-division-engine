@@ -248,85 +248,117 @@ function getTerrainOperationalMods(unitCategory) {
 }
 
 // --------------------------------------------------------------------------
-// 3. Melee Distance & Gap-Closing Engine
+// 3. Y-Axis Spatial Distance & Engagement Range Engine
 // --------------------------------------------------------------------------
 
 /**
- * Checks if a unit relies strictly on melee weapons / natural close-combat.
+ * Returns the starting Y-axis distance per side based on current Terrain & Feature.
+ * Plains/Desert/Urban = 2, Forest/Hills/Marsh/Jungle = 3, Mountain = 4.
  */
-function isMeleeUnit(u) {
-  if (!u) return false;
-  return u.traits.includes('melee_attack') || u.traits.includes('zombie_unit');
-}
-
-/**
- * Calculates initial engagement distance based on base terrain and fortifications.
- */
-function getInitialEngagementDistance(u) {
-  if (!isMeleeUnit(u)) return 0; // Ranged formations engage immediately at distance 0
-
+function getBaseTerrainDistance() {
   const terr = state.environment.terrain;
   const feat = state.environment.feature;
 
-  let baseDist = 2; // Default broken ground
-  if (terr === 'Plains' || terr === 'Desert') baseDist = 1;
-  else if (terr === 'Mountain') baseDist = 3;
+  let baseDist = 2;
+  if (terr === 'Plains' || terr === 'Desert' || terr === 'Urban') {
+    baseDist = 2;
+  } else if (terr === 'Forest' || terr === 'Hills' || terr === 'Marsh' || terr === 'Jungle') {
+    baseDist = 3;
+  } else if (terr === 'Mountain') {
+    baseDist = 4;
+  }
 
-  let featDist = 0;
-  if (feat === 'Road') featDist = -1;
-  else if (feat === 'SmallRiver') featDist = 1;
-  else if (feat === 'LargeRiver' || feat === 'Amphibious' || feat === 'Fort') featDist = 2;
+  if (feat === 'Road') baseDist = Math.max(1, baseDist - 1);
+  else if (feat === 'LargeRiver' || feat === 'Amphibious') baseDist += 1;
 
-  return Math.max(1, baseDist + featDist);
+  return baseDist;
 }
 
 /**
- * Resolves defensive overwatch volley (enfilade fire) against advancing melee chargers.
+ * Returns the initial starting position (distance from centerline 0) for a unit.
+ * Artillery starts at Terrain Distance + 2.
  */
-function resolveDefensiveOverwatchFire(defender, charger, defSide, atkSide, defTactic, atkTactic, vigResult) {
-  const defTraits = defender.traits.map(getTraitById).filter(Boolean);
-
-  // Defending unit fires from prepared positions
-  const defDieSides = getCombatDieSides(defender, 'attack');
-  const defDieRoll = rollDie(defDieSides);
-
-  // Calculate defender firepower against the advancing charger
-  const armorSplit = getEffectiveArmorSplit(charger);
-  const defSoft = defender.softAttack + defTraits.reduce((s, t) => s + (t.softFlat || 0), 0);
-  const defHard = defender.hardAttack + defTraits.reduce((s, t) => s + (t.hardFlat || 0), 0);
-
-  const defAtkBase = (charger.armorTier === 'unarmored' || charger.maxArmor <= 0)
-    ? defSoft
-    : (defSoft * armorSplit.softRatio + defHard * armorSplit.hardRatio);
-
-  const vigBonus = !vigResult.attackerWonVig ? vigResult.statBoost : 0;
-  const defTotals = computeUnitTotalStat(defender, charger, defSide, atkSide, 'attack', defAtkBase, defDieRoll, vigBonus, defTactic, atkTactic, true);
-
-  // Charger is caught in motion sprinting across open ground
-  const chgDieSides = getCombatDieSides(charger, 'defense');
-  const chgDieRoll = rollDie(chgDieSides);
-  const chgBaseDef = Math.max(0, charger.defense - charger.roundTemp.defMalus);
-  const chgTotals = computeUnitTotalStat(charger, defender, atkSide, defSide, 'defense', chgBaseDef, chgDieRoll, 0, atkTactic, defTactic, false);
-
-  addLog(
-    'rolls',
-    `💥 [Defensive Overwatching Fire] Defending ${defender.name} shoots at advancing ${charger.name}! Volley Atk: ${defTotals.finalValue} VS Charger In-Motion Def: ${chgTotals.finalValue}`
-  );
-
-  if (defTotals.finalValue > chgTotals.finalValue) {
-    const margin = Math.max(1, Math.round(defTotals.finalValue - chgTotals.finalValue));
-    inflictCombatDamage(defender, charger, margin, defSide, atkSide, defTactic, atkTactic, 'Overwatch Volley');
-  } else {
-    // Charger weathers the overwatch volley: Evaluate Grazing vs Complete Immunity
-    const chgGrazeResult = calculateGrazingCasualties(defender, charger, defTotals.finalValue, chgTotals.finalValue, false, false);
-
-    if (chgGrazeResult.immune) {
-      addLog('rolls', `🛡 [CHARGER IMMUNE] ${charger.name} shrugs off ${defender.name}'s overwatch volley: ${chgGrazeResult.reason} (0 casualties)!`);
-    } else {
-      addLog('damage', `🛡 [Grazing Shrapnel] ${charger.name} pushes through ${defender.name}'s defensive fire, but takes ${chgGrazeResult.casualties} suppressing casualties (${chgGrazeResult.reason})!`);
-      applyPersonnelCasualties(charger, chgGrazeResult.casualties, false, false, 'Overwatch Grazing Fire', defTactic, atkTactic);
-    }
+function getUnitStartingPosition(u) {
+  const baseDist = getBaseTerrainDistance();
+  if (u && u.category === 'artillery') {
+    return baseDist + 2;
   }
+  return baseDist;
+}
+
+/**
+ * Checks if a unit relies strictly on point-blank melee combat (Range 1).
+ */
+function isMeleeUnit(u) {
+  if (!u) return false;
+  return (u.traits && u.traits.includes('melee_attack')) || u.isZombie || (u.traits && u.traits.includes('zombie_unit'));
+}
+
+/**
+ * Returns the maximum Total Distance at which a unit can engage an opponent.
+ * - Pure Melee (Zombie): <= 1
+ * - Infantry & Armored Vehicles (non-tank): <= 2
+ * - Tanks: <= 3
+ * - Artillery: <= 6
+ */
+function getUnitEngagementRange(u) {
+  if (!u) return 2;
+  if (u.isZombie || (u.traits && u.traits.includes('zombie_unit'))) return 1;
+  if (u.category === 'artillery') return 6;
+  if (u.category === 'tank') return 3;
+  if (u.category === 'infantry' || u.category === 'armored_vehicle') return 2;
+  return 2;
+}
+
+/**
+ * Computes the Total Distance between two opposing units on the Y-axis.
+ * Side A is at +posA, Side B is at -posB => Total Distance = posA + posB.
+ */
+function getTotalDistance(unitA, unitB) {
+  const posA = (unitA && unitA.pos !== undefined && unitA.pos !== null) ? unitA.pos : getUnitStartingPosition(unitA);
+  const posB = (unitB && unitB.pos !== undefined && unitB.pos !== null) ? unitB.pos : getUnitStartingPosition(unitB);
+  return Math.max(0, posA + posB);
+}
+
+/**
+ * Checks if a unit or its side's active tactic can ignore engagement distance.
+ * Special Forces, Infiltration Specialists, Infiltration Assault, and Mouse-Holing ignore range limits.
+ */
+function canUnitIgnoreDistance(u, sideTactic = null) {
+  if (!u) return false;
+  const traits = u.traits || [];
+  if (traits.includes('special_forces') || traits.includes('infiltration_specialist')) {
+    return true;
+  }
+  if (sideTactic && (sideTactic.id === 'atk_infiltration' || sideTactic.id === 'urb_atk_mouse_holing')) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Checks if an attacker can engage a specific defender at their current Total Distance.
+ */
+function canUnitEngageTarget(attacker, defender, atkTactic = null) {
+  if (!attacker || !defender) return false;
+  if (canUnitIgnoreDistance(attacker, atkTactic)) return true;
+  const totalDist = getTotalDistance(attacker, defender);
+  const maxRange = getUnitEngagementRange(attacker);
+  return totalDist <= maxRange;
+}
+
+/**
+ * Returns the Target Value (TV) multiplier based on proximity.
+ * Closer units receive a much higher multiplier so frontline units are targeted before rear artillery.
+ */
+function getDistanceTargetMultiplier(totalDist) {
+  if (totalDist <= 0) return 3.00;
+  if (totalDist === 1) return 2.50;
+  if (totalDist === 2) return 1.85;
+  if (totalDist === 3) return 1.25;
+  if (totalDist === 4) return 0.60;
+  if (totalDist === 5) return 0.30;
+  return 0.15; // Distance 6+ (Deep rear artillery)
 }
 
 // --------------------------------------------------------------------------

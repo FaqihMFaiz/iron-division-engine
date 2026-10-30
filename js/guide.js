@@ -299,35 +299,50 @@ function renderSimulationGuide() {
         </div>
       </div>
 
-      <!-- ==================== PART 5: MELEE GAP & OVERWATCH ==================== -->
+      <!-- ==================== PART 5: Y-AXIS DISTANCE & ENGAGEMENT RANGES ==================== -->
       <div id="guide-melee" class="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5 shadow-lg space-y-3">
         <div class="flex items-center gap-2 border-b border-slate-800 pb-2.5">
           <span class="w-7 h-7 rounded-lg bg-rose-500/20 text-rose-400 font-bold flex items-center justify-center font-mono text-sm">5</span>
-          <h3 class="font-bold text-base text-white">Melee Gap-Closing &amp; Defensive Overwatch Fire</h3>
+          <h3 class="font-bold text-base text-white">Y-Axis Distance, Engagement Ranges &amp; Proximity Targeting</h3>
         </div>
         <p class="text-xs text-slate-300 leading-relaxed">
-          Units armed with bayonets, trench knives, or natural close-combat weapons (<i>Melee / Close Combat</i>, <i>Zombie Swarm</i>) must close distance across no-man's-land:
+          Opposing armies deploy on a spatial Y-axis (+Y for Side A, -Y for Side B, displayed as positive distance from the centerline 0). Total distance between two opposing units is the sum of their positions:
         </p>
+
+        <div class="p-2.5 rounded bg-slate-950 border border-slate-800 text-center font-mono text-xs sm:text-sm text-slate-200">
+          Total Engagement Distance = <span class="text-sky-300">Attacker Dist</span> + <span class="text-rose-400">Defender Dist</span>
+        </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs font-mono">
           <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
-            <span class="text-amber-400 font-bold block">1. Initial Distance</span>
+            <span class="text-amber-400 font-bold block">1. Terrain Starting Distance</span>
             <p class="text-[11px] text-slate-400 font-sans">
-              Distance = Base Terrain (Plains=1, Broken=2, Mountain=3) + Feature (Road=-1, River=+1, Fort=+2). While Distance &ge; 1, melee units cannot shoot or return fire.
+              • <b>Plains / Desert / Urban:</b> 2 per side (Total 4)<br>
+              • <b>Forest / Hills / Marsh / Jungle:</b> 3 per side (Total 6)<br>
+              • <b>Mountain:</b> 4 per side (Total 8)<br>
+              • <b>Artillery:</b> Starts at <b>Terrain Dist + 2</b>
             </p>
           </div>
           <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
-            <span class="text-rose-400 font-bold block">2. Defensive Overwatch</span>
+            <span class="text-sky-400 font-bold block">2. Max Engagement Ranges</span>
             <p class="text-[11px] text-slate-400 font-sans">
-              Defending ranged formations fire uncontested enfilade volleys at charging melee units during defense rounds as they sprint across open terrain.
+              • <b>Zombies / Pure Melee:</b> Total Dist &le; 1<br>
+              • <b>Infantry &amp; Armored Veh:</b> Total Dist &le; 2<br>
+              • <b>Tanks:</b> Total Dist &le; 3<br>
+              • <b>Artillery:</b> Total Dist &le; 6<br>
+              • <b>Special Forces / Infiltration:</b> Unlimited
             </p>
           </div>
           <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
-            <span class="text-emerald-400 font-bold block">3. Trench Contact</span>
+            <span class="text-emerald-400 font-bold block">3. Movement &amp; Phase Lock</span>
             <p class="text-[11px] text-slate-400 font-sans">
-              At Distance = 0, hand-to-hand combat begins. Melee attacks against Monsters or Zombies disrupt their reach: <b>-20 Return Fire Vigilance</b> and <b>-30% Return Fire Attack</b>.
+              Out-of-range attackers spend their turn advancing 1 distance closer. Defenders never move. If the attacker has no frontline units in range, the <b>Attacking Phase stays locked</b> until they close into range.
             </p>
           </div>
+        </div>
+
+        <div class="p-2.5 rounded bg-slate-950/70 border border-slate-800 text-[11px] text-slate-300 font-sans">
+          <b class="text-rose-400 font-mono">Revamped Melee / Close Combat Trait:</b> Charges <b>2 distance/round</b> when out of range and steps into <b>Total Distance 1</b> after firing. At Total Distance &le; 1, grants <b>+30% Attack, +4 Flat Attack, +4 Piercing</b>, ignores 50% of enemy Entrenchment, and inflicts <b>-20 Return Fire Vigilance &amp; -30% Return Fire Attack</b>.
         </div>
       </div>
 

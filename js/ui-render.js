@@ -35,6 +35,11 @@ function onEnvironmentChange() {
   }
   if (wSel && wSel.value) state.environment.weather = wSel.value;
   if (uChk) state.environment.unexpectedInitiative = uChk.checked;
+  if (state.battle.round === 1 && !state.battle.initialSnapshot) {
+    [...state.battle.sideA.units, ...state.battle.sideB.units].forEach(u => {
+      u.pos = getUnitStartingPosition(u);
+    });
+  }
   renderAll();
 }
 
@@ -124,6 +129,15 @@ function renderSidePanel(side) {
     ).join('');
   }
 
+  const unitPos = (u.pos !== undefined && u.pos !== null) ? u.pos : getUnitStartingPosition(u);
+    const unitRange = getUnitEngagementRange(u);
+    const enemySideObj = side === 'A' ? state.battle.sideB : state.battle.sideA;
+    const activeEnemies = enemySideObj.units.filter(isUnitActive);
+    const closestEnemyDist = activeEnemies.length > 0
+      ? Math.min(...activeEnemies.map(e => getTotalDistance(u, e)))
+      : null;
+    const inRangeNow = activeEnemies.some(e => canUnitEngageTarget(u, e));
+
   const activeUnits = sideObj.units.filter(isUnitActive);
   const totalPers = activeUnits.reduce((s, u) => s + u.personnel, 0);
   const totalArmor = activeUnits.reduce((s, u) => s + u.armor, 0);
@@ -195,7 +209,9 @@ function renderSidePanel(side) {
               <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800">${u.category.toUpperCase()}</span>
             </div>
             <div class="text-[11px] font-mono text-slate-400 mt-0.5">
-              Soft: <b class="text-slate-200">${u.softAttack}</b> | Hard: <b class="text-slate-200">${u.hardAttack}</b> | Def: <b class="text-slate-200">${u.defense}</b> | Pierce: <b class="text-sky-300">${u.piercing}</b> | Hardness: <b class="text-amber-300">${u.hardness}</b> | Pur/Ret: <b class="text-purple-300">${getUnitPursuitBonus(u) >= 0 ? '+' : ''}${getUnitPursuitBonus(u)}/${getUnitRetreatBonus(u) >= 0 ? '+' : ''}${getUnitRetreatBonus(u)}</b> | TV: <b class="text-emerald-300">${tv}</b> | ⛏ <b class="text-amber-300">Entrenched: Lvl ${u.entrenchmentLevel || 0}/${getUnitMaxEntrenchmentCap(u)}</b> ${isMeleeUnit(u) ? ` | <b class="${(u.meleeDistance || 0) > 0 ? 'text-amber-400' : 'text-rose-400'} font-mono">${(u.meleeDistance || 0) > 0 ? `🏃 Dist: ${u.meleeDistance}` : '⚔ In Melee'}</b>` : ''}
+              Soft: <b class="text-slate-200">${u.softAttack}</b> | Hard: <b class="text-slate-200">${u.hardAttack}</b> | Def: <b class="text-slate-200">${u.defense}</b> | Pierce: <b class="text-sky-300">${u.piercing}</b> | Hardness: <b class="text-amber-300">${u.hardness}</b> | Pur/Ret: <b class="text-purple-300">${getUnitPursuitBonus(u) >= 0 ? '+' : ''}${getUnitPursuitBonus(u)}/${getUnitRetreatBonus(u) >= 0 ? '+' : ''}${getUnitRetreatBonus(u)}</b> | TV: <b class="text-emerald-300">${tv}</b> 
+| 📍 <b class="text-cyan-300" title="Y-Axis Coordinate: ${side === 'A' ? '+' : '-'}${unitPos}">Dist: ${unitPos}</b> 
+| 🎯 <b class="${inRangeNow ? 'text-emerald-400' : 'text-amber-400'}" title="Max Engagement Range: ≤${unitRange} Total Distance">Range: ≤${unitRange}${closestEnemyDist !== null ? ` (Enemy: ${closestEnemyDist})` : ''}</b>}
             </div>
           </div>
           <button type="button" onclick="removeUnitFromSide('${side}', '${u.instanceId}')" class="text-slate-500 hover:text-rose-400 text-xs px-1.5 py-0.5 rounded" title="Remove unit">✕</button>

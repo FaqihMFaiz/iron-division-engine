@@ -84,6 +84,7 @@ function createCombatUnitInstance(template, side) {
       heavy_artillery: 0,
       air_support: 0
     },
+    pos: getUnitStartingPosition(template),
     meleeDistance: null,
     mobilityClassPenalty: 0,
     entrenchmentLevel: 0,
@@ -245,7 +246,7 @@ function getUnitTargetValue(target, attacker = null, atkTactic = null) {
   // 1. SIZE & MATERIAL FOOTPRINT
   let sizeScore = target.personnel * 0.6;
   if (target.maxArmor > 0 && target.armor > 0) {
-    sizeScore += (target.armor * 8); // Armored vehicles present large mechanical targets
+    sizeScore += (target.armor * 8);
   }
 
   // 2. TOTAL DAMAGE THREAT TO THE OPPONENT
@@ -253,14 +254,11 @@ function getUnitTargetValue(target, attacker = null, atkTactic = null) {
   if (attacker) {
     const isAttackerArmored = (attacker.maxArmor > 0 && attacker.armorTier !== 'unarmored');
     if (isAttackerArmored) {
-      // Prioritize targets that can pierce and damage our armor
       threatScore = (target.hardAttack * 5) + (target.softAttack * 2);
     } else {
-      // Prioritize anti-infantry machine guns and high soft attack
       threatScore = (target.softAttack * 5) + (target.hardAttack * 1);
     }
   } else {
-    // General baseline threat rating (used for default UI card display)
     threatScore = (target.softAttack * 4) + (target.hardAttack * 3);
   }
 
@@ -271,29 +269,19 @@ function getUnitTargetValue(target, attacker = null, atkTactic = null) {
 
   if (!target.isMonster && !target.isZombie) {
     const orgRatio = currentOrg / maxOrg;
-    if (orgRatio <= 0.15) {
-      orgScore += 250; // Critical opportunity to permanently shatter the unit
-    } else if (orgRatio <= 0.35) {
-      orgScore += 150; // Unit is wobbling; high priority to break cohesion
-    }
+    if (orgRatio <= 0.15) orgScore += 250;
+    else if (orgRatio <= 0.35) orgScore += 150;
   }
 
   // 4. UNIT CATEGORY PRIORITY MULTIPLIER
   let categoryMultiplier = 1.0;
-  if (target.category === 'artillery') {
-    categoryMultiplier = 1.35; // Silence enemy guns before they barrage
-  } else if (target.category === 'tank') {
-    categoryMultiplier = 1.25; // Neutralize high-impact armored spearheads
-  } else if (target.category === 'armored_vehicle') {
-    categoryMultiplier = 1.15; // Mechanized / APC targets
-  } else if (target.category === 'infantry') {
-    categoryMultiplier = 1.00;
-  }
+  if (target.category === 'artillery') categoryMultiplier = 1.35;
+  else if (target.category === 'tank') categoryMultiplier = 1.25;
+  else if (target.category === 'armored_vehicle') categoryMultiplier = 1.15;
 
-  // 5. ENTRENCHMENT LEVEL (Vulnerability in Open vs Bunkers)
+  // 5. ENTRENCHMENT LEVEL
   const entrenchLvl = target.entrenchmentLevel || 0;
   let entrenchmentMod = 0;
-
   const isBunkerBustingTactic = atkTactic && (
     atkTactic.id === 'atk_breakthrough' ||
     atkTactic.id === 'atk_assault' ||
@@ -301,25 +289,31 @@ function getUnitTargetValue(target, attacker = null, atkTactic = null) {
   );
 
   if (isBunkerBustingTactic) {
-    // Siege/Breakthrough doctrines actively hunt down fortified strongpoints
     entrenchmentMod = entrenchLvl * 25;
   } else {
-    // Standard combat doctrines avoid digging into heavy bunkers if exposed units exist
-    if (entrenchLvl === 0) entrenchmentMod = +60;      // Caught in open: easy target
+    if (entrenchLvl === 0) entrenchmentMod = +60;
     else if (entrenchLvl === 1) entrenchmentMod = +20;
     else if (entrenchLvl === 2) entrenchmentMod = 0;
     else if (entrenchLvl === 3) entrenchmentMod = -30;
-    else if (entrenchLvl >= 4) entrenchmentMod = -70;  // Deep bunkers
+    else if (entrenchLvl >= 4) entrenchmentMod = -70;
   }
 
   // 6. FRONTLINER SCREENING MAGNET
-  let frontlinerBonus = 0;
-  if (isFrontlinerActive(target)) {
-    frontlinerBonus = 200; // Actively shields allies and draws fire
-  }
+  let frontlinerBonus = isFrontlinerActive(target) ? 200 : 0;
 
-  const rawTV = (sizeScore + threatScore + orgScore) * categoryMultiplier + entrenchmentMod + frontlinerBonus;
-  return Math.max(10, Math.round(rawTV));
+  const baseTV = (sizeScore + threatScore + orgScore) * categoryMultiplier + entrenchmentMod + frontlinerBonus;
+
+  // 7. Y-AXIS PROXIMITY MULTIPLIER (Closer units have significantly higher TV)
+  const effectiveDist = attacker
+    ? getTotalDistance(attacker, target)
+    : Math.max(0, (target.pos !== undefined ? target.pos : getUnitStartingPosition(target)));
+
+  // If attacker ignores distance via Infiltration/Special Forces, do not penalize distant backline targets
+  const distMultiplier = (attacker && canUnitIgnoreDistance(attacker, atkTactic))
+    ? 1.50
+    : getDistanceTargetMultiplier(effectiveDist);
+
+  return Math.max(10, Math.round(baseTV * distMultiplier));
 }
 
 function getCategoryPursuitRetreatBonus(category) {
@@ -590,7 +584,7 @@ function runSingleRound() {
       return;
     }
 
-    // 5. Main Attack Phase
+    // 5. Main Attack & Y-Axis Movement Phase
     const attackers = atkState.units.filter(isUnitActive);
     const defenders = defState.units.filter(isUnitActive);
 
@@ -598,36 +592,57 @@ function runSingleRound() {
       addLog('rolls', `⏳ [Empty Frontline] Side ${defSide} has no active frontline troops (all survivors are regrouping in the rear). Side ${atkSide} holds the sector uncontested.`);
     }
 
-    const atkAllMeleeCharging = attackers.every(u => isMeleeUnit(u) && (u.meleeDistance || 0) > 0);
-    const defAllMeleeCharging = defenders.every(u => isMeleeUnit(u) && (u.meleeDistance || 0) > 0);
-
-    if (atkAllMeleeCharging && defAllMeleeCharging && attackers.length > 0) {
-      addLog('rolls', `🏃 [Mutual Melee Charge] Both sides charge toward each other with weapons bared! Neither side possesses ranged weapons; closing gap rapidly.`);
-    }
+    // Track whether any frontline maneuver unit (or any unit if army is pure artillery) is in range to engage
+    const hasManeuverUnits = attackers.some(u => u.category !== 'artillery');
+    let frontlineInRangeThisRound = false;
 
     for (const atkUnit of attackers) {
       const currentDefenders = defState.units.filter(isUnitActive);
       if (currentDefenders.length === 0) break;
 
-      const targetUnit = selectTargetUnit(atkUnit, currentDefenders, atkTactic, defTactic, vigResult.attackerWonVig);
-      if (!targetUnit) continue;
+      if (atkUnit.pos === undefined || atkUnit.pos === null) {
+        atkUnit.pos = getUnitStartingPosition(atkUnit);
+      }
+      currentDefenders.forEach(d => {
+        if (d.pos === undefined || d.pos === null) d.pos = getUnitStartingPosition(d);
+      });
 
-      // Melee Overwatch Interception
-      if (isMeleeUnit(atkUnit) && (atkUnit.meleeDistance || 0) > 0) {
-        if (!isMeleeUnit(targetUnit)) {
-          addLog(
-            'rolls',
-            `🛡 [Defensive Overwatch] ${atkUnit.name} charges across open ground (${atkUnit.meleeDistance} Dist away)! Defending ${targetUnit.name} unleashes a defensive volley on the exposed chargers!`
-          );
-          resolveDefensiveOverwatchFire(targetUnit, atkUnit, defSide, atkSide, defTactic, atkTactic, vigResult);
-        } else {
-          addLog(
-            'rolls',
-            `🏃 [Charging] ${atkUnit.name} is sprinting forward (${atkUnit.meleeDistance} Dist away) toward ${targetUnit.name}; neither side has ranged guns, closing distance.`
-          );
+      // Filter defenders that are within this unit's Engagement Range (or all if unit ignores distance)
+      const eligibleDefenders = currentDefenders.filter(d => canUnitEngageTarget(atkUnit, d, atkTactic));
+
+      if (eligibleDefenders.length === 0) {
+        // --- OUT OF RANGE: SPEND ROUND MOVING CLOSER ---
+        const minDefenderPos = Math.min(...currentDefenders.map(d => d.pos));
+        const oldPos = atkUnit.pos;
+        const unitRange = getUnitEngagementRange(atkUnit);
+
+        // Units with melee_attack charge at 2 distance per turn when out of range; standard units move 1
+        const moveRate = (atkUnit.traits.includes('melee_attack') && (oldPos + minDefenderPos) > 2) ? 2 : 1;
+        const minAllowedPos = 1 - minDefenderPos; // Prevent Total Distance from dropping below 1 on a move
+        atkUnit.pos = Math.max(minAllowedPos, oldPos - moveRate);
+        atkUnit.entrenchmentLevel = 0; // Advancing resets entrenchment
+
+        const newClosestDist = getTotalDistance(atkUnit, currentDefenders.reduce((a, b) => (a.pos < b.pos ? a : b)));
+        addLog(
+          'rolls',
+          `🏃 [Advancing on Y-Axis] ${atkUnit.name} (Max Range ≤${unitRange}) has no enemy in range and moves ${oldPos - atkUnit.pos} distance forward (Dist: ${oldPos} ➔ ${atkUnit.pos} | Closest Enemy Total Dist: ${newClosestDist}).`
+        );
+
+        // Check if this move brought a frontline unit into engagement range for next round
+        const nowInRange = currentDefenders.some(d => canUnitEngageTarget(atkUnit, d, atkTactic));
+        if (nowInRange && (!hasManeuverUnits || atkUnit.category !== 'artillery')) {
+          frontlineInRangeThisRound = true;
         }
         continue;
       }
+
+      // Unit IS in engagement range!
+      if (!hasManeuverUnits || atkUnit.category !== 'artillery') {
+        frontlineInRangeThisRound = true;
+      }
+
+      const targetUnit = selectTargetUnit(atkUnit, eligibleDefenders, atkTactic, defTactic, vigResult.attackerWonVig);
+      if (!targetUnit) continue;
 
       targetUnit.roundTemp.engagedByCount++;
       atkUnit.roundTemp.attackedThisRound = true;
@@ -636,10 +651,22 @@ function runSingleRound() {
         atkUnit, targetUnit, atkSide, defSide,
         atkTactic, defTactic, vigResult
       );
+
+      // Melee Assault Rush: If a unit with melee_attack fired at Total Distance 2, it steps 1 distance closer into Total Distance 1!
+      if (isUnitActive(atkUnit) && isUnitActive(targetUnit) && atkUnit.traits.includes('melee_attack')) {
+        const curDist = getTotalDistance(atkUnit, targetUnit);
+        if (curDist > 1) {
+          const prevPos = atkUnit.pos;
+          atkUnit.pos = Math.max(1 - targetUnit.pos, atkUnit.pos - 1);
+          if (atkUnit.pos !== prevPos) {
+            addLog('rolls', `🗡 [Melee Rush] ${atkUnit.name} presses forward into point-blank trench range (Dist: ${prevPos} ➔ ${atkUnit.pos} | Total Dist: ${getTotalDistance(atkUnit, targetUnit)})!`);
+          }
+        }
+      }
     }
 
-    // 6. End-of-Round Tactic Effects (Only if combat actually took place)
-    if (atkTactic.selfEndOrgDmg && defenders.length > 0) {
+    // 6. End-of-Round Tactic Effects
+    if (atkTactic.selfEndOrgDmg && defenders.length > 0 && frontlineInRangeThisRound) {
       atkState.units.filter(isUnitActive).forEach(u => {
         if (!u.isMonster && !u.isZombie) {
           u.org = Math.max(0, u.org - atkTactic.selfEndOrgDmg);
@@ -658,16 +685,22 @@ function runSingleRound() {
       return;
     }
 
-    // 8. Advance Round
+    // 8. Advance Round & Check Engagement Range Phase Lock
     state.battle.round++;
-    state.battle.attackerSide = state.battle.attackerSide === 'A' ? 'B' : 'A';
+    if (!frontlineInRangeThisRound && defenders.length > 0) {
+      // Attacker had no frontline units in engagement range — lock Attacking Phase on atkSide!
+      addLog('rolls', `⏳ [Initiative Locked] Side ${atkSide} has not yet closed into frontline engagement range — Side ${atkSide} remains in the Attacking Phase while Side ${defSide} holds in the Defending Phase!`);
+    } else {
+      state.battle.attackerSide = state.battle.attackerSide === 'A' ? 'B' : 'A';
+    }
     renderAll();
-  } catch (err) {
-    stopAutoRun();
-    logSystemError(`Round ${state.battle.round} Execution Halted`, err);
+  } catch (error) {
+    console.error('runSingleRound error:', error);
+    showToast('Battle resolution failed. Check the console for details.', 'error');
     renderAll();
   }
 }
+
 
 // --------------------------------------------------------------------------
 // 5. Supply, Upkeep, DOW & Rally Resolution
@@ -797,6 +830,7 @@ function processSupplyAndStartOfRoundTraits(side, chosenTactic) {
           u.isRallying = false;
           u.ralliedOnce = true;
           u.personnel = u.ralliedPersonnel;
+          u.pos = getUnitStartingPosition(u); // Re-enters at side's base terrain distance
 
           const rawD10 = rollDie(10);
           const strengthBonus = manpowerRatio >= 0.75 ? 5 : 0;
@@ -1570,20 +1604,30 @@ function resolveUnitEngagement(attacker, defender, atkSide, defSide, atkTactic, 
 
   if (!isUnitActive(defender) || !isUnitActive(attacker)) return;
 
-  // STEP G: Return Fire Phase
+  // STEP G: Return Fire Phase (Must be within Defender's Engagement Range!)
+  const engagementTotalDist = getTotalDistance(attacker, defender);
+  const defMaxRange = getUnitEngagementRange(defender);
+  const canDefenderReachAttacker = canUnitEngageTarget(defender, attacker, defTactic);
+
+  if (!canDefenderReachAttacker) {
+    addLog('rolls', `🎯 [Out of Return-Fire Range] ${defender.name} (Max Range ≤${defMaxRange}) cannot return fire against ${attacker.name} firing from Total Distance ${engagementTotalDist}!`);
+    return;
+  }
+
   let retDefVig = rollDie(100) + getSideVigilanceModifier(defSide, defTactic, atkTactic, false);
   const retAtkVig = rollDie(100) + getSideVigilanceModifier(atkSide, atkTactic, defTactic, true);
 
-  if (attacker.traits.includes('melee_attack') && (defender.isZombie || defender.isMonster)) {
+  if (attacker.traits.includes('melee_attack') && engagementTotalDist <= 1) {
     retDefVig -= 20;
-    addLog('rolls', `🗡 [Melee Disruption] ${attacker.name}'s bayonet/melee charge disrupts ${defender.name}'s natural reach (-20 Return Fire Vigilance)!`);
+    addLog('rolls', `🗡 [Point-Blank Melee Disruption] ${attacker.name}'s close-quarters assault at Total Distance ${engagementTotalDist} disrupts ${defender.name} (-20 Return Fire Vigilance & -30% Return Fire Attack)!`);
   }
 
   const entrenchedReturnFire = (retDefVig + 15 >= retAtkVig) || (TERRAIN_FEATURES[state.environment.feature]?.fortified);
 
-  if (isMeleeUnit(defender) && (defender.meleeDistance || 0) > 0) {
-    addLog('rolls', `🎯 [Uncontested Fire] ${defender.name} is still closing distance (${defender.meleeDistance} away) and cannot return fire against ${attacker.name}'s ranged volley!`);
-    return;
+  for (const u of sideState.units.filter(isUnitActive)) {
+    if (u.pos === undefined || u.pos === null) {
+      u.pos = getUnitStartingPosition(u);
+    }
   }
 
   if (retDefVig > retAtkVig || entrenchedReturnFire) {
@@ -1864,6 +1908,25 @@ function computeUnitTotalStat(unit, opponent, mySide, enemySide, role, baseStat,
 
   const preMult = Math.max(0, baseStat + dieRoll + flatBonus);
   const finalValue = Math.round(preMult * (1 + netPct / 100) * 10) / 10;
+
+  const clashDist = getTotalDistance(unit, opponent);
+
+  // Revamped Melee / Close-Quarters Combat bonuses at Total Distance <= 1
+  if (role === 'attack' && !isReturnFire && unit.traits.includes('melee_attack') && clashDist <= 1) {
+    addPct(30);
+    flatBonus += 4;
+  }
+  if (isReturnFire && opponent.traits.includes('melee_attack') && clashDist <= 1) {
+    addPct(-30);
+  }
+
+  if (role === 'defense' && unit.entrenchmentLevel > 0) {
+    // Melee attackers at Total Distance <= 1 ignore 50% of trench entrenchment
+    const effEntrench = (opponent && opponent.traits.includes('melee_attack') && clashDist <= 1)
+      ? Math.floor(unit.entrenchmentLevel * 0.5)
+      : unit.entrenchmentLevel;
+    addPct(effEntrench * 5);
+  }
 
   return { flatBonus, posPct, negPct: cappedNegPct, netPct, finalValue };
 }
