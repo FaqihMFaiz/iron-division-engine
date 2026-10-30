@@ -983,7 +983,101 @@ function processSupplyAndStartOfRoundTraits(side, chosenTactic) {
       }
     }
 
-    // Unbreakable, Medics, DOW, Repair crews... (preserve existing handlers below)
+    // Cooldown decrement
+    for (const k of Object.keys(u.supportCooldowns)) {
+      if (u.supportCooldowns[k] > 0) u.supportCooldowns[k]--;
+    }
+
+    // Unbreakable Stand Countdown
+    const hasUnbreakable = unitTraits.some(t => t.isUnbreakable);
+    if (hasUnbreakable) {
+      if (u.org > 0) {
+        u.unbreakableRoundsLeft = null;
+      } else if (u.unbreakableRoundsLeft !== null) {
+        if (u.unbreakableRoundsLeft > 0) {
+          addLog('damage', `⏳ [Unbreakable Stand] ${u.name} is at 0 Org! (${u.unbreakableRoundsLeft} round${u.unbreakableRoundsLeft === 1 ? '' : 's'} remaining before collapse).`);
+          u.unbreakableRoundsLeft--;
+        } else {
+          u.unbreakableRoundsLeft = null;
+          addLog('damage', `💀 [Unbreakable Shattered] ${u.name}'s 2-round last stand has expired! Cohesion collapses completely!`);
+          if (!u.ralliedOnce && u.personnel > 20) {
+            triggerUnitRally(u, 'Unbreakable last stand expired');
+          } else {
+            u.defeated = true;
+            u.defeatReason = 'Unbreakable stand collapsed';
+          }
+        }
+      }
+    }
+
+    // Field Medic Healing
+    if (unitTraits.some(t => t.isFieldMedic) && u.wounded > 0) {
+      const healed = Math.min(u.wounded, rollDie(3));
+      u.wounded -= healed;
+      u.personnel = Math.min(u.maxPersonnel, u.personnel + healed);
+      if (healed > 0) {
+        addLog('support', `➕ [Field Medic] ${u.name} heals ${healed} wounded back to active duty (${u.personnel} active).`);
+      }
+    }
+
+    // Died of Wounds (DOW)
+    if (state.battle.round >= 4 && u.wounded > 0 && !u.isMonster && !u.isZombie) {
+      const supRatio = u.supply / Math.max(1, u.maxSupply);
+      let dowRate = 0;
+
+      if (supRatio < 0.20) dowRate += 5;
+      else if (supRatio < 0.50) dowRate += 2;
+      if (u.supply <= 0) dowRate += 5;
+
+      if (state.environment.weather === 'Snowy') dowRate += 2;
+      if (state.environment.weather === 'HeatWaves' || state.environment.terrain === 'Marsh') dowRate += 1;
+
+      if (u.traits.includes('first_aid_kit')) dowRate -= 4;
+      if (u.traits.includes('field_medic')) dowRate -= 3;
+
+      const finalRate = clamp(dowRate, 0, 15);
+
+      if (finalRate > 0) {
+        const expected = u.wounded * (finalRate / 100);
+        let dowCasualties = Math.floor(expected);
+        if (Math.random() < (expected - dowCasualties)) {
+          dowCasualties += 1;
+        }
+
+        if (dowCasualties > 0) {
+          dowCasualties = Math.min(u.wounded, dowCasualties);
+          u.wounded -= dowCasualties;
+          u.dead += dowCasualties;
+          addLog('damage', `🏥 [Died of Wounds] ${u.name}: ${dowCasualties} wounded succumbed to injuries (WIA ➔ KIA, Rate: ${finalRate}%).`);
+        }
+      }
+    }
+
+    // Field Repair Crew
+    if (state.battle.round % 3 === 0 && unitTraits.some(t => t.isRepairCrew) && u.recoverableArmor > 0) {
+      const hasSupplyToRepair = u.isMonster || u.isZombie || (u.supply >= u.maxSupply * 0.30);
+      if (hasSupplyToRepair) {
+        const hasSimpleEng = unitTraits.some(t => t.id === 'simple_engineering');
+        const repCostReduction = hasSimpleEng ? 1 : 0;
+        const extraRepairBonus = hasSimpleEng ? 1 : 0;
+
+        const repDie = expObj.repairDie || 3;
+        const fieldCap = Math.max(1, Math.ceil(u.recoverableArmor * 0.5));
+        const repaired = Math.min(fieldCap, rollDie(repDie) + extraRepairBonus);
+
+        if (repaired > 0) {
+          const baseCost = 1 + rollDie(2);
+          const repSupCost = Math.max(0, baseCost - repCostReduction);
+          if (!u.isMonster && !u.isZombie) {
+            u.supply = Math.max(0, u.supply - repSupCost);
+          }
+          u.recoverableArmor -= repaired;
+          u.armor = Math.min(u.maxArmor, u.armor + repaired);
+          addLog('armor', `🔧 [Field Repair Crew] ${u.name} (${u.experience}, d${repDie}${extraRepairBonus ? '+1 SimpleEng' : ''}, Cost ${repSupCost} Sup) restores ${repaired} armor in-field (${u.armor} active, ${u.recoverableArmor} awaiting post-battle recovery).`);
+        }
+      }
+    }
+
     checkAndMarkUnitDefeat(u);
   }
 }
@@ -1624,12 +1718,6 @@ function resolveUnitEngagement(attacker, defender, atkSide, defSide, atkTactic, 
 
   const entrenchedReturnFire = (retDefVig + 15 >= retAtkVig) || (TERRAIN_FEATURES[state.environment.feature]?.fortified);
 
-  for (const u of sideState.units.filter(isUnitActive)) {
-    if (u.pos === undefined || u.pos === null) {
-      u.pos = getUnitStartingPosition(u);
-    }
-  }
-
   if (retDefVig > retAtkVig || entrenchedReturnFire) {
     const retDieSides = getCombatDieSides(defender, 'attack');
     const retDieRoll = rollDie(retDieSides);
@@ -1754,6 +1842,7 @@ function computeUnitTotalStat(unit, opponent, mySide, enemySide, role, baseStat,
   const exp = EXPERIENCE_TIERS[unit.experience] || EXPERIENCE_TIERS.Regular;
   const cmd = getSideCommander(mySide);
   const feat = TERRAIN_FEATURES[state.environment.feature] || TERRAIN_FEATURES.Normal;
+  const clashDist = getTotalDistance(unit, opponent);
 
   let flatBonus = vigFlatBoost;
   if (role === 'attack') {
@@ -1775,8 +1864,21 @@ function computeUnitTotalStat(unit, opponent, mySide, enemySide, role, baseStat,
     else negPct += val;
   }
 
+  // Revamped Melee / Close-Quarters Combat bonuses at Total Distance <= 1
+  if (role === 'attack' && !isReturnFire && unit.traits.includes('melee_attack') && clashDist <= 1) {
+    addPct(30);
+    flatBonus += 4;
+  }
+  if (isReturnFire && opponent && opponent.traits.includes('melee_attack') && clashDist <= 1) {
+    addPct(-30);
+  }
+
+  // Entrenchment defense bonus (Melee attackers at Total Distance <= 1 ignore 50% of trench entrenchment)
   if (role === 'defense' && unit.entrenchmentLevel > 0) {
-    addPct(unit.entrenchmentLevel * 5);
+    const effEntrench = (opponent && opponent.traits.includes('melee_attack') && clashDist <= 1)
+      ? Math.floor(unit.entrenchmentLevel * 0.5)
+      : unit.entrenchmentLevel;
+    addPct(effEntrench * 5);
   }
 
   if (unit.org <= 0 && traits.some(t => t.isUnbreakable)) {
@@ -1808,30 +1910,23 @@ function computeUnitTotalStat(unit, opponent, mySide, enemySide, role, baseStat,
     }
   });
 
-  // Dynamic Commander Trait Modifiers
   if (cmd) {
     const cmdTraits = (cmd.traits || []).map(getCommanderTraitById).filter(Boolean);
     cmdTraits.forEach(t => {
       if (traitAppliesToUnit(t, unit)) {
         addPct(role === 'attack' ? (t.atkPct || 0) : (t.defPct || 0));
-
-        // Terrain synergies
         if (t.terrainTarget && t.terrainTarget === state.environment.terrain) {
           addPct(t.terrainBonus || 0);
         }
       }
     });
 
-    // Flat modifiers from Commander traits
     if (role === 'attack') {
       flatBonus += cmdTraits.filter(t => traitAppliesToUnit(t, unit)).reduce((s, t) => s + (t.atkFlat || 0), 0);
     } else {
       flatBonus += cmdTraits.filter(t => traitAppliesToUnit(t, unit)).reduce((s, t) => s + (t.defFlat || 0), 0);
     }
-  }
 
-  // Commander Attributes (+2.5% Attack per Atk Level, +2.5% Defense per Def Level)
-  if (cmd) {
     if (role === 'attack') {
       addPct((cmd.attackLevel || 0) * 2.5);
     } else {
@@ -1908,25 +2003,6 @@ function computeUnitTotalStat(unit, opponent, mySide, enemySide, role, baseStat,
 
   const preMult = Math.max(0, baseStat + dieRoll + flatBonus);
   const finalValue = Math.round(preMult * (1 + netPct / 100) * 10) / 10;
-
-  const clashDist = getTotalDistance(unit, opponent);
-
-  // Revamped Melee / Close-Quarters Combat bonuses at Total Distance <= 1
-  if (role === 'attack' && !isReturnFire && unit.traits.includes('melee_attack') && clashDist <= 1) {
-    addPct(30);
-    flatBonus += 4;
-  }
-  if (isReturnFire && opponent.traits.includes('melee_attack') && clashDist <= 1) {
-    addPct(-30);
-  }
-
-  if (role === 'defense' && unit.entrenchmentLevel > 0) {
-    // Melee attackers at Total Distance <= 1 ignore 50% of trench entrenchment
-    const effEntrench = (opponent && opponent.traits.includes('melee_attack') && clashDist <= 1)
-      ? Math.floor(unit.entrenchmentLevel * 0.5)
-      : unit.entrenchmentLevel;
-    addPct(effEntrench * 5);
-  }
 
   return { flatBonus, posPct, negPct: cappedNegPct, netPct, finalValue };
 }
