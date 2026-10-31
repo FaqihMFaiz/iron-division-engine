@@ -758,22 +758,21 @@ function processSupplyAndStartOfRoundTraits(side, chosenTactic) {
         const totalRallyOrgGain = baseD3 + traitBonus + terrainBonus + cmdBonus;
         u.org = clamp((u.org || 0) + totalRallyOrgGain, 0, u.maxOrg);
 
-        // --- RALLYING UNIT SUPPLY RESTOCK FROM DEPOT ---
+        // --- IMPROVED RALLY SUPPLY RESTOCK FROM ABUNDANT DEPOT ---
         if (u.supply < u.maxSupply) {
           if (sideState.supplyDepot > 0) {
-            const rawSupD3 = rollDie(3);
+            // Draw a generous refit pack (5 + d6) if the depot has ample stock
+            const rawSup = (sideState.supplyDepot > 30) ? (5 + rollDie(6)) : rollDie(3);
             const traitSupBonus = unitTraits.reduce((s, t) => s + (t.supplyRegen || 0), 0);
-            const cmdSupBonus = (cmd && cmd.traits.includes('logistics_wizard') ? 1 : 0) + Math.floor((cmd?.logisticsLevel || 0) / 4);
+            const cmdSupBonus = (cmd && cmd.traits.includes('logistics_wizard') ? 2 : 0) + Math.floor((cmd?.logisticsLevel || 0) / 3);
             const neededSupply = u.maxSupply - u.supply;
-            const requestedSupply = Math.min(neededSupply, rawSupD3 + traitSupBonus + cmdSupBonus);
+            const requestedSupply = Math.min(neededSupply, rawSup + traitSupBonus + cmdSupBonus);
 
             const drawnSupply = Math.min(sideState.supplyDepot, requestedSupply);
             sideState.supplyDepot = Math.max(0, sideState.supplyDepot - drawnSupply);
             u.supply = clamp(u.supply + drawnSupply, 0, u.maxSupply);
 
-            addLog('support', `📦 [Depot Refit] ${u.name} draws +${drawnSupply} supply from Depot (d3[${rawSupD3}] + Traits[+${traitSupBonus}] + Cmd[+${cmdSupBonus}] ➔ Unit: ${u.supply}/${u.maxSupply} | Depot: ${sideState.supplyDepot}/${sideState.maxSupplyDepot}).`);
-          } else {
-            addLog('support', `⚠ [Depot Empty] ${u.name} attempts to resupply in rear, but Side ${side}'s Supply Depot is EXHAUSTED!`);
+            addLog('support', `📦 [Depot Refit] ${u.name} draws +${drawnSupply} supply from Depot (➔ Unit: ${u.supply}/${u.maxSupply} | Depot: ${sideState.supplyDepot}/${sideState.maxSupplyDepot}).`);
           }
         }
 
@@ -816,7 +815,11 @@ function processSupplyAndStartOfRoundTraits(side, chosenTactic) {
         const hasFrontlineAllies = sideState.units.some(o => o.instanceId !== u.instanceId && isUnitActive(o));
         const frontlineMod = hasFrontlineAllies ? 2 : -3;
 
-        const totalRallyScore = d20 + expBonus + cmdBonus + frontlineMod + persMod + supMod + armorMod;
+        // Track consecutive rounds spent resting to guarantee eventual re-organization
+        u.rallyRoundsResting = (u.rallyRoundsResting || 0) + 1;
+        const determinationBonus = Math.min(6, u.rallyRoundsResting); // +1 per round spent resting, up to +6
+
+        const totalRallyScore = d20 + expBonus + cmdBonus + frontlineMod + persMod + supMod + armorMod + determinationBonus;
         const rallyDC = 10;
         const isCriticalFumble = (d20 === 1);
         const passedRally = (totalRallyScore >= rallyDC) && !isCriticalFumble;
