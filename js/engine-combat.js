@@ -155,7 +155,8 @@ function triggerUnitRally(u, reason) {
   u.rallyRoundsLeft = Math.max(1, baseCooldown - durationRed);
 
   // --- SCATTERED TROOPS JOIN THE "ESCAPED" POOL ---
-  // 75% hold together to regroup; 25% scatter and flee the battle zone
+  // Define minRallyPersonnel here so small units (40-100 HP) scale properly
+  const minRallyPersonnel = Math.min(15, Math.max(5, Math.ceil(u.maxPersonnel * 0.15)));
   const retainedCount = Math.max(minRallyPersonnel, Math.round(u.personnel * 0.75));
   const scatteredCount = u.personnel - retainedCount;
 
