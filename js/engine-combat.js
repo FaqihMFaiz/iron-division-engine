@@ -156,7 +156,7 @@ function triggerUnitRally(u, reason) {
 
   // --- SCATTERED TROOPS JOIN THE "ESCAPED" POOL ---
   // 75% hold together to regroup; 25% scatter and flee the battle zone
-  const retainedCount = Math.max(15, Math.round(u.personnel * 0.75));
+  const retainedCount = Math.max(minRallyPersonnel, Math.round(u.personnel * 0.75));
   const scatteredCount = u.personnel - retainedCount;
 
   if (scatteredCount > 0) {
@@ -195,9 +195,11 @@ function checkAndMarkUnitDefeat(u) {
     return true;
   }
 
+  const minRallyPersonnel = Math.min(20, Math.max(5, Math.ceil(u.maxPersonnel * 0.15)));
+
   if (!u.isDismounted && u.maxArmor > 0 && u.armor <= 0) {
     u.armor = 0;
-    if (!u.ralliedOnce && u.personnel > 20) {
+    if (!u.ralliedOnce && u.personnel >= minRallyPersonnel) {
       triggerUnitRally(u, 'All combat-ready armor disabled');
       return false;
     } else {
@@ -216,7 +218,7 @@ function checkAndMarkUnitDefeat(u) {
   if (!u.isMonster && !u.isZombie && u.org <= 0) {
     u.org = 0;
     if (!hasUnbreakable) {
-      if (!u.ralliedOnce && u.personnel > 20) {
+      if (!u.ralliedOnce && u.personnel >= minRallyPersonnel) {
         triggerUnitRally(u, 'Cohesion broke');
         return false;
       } else {
@@ -467,18 +469,24 @@ function getTerrainUnitModifiers(u, role) {
 
   const theatreAtkSide = state.environment.theatreAttackerSide || 'A';
   const isTheatreAttacker = u.side === theatreAtkSide;
-  const positionalRole = isTheatreAttacker ? 'attack' : 'defense';
 
+  // Base terrain uses the unit's current combat role (attacking vs defending)
   let basePct = 0;
-  if (u.category === 'infantry') basePct = positionalRole === 'attack' ? terr.infAtk : terr.infDef;
-  else if (u.category === 'armored_vehicle') basePct = positionalRole === 'attack' ? terr.avAtk : terr.avDef;
-  else if (u.category === 'tank') basePct = positionalRole === 'attack' ? terr.tankAtk : terr.tankDef;
-  else if (u.category === 'artillery') basePct = positionalRole === 'attack' ? terr.artAtk : terr.artDef;
+  if (u.category === 'infantry') basePct = role === 'attack' ? terr.infAtk : terr.infDef;
+  else if (u.category === 'armored_vehicle') basePct = role === 'attack' ? terr.avAtk : terr.avDef;
+  else if (u.category === 'tank') basePct = role === 'attack' ? terr.tankAtk : terr.tankDef;
+  else if (u.category === 'artillery') basePct = role === 'attack' ? terr.artAtk : terr.artDef;
 
+  // Fortifications & Rivers only penalize the Invader when ATTACKING, and only boost the Garrison when DEFENDING
   const hasMarines = u.traits.includes('marines');
-  let featMult = positionalRole === 'attack' ? feat.atkMult : feat.defMult;
-  if (hasMarines && (feat.isRiver || feat.isAmphib) && featMult < 1.0) {
-    featMult = 1.0;
+  let featMult = 1.0;
+  if (role === 'attack' && isTheatreAttacker) {
+    featMult = feat.atkMult;
+    if (hasMarines && (feat.isRiver || feat.isAmphib) && featMult < 1.0) featMult = 1.0;
+  } else if (role === 'defense' && !isTheatreAttacker) {
+    featMult = feat.defMult;
+  } else if (feat.id === 'Road') {
+    featMult = role === 'attack' ? feat.atkMult : feat.defMult;
   }
 
   const combinedMult = (1 + basePct / 100) * featMult;
@@ -628,11 +636,6 @@ function runSingleRound() {
           `🏃 [Advancing on Y-Axis] ${atkUnit.name} (Max Range ≤${unitRange}) has no enemy in range and moves ${oldPos - atkUnit.pos} distance forward (Dist: ${oldPos} ➔ ${atkUnit.pos} | Closest Enemy Total Dist: ${newClosestDist}).`
         );
 
-        // Check if this move brought a frontline unit into engagement range for next round
-        const nowInRange = currentDefenders.some(d => canUnitEngageTarget(atkUnit, d, atkTactic));
-        if (nowInRange && (!hasManeuverUnits || atkUnit.category !== 'artillery')) {
-          frontlineInRangeThisRound = true;
-        }
         continue;
       }
 
@@ -2057,6 +2060,14 @@ function inflictCombatDamage(attacker, defender, attackDefenseDiff, atkSide, def
   }
   if (defTactic.id === 'def_tactical_withdrawal') {
     rawDowned = Math.max(1, Math.round(rawDowned * 0.80));
+  }
+
+  // Scale-aware casualty cap for smaller tactical units (< 500 personnel)
+  // A foot/light unit cannot down more than 45% of its own active headcount (or 35% of target max HP) in a single volley
+  if (attacker.maxPersonnel < 500 && attacker.category !== 'artillery' && !attacker.isMonster) {
+    const maxByAttackerSize = Math.max(4, Math.ceil(attacker.personnel * 0.45) + (attacker.armor * 2));
+    const maxByTargetScale = Math.max(6, Math.ceil(defender.maxPersonnel * 0.35));
+    rawDowned = Math.min(rawDowned, maxByAttackerSize, maxByTargetScale);
   }
 
   addLog(
