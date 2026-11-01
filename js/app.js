@@ -129,7 +129,10 @@ function saveCommander() {
 
   safeSaveStorage('ttrpg_commanders_v1', state.commanders);
   showToast(`Saved Commander "${name}"!`, 'success');
-  renderAll();
+  markTabDirty('commanders');
+  renderSideControls('A', true); // Rebuilds only commander dropdowns
+  renderSideControls('B', true);
+  renderActiveTabOnly('commanders'); // Refreshes the active commanders list
 }
 
 // Custom Commander Trait Modals & Actions
@@ -337,13 +340,13 @@ function deployUnitToSide(side) {
   const sideObj = side === 'A' ? state.battle.sideA : state.battle.sideB;
   sideObj.units.push(createCombatUnitInstance(tpl, side));
   showToast(`Deployed ${tpl.name} to Side ${side}`, 'success');
-  renderAll();
+  renderCombatRound(); // Updates cards, telemetry, and force ratio instantly
 }
 
 function removeUnitFromSide(side, instanceId) {
   const sideObj = side === 'A' ? state.battle.sideA : state.battle.sideB;
   sideObj.units = sideObj.units.filter(u => u.instanceId !== instanceId);
-  renderAll();
+  renderCombatRound();
 }
 
 function clearCombatLog() {
@@ -481,7 +484,11 @@ function saveUnitTemplate() {
   else state.unitTemplates.unshift(obj);
   safeSaveStorage('ttrpg_units_v1', state.unitTemplates);
   showToast(`Saved unit template "${obj.name}"!`, 'success');
-  renderAll();
+  
+  markTabDirty('units');
+  renderSideControls('A', true); // Updates "Deploy Unit" dropdowns
+  renderSideControls('B', true);
+  renderActiveTabOnly('units');  // Rebuilds unit designer library grid
 }
 
 function deploySavedUnitQuick(side) {
@@ -499,7 +506,7 @@ function deployTemplateById(tplId, side) {
   const sideObj = side === 'A' ? state.battle.sideA : state.battle.sideB;
   sideObj.units.push(createCombatUnitInstance(tpl, side));
   showToast(`Deployed ${tpl.name} to Side ${side}!`, 'success');
-  renderAll();
+  renderCombatRound();
 }
 
 function duplicateUnitTemplate(id) {
@@ -512,21 +519,34 @@ function duplicateUnitTemplate(id) {
   state.unitTemplates.splice(idx + 1, 0, copy);
   safeSaveStorage('ttrpg_units_v1', state.unitTemplates);
   showToast(`Duplicated "${orig.name}" as "${copy.name}"!`, 'success');
-  renderAll();
+  
+  markTabDirty('units');
+  renderSideControls('A', true);
+  renderSideControls('B', true);
+  renderActiveTabOnly('units');
 }
+
 
 function deleteUnitTemplate(id) {
   state.unitTemplates = state.unitTemplates.filter(u => u.id !== id);
   safeSaveStorage('ttrpg_units_v1', state.unitTemplates);
   showToast('Unit template removed.', 'info');
-  renderAll();
+  
+  markTabDirty('units');
+  renderSideControls('A', true);
+  renderSideControls('B', true);
+  renderActiveTabOnly('units');
 }
 
 function restoreDefaultUnits() {
   state.unitTemplates = structuredClone(DEFAULT_UNIT_TEMPLATES);
   safeSaveStorage('ttrpg_units_v1', state.unitTemplates);
   showToast('Restored all default sample units.', 'success');
-  renderAll();
+  
+  markTabDirty('units');
+  renderSideControls('A', true);
+  renderSideControls('B', true);
+  renderActiveTabOnly('units');
 }
 
 // --------------------------------------------------------------------------
@@ -625,8 +645,11 @@ function saveTrait() {
   else state.traits.unshift(newTrait);
   safeSaveStorage('ttrpg_traits_v1', state.traits);
   showToast(`Saved trait "${newTrait.name}"!`, 'success');
-  renderAll();
+  markTabDirty('traits');
+  markTabDirty('units'); // Traits checkboxes exist inside the Unit Designer tab
+  renderActiveTabOnly('traits');
 }
+
 
 // --------------------------------------------------------------------------
 // Robust Commander Trait Editor Handlers
@@ -749,7 +772,8 @@ function saveCustomCommanderTrait() {
   safeSaveStorage('ttrpg_cmd_traits_v1', state.commanderTraits);
   showToast(`Saved Commander Trait "${name}"!`, 'success');
   closeCmdTraitModal();
-  renderAll();
+  markTabDirty('commanders');
+  renderActiveTabOnly('commanders');
 }
 
 function deleteCurrentCommanderTrait() {
@@ -764,7 +788,8 @@ function deleteCurrentCommanderTrait() {
   safeSaveStorage('ttrpg_commanders_v1', state.commanders);
   showToast('Commander trait removed.', 'info');
   closeCmdTraitModal();
-  renderAll();
+  markTabDirty('commanders');
+  renderActiveTabOnly('commanders');
 }
 
 // --------------------------------------------------------------------------
@@ -810,8 +835,12 @@ function saveTerrainConfig() {
   };
   safeSaveStorage('ttrpg_terrains_v1', state.terrains);
   showToast(`Saved terrain "${name}"!`, 'success');
-  renderAll();
+  markTabDirty('terrain');
+  renderEnvironmentSelectors(); // Refreshes Battlefield terrain dropdown
+  renderActiveTabOnly('terrain');
 }
+
+
 
 // --------------------------------------------------------------------------
 // Bootstrap Initializer

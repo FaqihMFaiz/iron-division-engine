@@ -683,25 +683,28 @@ function runSingleRound() {
     atkState.prevRevealedTactic = atkTactic.id;
     defState.prevRevealedTactic = defTactic.id;
 
+
     // 7. Check Battle End Condition
     if (checkBattleEndCondition()) {
-      renderAll();
+      renderCombatRound();
       return;
     }
 
     // 8. Advance Round & Check Engagement Range Phase Lock
     state.battle.round++;
     if (!frontlineInRangeThisRound && defenders.length > 0) {
-      // Attacker had no frontline units in engagement range — lock Attacking Phase on atkSide!
       addLog('rolls', `⏳ [Initiative Locked] Side ${atkSide} has not yet closed into frontline engagement range — Side ${atkSide} remains in the Attacking Phase while Side ${defSide} holds in the Defending Phase!`);
     } else {
       state.battle.attackerSide = state.battle.attackerSide === 'A' ? 'B' : 'A';
     }
-    renderAll();
+    
+    // FAST REFRESH: Only updates telemetry, cards, and log (Does not touch background tabs or re-render form inputs)
+    renderCombatRound();
+
   } catch (error) {
     console.error('runSingleRound error:', error);
     showToast('Battle resolution failed. Check the console for details.', 'error');
-    renderAll();
+    renderCombatRound();
   }
 }
 

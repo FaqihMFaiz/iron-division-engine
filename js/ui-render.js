@@ -1,20 +1,106 @@
 /* ==========================================================================
-   IRON DIVISION ENGINE — DOM RENDERING & USER INTERFACE
+   IRON DIVISION ENGINE — DOM RENDERING & USER INTERFACE (OPTIMIZED)
    File: js/ui-render.js
    ========================================================================== */
 
+// Internal UI state for dirty-checking and DOM node caching
+const uiState = {
+  activeTab: 'battlefield',
+  renderedTabs: {
+    battlefield: false,
+    units: false,
+    traits: false,
+    commanders: false,
+    terrain: false,
+    tactics: false,
+    guide: false
+  },
+  dirtyTabs: {
+    battlefield: true,
+    units: true,
+    traits: true,
+    commanders: true,
+    terrain: true,
+    tactics: true,
+    guide: true
+  },
+  selectCache: {
+    sideA_role: null,
+    sideB_role: null,
+    sideA_urban: null,
+    sideB_urban: null,
+    cmdHash: '',
+    tplHash: ''
+  }
+};
+
+/**
+ * Mark a specific tab (or all tabs) as dirty so it will refresh when viewed.
+ */
+function markTabDirty(tabName = 'all') {
+  if (tabName === 'all') {
+    Object.keys(uiState.dirtyTabs).forEach(k => { uiState.dirtyTabs[k] = true; });
+  } else if (uiState.dirtyTabs[tabName] !== undefined) {
+    uiState.dirtyTabs[tabName] = true;
+  }
+}
+
+/**
+ * Switches the active UI tab without re-rendering unneeded views.
+ */
 function switchTab(tabName) {
-  // Added 'guide' to the registered tabs array
   const tabs = ['battlefield', 'units', 'traits', 'commanders', 'terrain', 'tactics', 'guide'];
+  uiState.activeTab = tabName;
+
   tabs.forEach(t => {
     const view = document.getElementById(`view-${t}`);
     const btn = document.getElementById(`tab-${t}`);
     if (view) view.classList.toggle('hidden', t !== tabName);
     if (btn) btn.classList.toggle('active', t === tabName);
   });
-  renderAll();
+
+  renderActiveTabOnly(tabName);
 }
 
+/**
+ * Renders only the tab currently in view if it has been marked dirty.
+ */
+function renderActiveTabOnly(tabName) {
+  if (!uiState.dirtyTabs[tabName] && uiState.renderedTabs[tabName]) return;
+
+  switch (tabName) {
+    case 'battlefield':
+      renderBattlefield(false);
+      break;
+    case 'units':
+      renderUnitDesigner();
+      break;
+    case 'traits':
+      renderTraitsTab();
+      break;
+    case 'commanders':
+      renderCommandersTab();
+      break;
+    case 'terrain':
+      renderTerrainTab();
+      break;
+    case 'tactics':
+      renderTacticsGuide();
+      break;
+    case 'guide':
+      if (typeof renderSimulationGuide === 'function') {
+        renderSimulationGuide();
+      }
+      break;
+  }
+
+  uiState.dirtyTabs[tabName] = false;
+  uiState.renderedTabs[tabName] = true;
+}
+
+/**
+ * Triggered on environment controls changes.
+ */
 function onEnvironmentChange() {
   const tSel = document.getElementById('bf-terrain');
   const fSel = document.getElementById('bf-feature');
@@ -35,43 +121,64 @@ function onEnvironmentChange() {
   }
   if (wSel && wSel.value) state.environment.weather = wSel.value;
   if (uChk) state.environment.unexpectedInitiative = uChk.checked;
+
   if (state.battle.round === 1 && !state.battle.initialSnapshot) {
     [...state.battle.sideA.units, ...state.battle.sideB.units].forEach(u => {
       u.pos = getUnitStartingPosition(u);
     });
   }
-  renderAll();
+
+  renderEnvironmentSelectors();
+  renderSideControls('A', true);
+  renderSideControls('B', true);
+  renderCombatRound();
 }
 
+/**
+ * Updates selected commander or tactic for a side without rebuilding DOM inputs.
+ */
 function updateSideConfig(side) {
   const cmdSel = document.getElementById(`side${side}-commander`);
   const tacSel = document.getElementById(`side${side}-tactic`);
   const sideObj = side === 'A' ? state.battle.sideA : state.battle.sideB;
   if (cmdSel) sideObj.commanderId = cmdSel.value;
   if (tacSel) sideObj.tacticId = tacSel.value;
-  renderAll();
+  renderSideTelemetry(side);
 }
 
+/**
+ * Renders base environment selector options and summary bar.
+ */
 function renderEnvironmentSelectors() {
   const tSel = document.getElementById('bf-terrain');
   const fSel = document.getElementById('bf-feature');
   const wSel = document.getElementById('bf-weather');
   if (!tSel || !fSel || !wSel) return;
 
-  tSel.innerHTML = Object.keys(state.terrains).map(k => {
-    const t = state.terrains[k];
-    return `<option value="${k}" ${state.environment.terrain === k ? 'selected' : ''}>${t.name}${t.isUrban ? ' (Urban Tactics Enabled)' : ''}</option>`;
-  }).join('');
+  // Only rewrite innerHTML if option list has not been populated
+  if (tSel.children.length === 0) {
+    tSel.innerHTML = Object.keys(state.terrains).map(k => {
+      const t = state.terrains[k];
+      return `<option value="${k}">${t.name}${t.isUrban ? ' (Urban Tactics Enabled)' : ''}</option>`;
+    }).join('');
+  }
+  tSel.value = state.environment.terrain;
 
-  fSel.innerHTML = Object.keys(TERRAIN_FEATURES).map(k => {
-    const f = TERRAIN_FEATURES[k];
-    return `<option value="${k}" ${state.environment.feature === k ? 'selected' : ''}>${f.name}</option>`;
-  }).join('');
+  if (fSel.children.length === 0) {
+    fSel.innerHTML = Object.keys(TERRAIN_FEATURES).map(k => {
+      const f = TERRAIN_FEATURES[k];
+      return `<option value="${k}">${f.name}</option>`;
+    }).join('');
+  }
+  fSel.value = state.environment.feature;
 
-  wSel.innerHTML = Object.keys(WEATHER_TYPES).map(k => {
-    const w = WEATHER_TYPES[k];
-    return `<option value="${k}" ${state.environment.weather === k ? 'selected' : ''}>${w.name}</option>`;
-  }).join('');
+  if (wSel.children.length === 0) {
+    wSel.innerHTML = Object.keys(WEATHER_TYPES).map(k => {
+      const w = WEATHER_TYPES[k];
+      return `<option value="${k}">${w.name}</option>`;
+    }).join('');
+  }
+  wSel.value = state.environment.weather;
 
   const terr = state.terrains[state.environment.terrain] || DEFAULT_TERRAINS.Plains;
   const feat = TERRAIN_FEATURES[state.environment.feature] || TERRAIN_FEATURES.Normal;
@@ -90,43 +197,79 @@ function renderEnvironmentSelectors() {
   }
 }
 
-function renderSidePanel(side) {
+/**
+ * Intelligent Selector Sync: Updates options only when roles or data sets change.
+ * Prevents user dropdown menus from closing mid-round.
+ */
+function renderSideControls(side, forceRebuild = false) {
   const sideObj = side === 'A' ? state.battle.sideA : state.battle.sideB;
   const isAttacker = state.battle.attackerSide === side;
   const role = isAttacker ? 'attack' : 'defense';
-  const badge = document.getElementById(`side${side}-role-badge`);
+
+  const terr = state.terrains[state.environment.terrain] || DEFAULT_TERRAINS.Plains;
+  const isUrban = !!terr.isUrban || state.environment.feature === 'Fort';
+
+  // 1. Commander Select
+  const cmdSel = document.getElementById(`side${side}-commander`);
+  const cmdHash = state.commanders.map(c => c.id).join('|');
+  if (cmdSel) {
+    if (forceRebuild || uiState.selectCache.cmdHash !== cmdHash || cmdSel.children.length === 0) {
+      cmdSel.innerHTML = state.commanders.map(c =>
+        `<option value="${c.id}">${c.name} [${c.personality}]</option>`
+      ).join('');
+      uiState.selectCache.cmdHash = cmdHash;
+    }
+    cmdSel.value = sideObj.commanderId;
+  }
+
+  // 2. Tactic Select
+  const tacSel = document.getElementById(`side${side}-tactic`);
+  const roleKey = `side${side}_role`;
+  const urbanKey = `side${side}_urban`;
+  if (tacSel) {
+    const roleChanged = uiState.selectCache[roleKey] !== role;
+    const urbanChanged = uiState.selectCache[urbanKey] !== isUrban;
+
+    if (forceRebuild || roleChanged || urbanChanged || tacSel.children.length === 0) {
+      const eligible = getEligibleTactics(role, isUrban);
+      tacSel.innerHTML = `<option value="auto">🤖 Commander AI Auto-Select</option>` +
+        eligible.map(t => `<option value="${t.id}">${t.name} (${t.personality})</option>`).join('');
+      uiState.selectCache[roleKey] = role;
+      uiState.selectCache[urbanKey] = isUrban;
+    }
+    tacSel.value = sideObj.tacticId;
+  }
+
+  // 3. Add-Unit Select
+  const addSel = document.getElementById(`side${side}-add-select`);
+  const tplHash = state.unitTemplates.map(u => u.id).join('|');
+  if (addSel) {
+    if (forceRebuild || uiState.selectCache.tplHash !== tplHash || addSel.children.length === 0) {
+      const cur = addSel.value;
+      addSel.innerHTML = state.unitTemplates.map(u =>
+        `<option value="${u.id}">${u.name} (${u.category.toUpperCase()} | ${u.personnel} HP)</option>`
+      ).join('');
+      if (cur) addSel.value = cur;
+      uiState.selectCache.tplHash = tplHash;
+    }
+  }
+}
+
+/**
+ * Updates side header badges, force ratio counters, and depot bar.
+ */
+function renderSideTelemetry(side) {
+  const sideObj = side === 'A' ? state.battle.sideA : state.battle.sideB;
+  const isAttacker = state.battle.attackerSide === side;
   const isTheatreAtk = (state.environment.theatreAttackerSide || 'A') === side;
   const theatreTag = isTheatreAtk ? 'INVADER' : 'ENTRENCHED';
 
+  const badge = document.getElementById(`side${side}-role-badge`);
   if (badge) {
     badge.textContent = isAttacker ? `⚔ INITIATIVE [${theatreTag}]` : `🛡 REACTING [${theatreTag}]`;
     badge.className = isAttacker
       ? 'text-[11px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-semibold'
       : 'text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 font-semibold';
-  }
-
-  const cmdSel = document.getElementById(`side${side}-commander`);
-  if (cmdSel) {
-    cmdSel.innerHTML = state.commanders.map(c =>
-      `<option value="${c.id}" ${sideObj.commanderId === c.id ? 'selected' : ''}>${c.name} [${c.personality}]</option>`
-    ).join('');
-  }
-
-  const tacSel = document.getElementById(`side${side}-tactic`);
-  if (tacSel) {
-    const terr = state.terrains[state.environment.terrain] || DEFAULT_TERRAINS.Plains;
-    const isUrban = !!terr.isUrban || state.environment.feature === 'Fort';
-    const eligible = getEligibleTactics(role, isUrban);
-    tacSel.innerHTML = `<option value="auto" ${sideObj.tacticId === 'auto' ? 'selected' : ''}>🤖 Commander AI Auto-Select</option>` +
-      eligible.map(t => `<option value="${t.id}" ${sideObj.tacticId === t.id ? 'selected' : ''}>${t.name} (${t.personality})</option>`).join('');
-  }
-
-  const addSel = document.getElementById(`side${side}-add-select`);
-  if (addSel) {
-    const currentVal = addSel.value;
-    addSel.innerHTML = state.unitTemplates.map(u =>
-      `<option value="${u.id}" ${currentVal === u.id ? 'selected' : ''}>${u.name} (${u.category.toUpperCase()} | ${u.personnel} HP)</option>`
-    ).join('');
   }
 
   const activeUnits = sideObj.units.filter(isUnitActive);
@@ -166,7 +309,13 @@ function renderSidePanel(side) {
       </div>
     `;
   }
+}
 
+/**
+ * Updates unit cards list for a specific side.
+ */
+function renderSideUnitCards(side) {
+  const sideObj = side === 'A' ? state.battle.sideA : state.battle.sideB;
   const listEl = document.getElementById(`side${side}-units-list`);
   if (!listEl) return;
 
@@ -189,7 +338,6 @@ function renderSidePanel(side) {
     const supMalus = getSupplyMalusPct(u);
     const tv = getUnitTargetValue(u);
 
-    // Calculate Y-Axis Position & Engagement Range inside the unit loop where `u` is defined
     const unitPos = (u.pos !== undefined && u.pos !== null) ? u.pos : getUnitStartingPosition(u);
     const unitRange = getUnitEngagementRange(u);
     const closestEnemyDist = activeEnemies.length > 0
@@ -279,6 +427,18 @@ function renderSidePanel(side) {
   }).join('');
 }
 
+/**
+ * Composite function for the entire side panel.
+ */
+function renderSidePanel(side, forceRebuild = false) {
+  renderSideControls(side, forceRebuild);
+  renderSideTelemetry(side);
+  renderSideUnitCards(side);
+}
+
+/**
+ * Updates round counter and force ratio gauge.
+ */
 function renderCenterTelemetry() {
   const rdEl = document.getElementById('round-counter-display');
   const phEl = document.getElementById('phase-indicator');
@@ -321,11 +481,7 @@ function renderCenterTelemetry() {
   }
 }
 
-/* ==========================================================================
-   COMBAT LOG COLOR DEFINITIONS & RENDERER (js/ui-render.js)
-   ========================================================================== */
-
-// Defined globally and attached to window to prevent any ReferenceError
+// Combat log color map definitions
 const colorMap = {
   rolls: 'text-slate-200 border-slate-800 bg-slate-950/60',
   damage: 'text-rose-200 border-rose-900/40 bg-rose-950/20',
@@ -348,7 +504,6 @@ function renderCombatLog() {
     return;
   }
 
-  // Cap at the latest 150 log entries to keep the DOM fast and responsive
   const logsToRender = state.battle.logs.slice(-150);
   const filtered = logsToRender.filter(item => filterVal === 'all' || item.category === filterVal);
 
@@ -363,6 +518,36 @@ function renderCombatLog() {
     </div>
   `).join('');
 }
+
+/**
+ * HIGH-PERFORMANCE COMBAT PIPELINE:
+ * Only updates active telemetry and combat log. Executed on every battle round tick.
+ */
+function renderCombatRound() {
+  renderCenterTelemetry();
+  renderSideTelemetry('A');
+  renderSideTelemetry('B');
+  renderSideControls('A', false); // Updates values without wiping DOM inputs
+  renderSideControls('B', false);
+  renderSideUnitCards('A');
+  renderSideUnitCards('B');
+  renderCombatLog();
+}
+
+/**
+ * Full battlefield layout update.
+ */
+function renderBattlefield(forceRebuildControls = false) {
+  renderEnvironmentSelectors();
+  renderSidePanel('A', forceRebuildControls);
+  renderSidePanel('B', forceRebuildControls);
+  renderCenterTelemetry();
+  renderCombatLog();
+}
+
+// --------------------------------------------------------------------------
+// Subsystem Tabs (Rendered on Demand via Dirty Checking)
+// --------------------------------------------------------------------------
 
 function renderUnitDesigner() {
   const chkContainer = document.getElementById('unit-traits-checkboxes');
@@ -484,7 +669,6 @@ function renderCommandersTab() {
             <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300">${c.personality}</span>
           </div>
 
-          <!-- 4 ATTRIBUTES BADGE ROW -->
           <div class="grid grid-cols-2 gap-1.5 my-2 p-2 rounded bg-slate-900 text-[10px] font-mono">
             <div>⚔ Atk: <b class="text-amber-400">Lvl ${c.attackLevel || 0} (+${((c.attackLevel || 0) * 2.5).toFixed(1)}%)</b></div>
             <div>🛡 Def: <b class="text-sky-400">Lvl ${c.defenseLevel || 0} (+${((c.defenseLevel || 0) * 2.5).toFixed(1)}%)</b></div>
@@ -571,6 +755,10 @@ function renderTacticsGuide() {
     </div>
   `).join('');
 }
+
+// --------------------------------------------------------------------------
+// Modal & Global Refresh
+// --------------------------------------------------------------------------
 
 function openBattleSummaryModal() {
   const modal = document.getElementById('battle-modal');
@@ -697,18 +885,14 @@ function closeBattleSummaryModal() {
   }
 }
 
+/**
+ * Backward-compatible full refresh that only marks other tabs dirty
+ * and refreshes the currently active tab.
+ */
 function renderAll() {
-  renderEnvironmentSelectors();
-  renderSidePanel('A');
-  renderSidePanel('B');
-  renderCenterTelemetry();
-  renderCombatLog();
-  renderUnitDesigner();
-  renderTraitsTab();
-  renderCommandersTab();
-  renderTerrainTab();
-  renderTacticsGuide();
-  if (typeof renderSimulationGuide === 'function') {
-    renderSimulationGuide();
+  markTabDirty('all');
+  renderBattlefield(true);
+  if (uiState.activeTab !== 'battlefield') {
+    renderActiveTabOnly(uiState.activeTab);
   }
 }
