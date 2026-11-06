@@ -2,69 +2,74 @@
    IRON DIVISION ENGINE — CORE GAME DATABASES & REGISTRIES
    File: js/data.js
    ========================================================================== */
+window.IronDivision = window.IronDivision || {};
 
-// --------------------------------------------------------------------------
-// 1. Experience Tiers
-// --------------------------------------------------------------------------
-const EXPERIENCE_TIERS = {
-  Green:    { name: 'Green',    atkPct: -10, defPct: -10, orgRegen: -1, recBonus: 0,  retreatBonus: -10, pursueBonus: 0,  repairDie: 2 },
-  Trained:  { name: 'Trained',  atkPct: 10,  defPct: 10,  orgRegen: 0,  recBonus: 0,  retreatBonus: 0,   pursueBonus: 0,  repairDie: 2 },
-  Regular:  { name: 'Regular',  atkPct: 20,  defPct: 20,  orgRegen: 0,  recBonus: 0,  retreatBonus: 0,   pursueBonus: 0,  repairDie: 3 },
-  Seasoned: { name: 'Seasoned', atkPct: 30,  defPct: 30,  orgRegen: 1,  recBonus: 0,  retreatBonus: 0,   pursueBonus: 0,  repairDie: 3 },
-  Veteran:  { name: 'Veteran',  atkPct: 40,  defPct: 40,  orgRegen: 2,  recBonus: 10, retreatBonus: 10,  pursueBonus: 10, repairDie: 4 },
-  Elite:    { name: 'Elite',    atkPct: 50,  defPct: 50,  orgRegen: 3,  recBonus: 20, retreatBonus: 20,  pursueBonus: 20, repairDie: 5 }
-};
+(function (ID) {
+  'use strict';
 
-// --------------------------------------------------------------------------
-// 2. Armor Class Hard/Soft Splits
-// --------------------------------------------------------------------------
-const ARMOR_TIERS = {
-  unarmored: { label: 'Unarmored', hardRatio: 0.0,  softRatio: 1.0 },
-  light:     { label: 'Light Armor (25%H/75%S)', hardRatio: 0.25, softRatio: 0.75 },
-  medium:    { label: 'Medium Armor (50%H/50%S)', hardRatio: 0.50, softRatio: 0.50 },
-  heavy:     { label: 'Heavy Armor (75%H/25%S)', hardRatio: 0.75, softRatio: 0.25 },
-  super:     { label: 'Super Heavy (100%H/0%S)', hardRatio: 1.00, softRatio: 0.00 }
-};
+  const EXPERIENCE_TIERS = {
+    Green:    { name: 'Green',    atkPct: -10, defPct: -10, orgRegen: -1, recBonus: 0,  retreatBonus: -10, pursueBonus: 0,  repairDie: 2 },
+    Trained:  { name: 'Trained',  atkPct: 10,  defPct: 10,  orgRegen: 0,  recBonus: 0,  retreatBonus: 0,   pursueBonus: 0,  repairDie: 2 },
+    Regular:  { name: 'Regular',  atkPct: 20,  defPct: 20,  orgRegen: 0,  recBonus: 0,  retreatBonus: 0,   pursueBonus: 0,  repairDie: 3 },
+    Seasoned: { name: 'Seasoned', atkPct: 30,  defPct: 30,  orgRegen: 1,  recBonus: 0,  retreatBonus: 0,   pursueBonus: 0,  repairDie: 3 },
+    Veteran:  { name: 'Veteran',  atkPct: 40,  defPct: 40,  orgRegen: 2,  recBonus: 10, retreatBonus: 10,  pursueBonus: 10, repairDie: 4 },
+    Elite:    { name: 'Elite',    atkPct: 50,  defPct: 50,  orgRegen: 3,  recBonus: 20, retreatBonus: 20,  pursueBonus: 20, repairDie: 5 }
+  };
 
-// --------------------------------------------------------------------------
-// 3. Base Terrains
-// --------------------------------------------------------------------------
-const DEFAULT_TERRAINS = {
-  Plains:   { name: 'Plains',   infAtk: 0,   infDef: 0,  avAtk: 10,  avDef: 0,   tankAtk: 15,  tankDef: 5,   artAtk: 5,   artDef: 0,  vigMod: 5,   supplyDrain: 0, isUrban: false, openTerrain: true },
-  Forest:   { name: 'Forest',   infAtk: -5,  infDef: 15, avAtk: -15, avDef: -5,  tankAtk: -25, tankDef: -10, artAtk: -10, artDef: 5,  vigMod: -10, supplyDrain: 1, isUrban: false, openTerrain: false },
-  Hills:    { name: 'Hills',    infAtk: -10, infDef: 20, avAtk: -15, avDef: 5,   tankAtk: -20, tankDef: -5,  artAtk: 10,  artDef: 15, vigMod: 10,  supplyDrain: 1, isUrban: false, openTerrain: false },
-  Mountain: { name: 'Mountain', infAtk: -20, infDef: 35, avAtk: -35, avDef: -15, tankAtk: -50, tankDef: -25, artAtk: 15,  artDef: 20, vigMod: 15,  supplyDrain: 2, isUrban: false, openTerrain: false },
-  Jungle:   { name: 'Jungle',   infAtk: -15, infDef: 25, avAtk: -30, avDef: -15, tankAtk: -45, tankDef: -25, artAtk: -20, artDef: 0,  vigMod: -20, supplyDrain: 2, isUrban: false, openTerrain: false },
-  Marsh:    { name: 'Marsh',    infAtk: -20, infDef: 15, avAtk: -35, avDef: -20, tankAtk: -50, tankDef: -30, artAtk: -15, artDef: -10,vigMod: -5,  supplyDrain: 2, isUrban: false, openTerrain: false },
-  Desert:   { name: 'Desert',   infAtk: -10, infDef: -10,avAtk: 10,  avDef: 5,   tankAtk: 15,  tankDef: 5,   artAtk: 5,   artDef: -5, vigMod: 10,  supplyDrain: 2, isUrban: false, openTerrain: true },
-  Urban:    { name: 'Urban',    infAtk: -5,  infDef: 30, avAtk: -20, avDef: -10, tankAtk: -35, tankDef: -20, artAtk: -5,  artDef: 15, vigMod: -15, supplyDrain: 1, isUrban: true,  openTerrain: false }
-};
+  const ARMOR_TIERS = {
+    unarmored: { label: 'Unarmored', hardRatio: 0.0,  softRatio: 1.0 },
+    light:     { label: 'Light Armor (25%H/75%S)', hardRatio: 0.25, softRatio: 0.75 },
+    medium:    { label: 'Medium Armor (50%H/50%S)', hardRatio: 0.50, softRatio: 0.50 },
+    heavy:     { label: 'Heavy Armor (75%H/25%S)', hardRatio: 0.75, softRatio: 0.25 },
+    super:     { label: 'Super Heavy (100%H/0%S)', hardRatio: 1.00, softRatio: 0.00 }
+  };
 
-// --------------------------------------------------------------------------
-// 4. Terrain Features (Multiplicative Stacking)
-// --------------------------------------------------------------------------
-const TERRAIN_FEATURES = {
-  Normal:     { id: 'Normal',     name: 'Normal Sector',            atkMult: 1.0,  defMult: 1.0,  vigAdd: 0,   supplyAdd: 0,  fortified: false, desc: 'Standard terrain conditions (x1.00 Atk, x1.00 Def).' },
-  Road:       { id: 'Road',       name: 'Path or Road (Non-Urban)', atkMult: 1.10, defMult: 0.95, vigAdd: 5,   supplyAdd: -1, fortified: false, desc: 'Multiplicative x1.10 Attack, x0.95 Defense, -1 Supply drain.' },
-  SmallRiver: { id: 'SmallRiver', name: 'Small River Crossing',     atkMult: 0.85, defMult: 1.15, vigAdd: -5,  supplyAdd: 1,  fortified: false, isRiver: true, desc: 'Attacker x0.85 Attack, Defender x1.15 Defense, +1 Supply drain.' },
-  LargeRiver: { id: 'LargeRiver', name: 'Large River Crossing',     atkMult: 0.70, defMult: 1.30, vigAdd: -10, supplyAdd: 2,  fortified: false, isRiver: true, desc: 'Attacker x0.70 Attack, Defender x1.30 Defense, +2 Supply drain.' },
-  Amphibious: { id: 'Amphibious', name: 'Amphibious Landing',       atkMult: 0.65, defMult: 1.35, vigAdd: -15, supplyAdd: 2,  fortified: false, isAmphib: true, desc: 'Attacker x0.65 Attack, Defender x1.35 Defense (Marines negate penalty).' },
-  Fort:       { id: 'Fort',       name: 'Fortified Strongpoint',    atkMult: 0.75, defMult: 1.45, vigAdd: 10,  supplyAdd: 0,  fortified: true,  desc: 'Attacker x0.75 Attack, Defender x1.45 Defense; Fortified position.' }
-};
+  const DEFAULT_TERRAINS = {
+    Plains:   { name: 'Plains',   infAtk: 0,   infDef: 0,  avAtk: 10,  avDef: 0,   tankAtk: 15,  tankDef: 5,   artAtk: 5,   artDef: 0,  vigMod: 5,   supplyDrain: 0, isUrban: false, openTerrain: true },
+    Forest:   { name: 'Forest',   infAtk: -5,  infDef: 15, avAtk: -15, avDef: -5,  tankAtk: -25, tankDef: -10, artAtk: -10, artDef: 5,  vigMod: -10, supplyDrain: 1, isUrban: false, openTerrain: false },
+    Hills:    { name: 'Hills',    infAtk: -10, infDef: 20, avAtk: -15, avDef: 5,   tankAtk: -20, tankDef: -5,  artAtk: 10,  artDef: 15, vigMod: 10,  supplyDrain: 1, isUrban: false, openTerrain: false },
+    Mountain: { name: 'Mountain', infAtk: -20, infDef: 35, avAtk: -35, avDef: -15, tankAtk: -50, tankDef: -25, artAtk: 15,  artDef: 20, vigMod: 15,  supplyDrain: 2, isUrban: false, openTerrain: false },
+    Jungle:   { name: 'Jungle',   infAtk: -15, infDef: 25, avAtk: -30, avDef: -15, tankAtk: -45, tankDef: -25, artAtk: -20, artDef: 0,  vigMod: -20, supplyDrain: 2, isUrban: false, openTerrain: false },
+    Marsh:    { name: 'Marsh',    infAtk: -20, infDef: 15, avAtk: -35, avDef: -20, tankAtk: -50, tankDef: -30, artAtk: -15, artDef: -10,vigMod: -5,  supplyDrain: 2, isUrban: false, openTerrain: false },
+    Desert:   { name: 'Desert',   infAtk: -10, infDef: -10,avAtk: 10,  avDef: 5,   tankAtk: 15,  tankDef: 5,   artAtk: 5,   artDef: -5, vigMod: 10,  supplyDrain: 2, isUrban: false, openTerrain: true },
+    Urban:    { name: 'Urban',    infAtk: -5,  infDef: 30, avAtk: -20, avDef: -10, tankAtk: -35, tankDef: -20, artAtk: -5,  artDef: 15, vigMod: -15, supplyDrain: 1, isUrban: true,  openTerrain: false }
+  };
 
-// --------------------------------------------------------------------------
-// 5. Weather Conditions
-// --------------------------------------------------------------------------
-const WEATHER_TYPES = {
-  Sunny:     { id: 'Sunny',     name: 'Sunny / Clear', atkMod: 0,   defMod: 0,  vigMod: 5,   airMod: 0,   supplyAdd: 0, tankMod: 5,   desc: '+5 Vigilance, +5% Tank effectiveness.' },
-  Overcast:  { id: 'Overcast',  name: 'Overcast',      atkMod: 0,   defMod: 0,  vigMod: -5,  airMod: -10, supplyAdd: 0, tankMod: 0,   desc: '-5 Vigilance, -10% Air Support effectiveness.' },
-  Windy:     { id: 'Windy',     name: 'Windy',         atkMod: -5,  defMod: 0,  vigMod: -5,  airMod: -15, supplyAdd: 0, artMod: -10,  desc: '-5% Attack, -10% Artillery accuracy, -15% Air Support.' },
-  LightRain: { id: 'LightRain', name: 'Light Rain',    atkMod: -5,  defMod: 5,  vigMod: -10, airMod: -20, supplyAdd: 1, tankMod: -5,  desc: '-5% Attack, +5% Defense, -10 Vigilance, +1 Supply drain.' },
-  HeavyRain: { id: 'HeavyRain', name: 'Heavy Rain',    atkMod: -15, defMod: 10, vigMod: -20, airMod: -50, supplyAdd: 2, tankMod: -20, desc: '-15% Attack, -20% Tank mobility, -20 Vigilance, +2 Supply drain.' },
-  Foggy:     { id: 'Foggy',     name: 'Foggy',         atkMod: -10, defMod: 10, vigMod: -30, airMod: -60, supplyAdd: 0, artMod: -20,  desc: '-30 Vigilance, -20% Artillery, -60% Air Support.' },
-  Snowy:     { id: 'Snowy',     name: 'Snowy / Frost', atkMod: -15, defMod: 15, vigMod: -15, airMod: -30, supplyAdd: 2, tankMod: -15, desc: '-15% Attack, +15% Defense, +2 Supply drain, -15% Tank attack.' },
-  HeatWaves: { id: 'HeatWaves', name: 'Heat Waves',    atkMod: -10, defMod: -5, vigMod: -10, airMod: -10, supplyAdd: 2, infMod: -10,  desc: '-10% Attack, -5% Defense, +2 Supply drain, -10% Infantry stamina.' }
-};
+  const TERRAIN_FEATURES = {
+    Normal:     { id: 'Normal',     name: 'Normal Sector',            atkMult: 1.0,  defMult: 1.0,  vigAdd: 0,   supplyAdd: 0,  fortified: false, desc: 'Standard terrain conditions (x1.00 Atk, x1.00 Def).' },
+    Road:       { id: 'Road',       name: 'Path or Road (Non-Urban)', atkMult: 1.10, defMult: 0.95, vigAdd: 5,   supplyAdd: -1, fortified: false, desc: 'Multiplicative x1.10 Attack, x0.95 Defense, -1 Supply drain.' },
+    SmallRiver: { id: 'SmallRiver', name: 'Small River Crossing',     atkMult: 0.85, defMult: 1.15, vigAdd: -5,  supplyAdd: 1,  fortified: false, isRiver: true, desc: 'Attacker x0.85 Attack, Defender x1.15 Defense, +1 Supply drain.' },
+    LargeRiver: { id: 'LargeRiver', name: 'Large River Crossing',     atkMult: 0.70, defMult: 1.30, vigAdd: -10, supplyAdd: 2,  fortified: false, isRiver: true, desc: 'Attacker x0.70 Attack, Defender x1.30 Defense, +2 Supply drain.' },
+    Amphibious: { id: 'Amphibious', name: 'Amphibious Landing',       atkMult: 0.65, defMult: 1.35, vigAdd: -15, supplyAdd: 2,  fortified: false, isAmphib: true, desc: 'Attacker x0.65 Attack, Defender x1.35 Defense (Marines negate penalty).' },
+    Fort:       { id: 'Fort',       name: 'Fortified Strongpoint',    atkMult: 0.75, defMult: 1.45, vigAdd: 10,  supplyAdd: 0,  fortified: true,  desc: 'Attacker x0.75 Attack, Defender x1.45 Defense; Fortified position.' }
+  };
+
+  const WEATHER_TYPES = {
+    Sunny:     { id: 'Sunny',     name: 'Sunny / Clear', atkMod: 0,   defMod: 0,  vigMod: 5,   airMod: 0,   supplyAdd: 0, tankMod: 5,   desc: '+5 Vigilance, +5% Tank effectiveness.' },
+    Overcast:  { id: 'Overcast',  name: 'Overcast',      atkMod: 0,   defMod: 0,  vigMod: -5,  airMod: -10, supplyAdd: 0, tankMod: 0,   desc: '-5 Vigilance, -10% Air Support effectiveness.' },
+    Windy:     { id: 'Windy',     name: 'Windy',         atkMod: -5,  defMod: 0,  vigMod: -5,  airMod: -15, supplyAdd: 0, artMod: -10,  desc: '-5% Attack, -10% Artillery accuracy, -15% Air Support.' },
+    LightRain: { id: 'LightRain', name: 'Light Rain',    atkMod: -5,  defMod: 5,  vigMod: -10, airMod: -20, supplyAdd: 1, tankMod: -5,  desc: '-5% Attack, +5% Defense, -10 Vigilance, +1 Supply drain.' },
+    HeavyRain: { id: 'HeavyRain', name: 'Heavy Rain',    atkMod: -15, defMod: 10, vigMod: -20, airMod: -50, supplyAdd: 2, tankMod: -20, desc: '-15% Attack, -20% Tank mobility, -20 Vigilance, +2 Supply drain.' },
+    Foggy:     { id: 'Foggy',     name: 'Foggy',         atkMod: -10, defMod: 10, vigMod: -30, airMod: -60, supplyAdd: 0, artMod: -20,  desc: '-30 Vigilance, -20% Artillery, -60% Air Support.' },
+    Snowy:     { id: 'Snowy',     name: 'Snowy / Frost', atkMod: -15, defMod: 15, vigMod: -15, airMod: -30, supplyAdd: 2, tankMod: -15, desc: '-15% Attack, +15% Defense, +2 Supply drain, -15% Tank attack.' },
+    HeatWaves: { id: 'HeatWaves', name: 'Heat Waves',    atkMod: -10, defMod: -5, vigMod: -10, airMod: -10, supplyAdd: 2, infMod: -10,  desc: '-10% Attack, -5% Defense, +2 Supply drain, -10% Infantry stamina.' }
+  };
+
+  // Expose on IronDivision.Data
+  ID.Data = {
+    EXPERIENCE_TIERS,
+    ARMOR_TIERS,
+    DEFAULT_TERRAINS,
+    TERRAIN_FEATURES,
+    WEATHER_TYPES,
+    DEFAULT_TRAITS: typeof DEFAULT_TRAITS !== 'undefined' ? DEFAULT_TRAITS : [],
+    DEFAULT_COMMANDER_TRAITS: typeof DEFAULT_COMMANDER_TRAITS !== 'undefined' ? DEFAULT_COMMANDER_TRAITS : [],
+    DEFAULT_COMMANDERS: typeof DEFAULT_COMMANDERS !== 'undefined' ? DEFAULT_COMMANDERS : [],
+    TACTICS_DB: typeof TACTICS_DB !== 'undefined' ? TACTICS_DB : [],
+    DEFAULT_UNIT_TEMPLATES: typeof DEFAULT_UNIT_TEMPLATES !== 'undefined' ? DEFAULT_UNIT_TEMPLATES : []
+  };
+
+})(window.IronDivision);
 
 // --------------------------------------------------------------------------
 // 6. Built-In Traits & Support Modules (Rebalanced Roster)

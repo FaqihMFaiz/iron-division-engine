@@ -2,53 +2,54 @@
    IRON DIVISION ENGINE — SYSTEM ERROR LOGGING & DIAGNOSTICS
    File: js/diagnostics.js
    ========================================================================== */
+window.IronDivision = window.IronDivision || {};
 
-/**
- * Logs a system-level error to console, combat log, and runtime diagnostic history.
- * @param {string} context - The operational subsystem where the error occurred
- * @param {Error|string} error - The caught exception or error message
- */
-function logSystemError(context, error) {
-  console.error(`[Iron Division Diagnostic: ${context}]`, error);
-  const errMsg = error ? (error.message || String(error)) : 'Unknown exception';
-  const logText = `🚨 [CRITICAL ERROR: ${context}] ${errMsg} (Check Developer Console for full stack trace)`;
+(function (ID) {
+  'use strict';
 
-  // Add to active combat log if logger exists
-  if (typeof addLog === 'function') {
-    addLog('error', logText);
+  function logSystemError(context, error) {
+    console.error(`[Iron Division Diagnostic: ${context}]`, error);
+    const errMsg = error ? (error.message || String(error)) : 'Unknown exception';
+    const logText = `🚨 [CRITICAL ERROR: ${context}] ${errMsg} (Check Developer Console for full stack trace)`;
+
+    if (ID.Helpers && typeof ID.Helpers.addLog === 'function') {
+      ID.Helpers.addLog('error', logText);
+    }
+
+    if (ID.Helpers && typeof ID.Helpers.showToast === 'function') {
+      ID.Helpers.showToast(`🚨 System Error: ${errMsg}`, 'danger');
+    }
+
+    if (ID.state) {
+      if (!ID.state.systemErrors) ID.state.systemErrors = [];
+      ID.state.systemErrors.push({
+        time: new Date().toLocaleTimeString(),
+        round: ID.state.battle ? ID.state.battle.round : 0,
+        context: context,
+        message: errMsg,
+        stack: error?.stack || 'No stack trace available'
+      });
+    }
   }
 
-  // Display user-facing notification if toast engine is loaded
-  if (typeof showToast === 'function') {
-    showToast(`🚨 System Error: ${errMsg}`, 'danger');
-  }
+  // Global uncaught exception traps
+  window.onerror = function (msg, url, lineNo, columnNo, error) {
+    logSystemError(`Uncaught Script Error (Line ${lineNo}:${columnNo})`, error || msg);
+    if (ID.UI && typeof ID.UI.renderCombatLog === 'function') {
+      ID.UI.renderCombatLog();
+    }
+    return false;
+  };
 
-  // Append to persistent runtime diagnostic registry
-  if (typeof state !== 'undefined') {
-    if (!state.systemErrors) state.systemErrors = [];
-    state.systemErrors.push({
-      time: new Date().toLocaleTimeString(),
-      round: state.battle ? state.battle.round : 0,
-      context: context,
-      message: errMsg,
-      stack: error?.stack || 'No stack trace available'
-    });
-  }
-}
+  window.addEventListener('unhandledrejection', function (event) {
+    logSystemError('Unhandled Promise Rejection', event.reason);
+    if (ID.UI && typeof ID.UI.renderCombatLog === 'function') {
+      ID.UI.renderCombatLog();
+    }
+  });
 
-// Global uncaught exception listener (catches syntax/runtime crashes in browser)
-window.onerror = function (msg, url, lineNo, columnNo, error) {
-  logSystemError(`Uncaught Script Error (Line ${lineNo}:${columnNo})`, error || msg);
-  if (typeof renderCombatLog === 'function') {
-    renderCombatLog();
-  }
-  return false;
-};
+  ID.Diagnostics = {
+    logSystemError
+  };
 
-// Global unhandled promise rejection listener
-window.addEventListener('unhandledrejection', function (event) {
-  logSystemError('Unhandled Promise Rejection', event.reason);
-  if (typeof renderCombatLog === 'function') {
-    renderCombatLog();
-  }
-});
+})(window.IronDivision);

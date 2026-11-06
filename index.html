@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HOI4-Style TTRPG Combat Simulator</title>
+  <title>Iron Division — Operational TTRPG Combat Engine</title>
   
-  <!-- Tailwind CSS & Google Fonts -->
+  <!-- Tailwind CSS v3 CDN & Google Fonts -->
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   
@@ -63,7 +63,6 @@
         <button type="button" onclick="switchTab('tactics')" id="tab-tactics" class="tab-btn px-3 py-1.5 rounded-md text-xs sm:text-sm font-semibold text-slate-300 hover:text-white transition">
           📋 Tactics Guide
         </button>
-        <!-- NEW SIMULATION GUIDE TAB (TOP RIGHT) -->
         <button type="button" onclick="switchTab('guide')" id="tab-guide" class="tab-btn px-3 py-1.5 rounded-md text-xs sm:text-sm font-bold text-amber-300 hover:text-amber-200 transition border border-amber-500/40 bg-amber-500/10">
           📖 Simulation Guide
         </button>
@@ -570,7 +569,7 @@
               </select>
             </div>
 
-            <!-- 4 CORE COMMANDER ATTRIBUTES (+2.5% each) -->
+            <!-- 4 Core Commander Attributes (+2.5% each) -->
             <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-2">
               <div class="font-mono text-xs text-amber-300 font-bold uppercase tracking-wider mb-1">Commander Attributes (+2.5% per Level)</div>
               <div class="grid grid-cols-2 gap-2.5">
@@ -633,7 +632,7 @@
       </div>
     </section>
 
-    <!-- ==================== ROBUST COMMANDER TRAIT CUSTOMIZER MODAL ==================== -->
+    <!-- ==================== COMMANDER TRAIT CUSTOMIZER MODAL ==================== -->
     <div id="cmd-trait-modal" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm hidden items-center justify-center p-3 sm:p-4">
       <div class="bg-slate-900 border border-amber-500/50 rounded-2xl max-w-3xl w-full max-h-[92vh] overflow-y-auto custom-scroll p-4 sm:p-5 shadow-2xl space-y-3">
         <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
@@ -951,28 +950,28 @@
   <!-- MODULAR SCRIPTS (Loaded in Strict Dependency Order)                       -->
   <!-- ========================================================================= -->
 
-  <!-- 1. Diagnostic Boundary (Catches all browser & script errors) -->
+  <!-- 1. Diagnostic Boundary (Global exception traps & error logging) -->
   <script src="js/diagnostics.js"></script>
 
   <!-- 2. Static Game Databases (Tactics, Traits, Commanders, Terrains, Templates) -->
   <script src="js/data.js"></script>
 
-  <!-- 3. Math & Core Rule Helpers (Dice, Cover, Distance, Grazing, Overwatch) -->
+  <!-- 3. Math & Core Rule Helpers (Polyhedral dice, spatial distance, cover, grazing) -->
   <script src="js/engine-helpers.js"></script>
 
-  <!-- 4. Combat Simulation Loop (Targeting, Piercing, Clashes, DOW, Rallying) -->
+  <!-- 4. Combat Simulation Loop (Clashes, piercing, DOW, rally engine) -->
   <script src="js/engine-combat.js"></script>
 
-  <!-- 5. Operational Pursuit & Salvage (Overruns, Towing, Equipment Spoils) -->
+  <!-- 5. Operational Pursuit & Salvage (Overruns, towing, Beutepanzers) -->
   <script src="js/engine-pursuit.js"></script>
 
-  <!-- 6. UI & DOM Rendering -->
+  <!-- 6. UI & DOM Rendering (Granular updates, telemetry, modals) -->
   <script src="js/ui-render.js"></script>
 
-  <!-- 7. Simulation Field Guide -->
+  <!-- 7. Simulation Field Guide (Reference manual generator) -->
   <script src="js/guide.js"></script>
 
-  <!-- 8. Application State & Controller Bootstrap -->
+  <!-- 8. Application State & Controller Bootstrap (Namespace state, facade bridge) -->
   <script src="js/app.js"></script>
 
 </body>

@@ -2,92 +2,96 @@
    IRON DIVISION ENGINE — MATHEMATICAL & OPERATIONAL HELPERS
    File: js/engine-helpers.js
    ========================================================================== */
+window.IronDivision = window.IronDivision || {};
 
-// --------------------------------------------------------------------------
-// 1. Core Dice & Storage Utilities
-// --------------------------------------------------------------------------
+(function (ID) {
+  'use strict';
 
-/**
- * Rolls a polyhedral die with the specified number of sides.
- * @param {number} sides - Number of sides (e.g., 6, 8, 10, 12, 16, 20, 50, 70, 100)
- * @returns {number} Random integer between 1 and sides (or 0 if sides <= 0)
- */
-function rollDie(sides) {
-  if (sides <= 0) return 0;
-  return Math.floor(Math.random() * sides) + 1;
-}
-
-/**
- * Clamps a numerical value between a minimum and maximum bound.
- */
-function clamp(val, min, max) {
-  return Math.max(min, Math.min(max, val));
-}
-
-/**
- * Appends a classified message to the combat resolution log.
- * @param {'rolls'|'damage'|'armor'|'support'|'error'} category - Log classification
- * @param {string} text - The log entry narrative
- */
-function addLog(category, text) {
-  // If state is not initialized yet during boot, log to console safely
-  if (typeof state === 'undefined' || !state || !state.battle) {
-    console.log(`[Combat Log Standby (${category})]`, text);
-    return;
+  function rollDie(sides) {
+    if (sides <= 0) return 0;
+    return Math.floor(Math.random() * sides) + 1;
   }
-  if (!state.battle.logs) state.battle.logs = [];
-  state.battle.logs.push({
-    id: Date.now() + Math.random(),
-    round: state.battle.round || 1,
-    category: category,
-    text: text
-  });
-}
 
-/**
- * Displays an ephemeral toast banner in the bottom-right viewport.
- */
-function showToast(msg, type = 'info') {
-  const container = document.getElementById('toast-container');
-  if (!container) return;
-  const el = document.createElement('div');
-  const colors = {
-    info: 'bg-slate-800 border-slate-600 text-slate-100',
-    success: 'bg-emerald-950 border-emerald-500/60 text-emerald-200',
-    warn: 'bg-amber-950 border-amber-500/60 text-amber-200',
-    danger: 'bg-rose-950 border-rose-500/60 text-rose-200'
+  function clamp(val, min, max) {
+    return Math.max(min, Math.min(max, val));
+  }
+
+  function addLog(category, text) {
+    if (!ID.state || !ID.state.battle) {
+      console.log(`[Combat Log Standby (${category})]`, text);
+      return;
+    }
+    if (!ID.state.battle.logs) ID.state.battle.logs = [];
+    ID.state.battle.logs.push({
+      id: Date.now() + Math.random(),
+      round: ID.state.battle.round || 1,
+      category: category,
+      text: text
+    });
+  }
+
+  function showToast(msg, type = 'info') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const el = document.createElement('div');
+    const colors = {
+      info: 'bg-slate-800 border-slate-600 text-slate-100',
+      success: 'bg-emerald-950 border-emerald-500/60 text-emerald-200',
+      warn: 'bg-amber-950 border-amber-500/60 text-amber-200',
+      danger: 'bg-rose-950 border-rose-500/60 text-rose-200'
+    };
+    el.className = `px-3.5 py-2 rounded-lg border shadow-xl text-xs font-medium transition-all ${colors[type] || colors.info}`;
+    el.textContent = msg;
+    container.appendChild(el);
+    setTimeout(() => {
+      el.style.opacity = '0';
+      setTimeout(() => el.remove(), 250);
+    }, 3200);
+  }
+
+  function safeSaveStorage(key, data) {
+    try {
+      localStorage.setItem(key, JSON.stringify(data));
+    } catch (e) {
+      // Ignore sandboxed iframe restriction exceptions
+    }
+  }
+
+  function safeLoadStorage(key, fallback) {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : fallback;
+    } catch (e) {
+      return fallback;
+    }
+  }
+
+  ID.Helpers = {
+    rollDie,
+    clamp,
+    addLog,
+    showToast,
+    safeSaveStorage,
+    safeLoadStorage,
+    // (Attach all remaining helper functions here)
+    getTerrainCoverRating,
+    getUnitMobilityClass,
+    getUnitEffectiveSpeed,
+    formatTacticModifiers,
+    getUnitMaxEntrenchmentCap,
+    getTerrainOperationalMods,
+    getBaseTerrainDistance,
+    getUnitStartingPosition,
+    isMeleeUnit,
+    getUnitEngagementRange,
+    getTotalDistance,
+    canUnitIgnoreDistance,
+    canUnitEngageTarget,
+    getDistanceTargetMultiplier,
+    calculateGrazingCasualties
   };
-  el.className = `px-3.5 py-2 rounded-lg border shadow-xl text-xs font-medium transition-all ${colors[type] || colors.info}`;
-  el.textContent = msg;
-  container.appendChild(el);
-  setTimeout(() => {
-    el.style.opacity = '0';
-    setTimeout(() => el.remove(), 250);
-  }, 3200);
-}
 
-/**
- * Safely persists JSON data to localStorage, ignoring sandboxed iframe restrictions.
- */
-function safeSaveStorage(key, data) {
-  try {
-    localStorage.setItem(key, JSON.stringify(data));
-  } catch (e) {
-    // Ignore storage errors in restricted contexts
-  }
-}
-
-/**
- * Safely loads JSON data from localStorage with fallback default.
- */
-function safeLoadStorage(key, fallback) {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
-  } catch (e) {
-    return fallback;
-  }
-}
+})(window.IronDivision);
 
 // --------------------------------------------------------------------------
 // 2. Operational, Cover & Triage Helpers
