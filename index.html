@@ -223,6 +223,16 @@
             </div>
           </div>
 
+          <!-- Tactical Horizontal Y-Axis Rangefinder (-7 BLUEFOR ... 0 ... +7 OPFOR) -->
+          <div id="battlefield-yaxis-panel" class="mil-panel p-3">
+            <div class="flex items-center justify-between text-[10px] font-mono uppercase tracking-wider border-b border-slate-800 pb-1.5">
+              <span class="text-[#8ec0e8] font-bold">◄ SIDE A (BLUEFOR)</span>
+              <span class="text-[#c8a24b] font-bold">Y-AXIS CONTACT LINE (0)</span>
+              <span class="text-[#e69894] font-bold">SIDE B (OPFOR) ►</span>
+            </div>
+            <div id="yaxis-line-container"></div>
+          </div>
+
           <!-- Combat Sitrep Ticker -->
           <div class="mil-panel p-3.5 flex-1 flex flex-col min-h-[500px]">
             <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-2">
@@ -242,7 +252,7 @@
                 <button type="button" onclick="clearCombatLog()" class="mil-btn text-[10px] text-[#939e91] hover:text-white px-2 py-0.5 bg-[#1c221d] border border-[#2f3831]">CLR</button>
               </div>
             </div>
-            <div id="combat-log-container" class="flex-1 overflow-y-auto custom-scroll space-y-1.5 font-mono text-xs pr-1 max-h-[560px]"></div>
+            <div id="combat-log-container" class="paper-sitrep-sheet flex-1 overflow-y-auto custom-scroll space-y-1 font-mono text-xs max-h-[520px]"></div>
           </div>
         </div>
 
@@ -932,27 +942,27 @@
   </main>
 
   <!-- ==================== POST-BATTLE AAR MODAL ==================== -->
-  <div id="battle-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden items-center justify-center p-4">
-    <div class="bg-slate-900 border border-amber-500/50 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto custom-scroll p-5 shadow-2xl">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+  <div id="battle-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="tradoc-aar-card max-w-4xl w-full max-h-[90vh] overflow-y-auto custom-scroll p-5 sm:p-6">
+      <div class="tradoc-aar-header flex items-start justify-between gap-3">
         <div>
-          <span class="text-[11px] font-mono uppercase text-[#c8a24b] tracking-widest">FORM DA-774 // AFTER-ACTION REPORT &amp; PURSUIT RESOLUTION</span>
-          <h2 id="modal-winner-title" class="text-lg sm:text-xl font-extrabold font-mono uppercase tracking-wide text-white mt-0.5">OPERATION CONCLUDED</h2>
+          <span class="text-[10.5px] font-mono font-bold uppercase text-[#2f3b2e] tracking-widest block">HEADQUARTERS // FORM DA-774 — OFFICIAL AFTER-ACTION REPORT</span>
+          <h2 id="modal-winner-title" class="text-lg sm:text-xl font-black font-mono uppercase tracking-wide text-[#141815] mt-0.5">OPERATION CONCLUDED</h2>
         </div>
-        <button type="button" onclick="closeBattleSummaryModal()" class="mil-btn w-8 h-8 bg-[#1c221d] hover:bg-[#272f29] border border-[#3a453c] text-slate-300 font-bold">X</button>
+        <button type="button" onclick="closeBattleSummaryModal()" class="mil-btn w-8 h-8 bg-[#262f25] hover:bg-[#384637] border border-[#181c19] text-[#f4f1e6] font-bold shrink-0">X</button>
       </div>
 
       <div id="modal-report-body" class="space-y-4 text-xs sm:text-sm"></div>
 
-      <div class="mt-5 pt-3 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2">
-        <button type="button" onclick="exportAARToPDF()" id="btn-export-aar-pdf" class="mil-btn px-4 py-2 bg-[#234563] hover:bg-[#2d587d] border border-[#4e8ec4] text-[#d9ecfc] font-bold text-xs">
+      <div class="mt-5 pt-3 border-t-2 border-[#2f3b2e] flex flex-wrap items-center justify-between gap-2">
+        <button type="button" onclick="exportAARToPDF()" id="btn-export-aar-pdf" class="mil-btn px-4 py-2 bg-[#234563] hover:bg-[#1b364e] border border-[#132638] text-[#f4f1e6] font-bold text-xs">
           DOWNLOAD OFFICIAL AAR (PDF)
         </button>
         <div class="flex flex-wrap gap-2">
-          <button type="button" onclick="resetCurrentBattle(); closeBattleSummaryModal();" class="mil-btn px-4 py-2 bg-[#c8a24b] hover:bg-[#d8b45c] border border-[#e0be6a] text-[#0d100d] font-bold text-xs">
+          <button type="button" onclick="resetCurrentBattle(); closeBattleSummaryModal();" class="mil-btn px-4 py-2 bg-[#2f3b2e] hover:bg-[#3e4e3d] border border-[#181c19] text-[#f4f1e6] font-bold text-xs">
             RESET OPERATION
           </button>
-          <button type="button" onclick="closeBattleSummaryModal()" class="mil-btn px-4 py-2 bg-[#1c221d] hover:bg-[#272f29] border border-[#3a453c] text-[#dde3da] font-semibold text-xs">
+          <button type="button" onclick="closeBattleSummaryModal()" class="mil-btn px-4 py-2 bg-[#e5dfce] hover:bg-[#d8d0ba] border border-[#8f8773] text-[#181c19] font-bold text-xs">
             CLOSE
           </button>
         </div>

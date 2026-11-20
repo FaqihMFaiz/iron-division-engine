@@ -538,15 +538,137 @@ window.IronDivision = window.IronDivision || {};
       else if (bonusB > 0) pill.textContent = `Side B Outnumbers (+${bonusB}% Atk/Def)`;
       else pill.textContent = `Balanced Forces (No Outnumber Bonus)`;
     }
+
+    renderYAxisTracker();
   }
 
-  // Combat Log Sitrep Channel Registry
+  /**
+   * Renders the horizontal tactical Y-Axis line (-7 Side A ... 0 ... +7 Side B)
+   * with reversed-triangle markers (Blue = A, Red = B, Purple = Both),
+   * themed hover tooltips, and an off-line rear-staging strip for routed units.
+   */
+  function renderYAxisTracker() {
+    const state = ID.state;
+    const container = document.getElementById('yaxis-line-container');
+    if (!container || !state || !state.battle) return;
+
+    const C = getCombat();
+    const isAct = C.isUnitActive || (u => !u.defeated && !u.isRallying && u.personnel > 0);
+
+    // Map coordinates [-7 .. +7] -> { A: [], B: [] }
+    const coordMap = {};
+    const rearA = [];
+    const rearB = [];
+
+    (state.battle.sideA.units || []).forEach(u => {
+      if (u.defeated) return;
+      if (u.isRallying) {
+        rearA.push(u);
+        return;
+      }
+      if (!isAct(u)) return;
+      const rawPos = (u.pos !== undefined && u.pos !== null) ? u.pos : (H.getUnitStartingPosition ? H.getUnitStartingPosition(u) : 2);
+      const axisCoord = H.clamp(-rawPos, -7, 7);
+      if (!coordMap[axisCoord]) coordMap[axisCoord] = { A: [], B: [] };
+      coordMap[axisCoord].A.push(u);
+    });
+
+    (state.battle.sideB.units || []).forEach(u => {
+      if (u.defeated) return;
+      if (u.isRallying) {
+        rearB.push(u);
+        return;
+      }
+      if (!isAct(u)) return;
+      const rawPos = (u.pos !== undefined && u.pos !== null) ? u.pos : (H.getUnitStartingPosition ? H.getUnitStartingPosition(u) : 2);
+      const axisCoord = H.clamp(rawPos, -7, 7);
+      if (!coordMap[axisCoord]) coordMap[axisCoord] = { A: [], B: [] };
+      coordMap[axisCoord].B.push(u);
+    });
+
+    // Build ticks from -7 to +7
+    const ticksHtml = [];
+    for (let x = -7; x <= 7; x++) {
+      const pct = ((x + 7) / 14) * 100;
+      const label = x === 0 ? '0' : String(Math.abs(x));
+      ticksHtml.push(`
+        <div class="yaxis-tick ${x === 0 ? 'yaxis-tick-zero' : ''}" style="left: ${pct.toFixed(4)}%;">
+          <span class="yaxis-tick-label">${label}</span>
+        </div>
+      `);
+    }
+
+    // Build reversed triangle markers with custom military hover tooltips
+    const markersHtml = Object.keys(coordMap).map(key => {
+      const x = Number(key);
+      const bucket = coordMap[x];
+      const hasA = bucket.A.length > 0;
+      const hasB = bucket.B.length > 0;
+      const pct = ((x + 7) / 14) * 100;
+
+      const triClass = (hasA && hasB) ? 'yaxis-tri-both' : (hasA ? 'yaxis-tri-a' : 'yaxis-tri-b');
+      const edgeClass = x <= -5 ? 'edge-left' : (x >= 5 ? 'edge-right' : '');
+      const totalCount = bucket.A.length + bucket.B.length;
+      const coordTitle = x === 0
+        ? 'COORD 0 // CONTACT LINE'
+        : (x < 0 ? `COORD A-${Math.abs(x)} // SECTOR LEFT` : `COORD B-${x} // SECTOR RIGHT`);
+
+      const rowsA = bucket.A.map(u => `
+        <div class="yaxis-tooltip-item">
+          <span class="text-[#8ec0e8] font-bold truncate">[A] ${escapeHtml(u.name)}</span>
+          <span class="text-[#939e91] shrink-0">${u.personnel}</span>
+        </div>
+      `).join('');
+
+      const rowsB = bucket.B.map(u => `
+        <div class="yaxis-tooltip-item">
+          <span class="text-[#e69894] font-bold truncate">[B] ${escapeHtml(u.name)}</span>
+          <span class="text-[#939e91] shrink-0">${u.personnel}</span>
+        </div>
+      `).join('');
+
+      return `
+        <div class="yaxis-marker ${edgeClass}" style="left: ${pct.toFixed(4)}%;" tabindex="0">
+          ${totalCount > 1 ? `<span class="yaxis-count-dot">${totalCount}</span>` : ''}
+          <div class="yaxis-tri ${triClass}"></div>
+          <div class="yaxis-tooltip">
+            <div class="yaxis-tooltip-head">${coordTitle}${hasA && hasB ? ' [CONTESTED]' : ''}</div>
+            ${rowsA}
+            ${rowsB}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    const rearHtml = (rearA.length > 0 || rearB.length > 0) ? `
+      <div class="yaxis-rear-strip">
+        <div class="text-[#8ec0e8]">
+          ${rearA.length > 0 ? `OFF-LINE REAR [A]: ${rearA.map(u => `${escapeHtml(u.name)} (${u.rallyRoundsLeft}rd)`).join(', ')}` : ''}
+        </div>
+        <div class="text-[#e69894] ml-auto text-right">
+          ${rearB.length > 0 ? `OFF-LINE REAR [B]: ${rearB.map(u => `${escapeHtml(u.name)} (${u.rallyRoundsLeft}rd)`).join(', ')}` : ''}
+        </div>
+      </div>
+    ` : '';
+
+    container.innerHTML = `
+      <div class="yaxis-track-wrap">
+        <div class="yaxis-line">
+          ${ticksHtml.join('')}
+          ${markersHtml}
+        </div>
+      </div>
+      ${rearHtml}
+    `;
+  }
+
+  // Combat Log Paper Sitrep Channel Registry
   const colorMap = {
-    rolls: 'sitrep-row text-[#d2d9d0] border-l-[#5c6b5d] bg-[#101411]',
-    damage: 'sitrep-row text-[#ecc5c3] border-l-[#c2524c] bg-[#1c1212]',
-    armor: 'sitrep-row text-[#e8d5a8] border-l-[#c8a24b] bg-[#1a1710]',
-    support: 'sitrep-row text-[#bfd8ec] border-l-[#4e8ec4] bg-[#11171c]',
-    error: 'sitrep-row text-white border-l-[#ef4444] bg-[#3b1515] font-bold'
+    rolls: 'paper-sitrep-row paper-sitrep-rolls',
+    damage: 'paper-sitrep-row paper-sitrep-damage',
+    armor: 'paper-sitrep-row paper-sitrep-armor',
+    support: 'paper-sitrep-row paper-sitrep-support',
+    error: 'paper-sitrep-row paper-sitrep-error'
   };
 
   function renderCombatLog() {
@@ -559,7 +681,7 @@ window.IronDivision = window.IronDivision || {};
 
     if (!state.battle.logs || state.battle.logs.length === 0) {
       uiState.renderedLogIds.clear();
-      container.innerHTML = `<div class="text-slate-500 text-center py-12">No combat events recorded yet. Click "▶ Next Round" or "⏩ Auto Battle" to start simulation.</div>`;
+      container.innerHTML = `<div class="text-[#5c645a] text-center py-12 font-mono text-[11px] uppercase">NO SITREP ENTRIES RECORDED // EXECUTE STEP RD OR AUTO-OPS TO BEGIN</div>`;
       return;
     }
 
@@ -567,7 +689,7 @@ window.IronDivision = window.IronDivision || {};
     const filtered = logsToRender.filter(item => filterVal === 'all' || item.category === filterVal);
 
     if (filtered.length === 0) {
-      container.innerHTML = `<div class="text-slate-500 text-center py-12">No events match the selected filter.</div>`;
+      container.innerHTML = `<div class="text-[#5c645a] text-center py-12 font-mono text-[11px] uppercase">NO ENTRIES MATCH SELECTED CHANNEL FILTER</div>`;
       return;
     }
 
@@ -575,8 +697,8 @@ window.IronDivision = window.IronDivision || {};
       const isNew = !uiState.renderedLogIds.has(item.id);
       if (isNew) uiState.renderedLogIds.add(item.id);
       return `
-      <div class="${isNew ? 'log-entry-new ' : ''}px-2.5 py-1.5 ${colorMap[item.category] || colorMap.rolls}">
-        <span class="text-[#6e7a6d] mr-1.5 font-bold">[RD-${String(item.round).padStart(2, '0')}]</span>${escapeHtml(item.text)}
+      <div class="${isNew ? 'log-entry-new ' : ''}${colorMap[item.category] || colorMap.rolls}">
+        <span class="text-[#4a5448] mr-1.5 font-bold">[RD-${String(item.round).padStart(2, '0')}]</span>${escapeHtml(item.text)}
       </div>`;
     }).join('');
 
@@ -1095,56 +1217,56 @@ window.IronDivision = window.IronDivision || {};
       titleEl.textContent = `LIVE OPERATIONAL SITREP — RD-${String(rep.rounds).padStart(2, '0')} (IN PROGRESS)`;
     }
 
-    function renderSideReportTable(sideLabel, commanderName, units = [], sum, colorClass) {
+    function renderSideReportTable(sideLabel, commanderName, units = [], sum, accentColor) {
       return `
-        <div class="bg-slate-950 border border-slate-800 p-3 space-y-2">
-          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
+        <div class="tradoc-aar-section space-y-2">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-[#b5ad98] pb-1.5">
             <div>
-              <h4 class="font-bold font-mono text-xs uppercase tracking-wider ${colorClass}">${sideLabel}</h4>
-              <div class="text-[10px] font-mono text-[#7c877b]">COMMANDER: ${escapeHtml(stripEmojisForAAR(commanderName))}</div>
+              <h4 class="font-extrabold font-mono text-xs uppercase tracking-wider" style="color: ${accentColor};">${sideLabel}</h4>
+              <div class="text-[10px] font-mono text-[#4a5448]">COMMANDING OFFICER: ${escapeHtml(stripEmojisForAAR(commanderName))}</div>
             </div>
-            <div class="text-[10.5px] font-mono text-[#c8d1c7]">
+            <div class="text-[10.5px] font-mono text-[#1c211d]">
               EFF: <b>${sum.rem.toLocaleString()}</b>/${sum.start.toLocaleString()} |
-              KIA: <b class="text-[#d46a64]">${sum.dead.toLocaleString()}</b> |
-              WIA: <b class="text-[#c8a24b]">${sum.wounded.toLocaleString()}</b> |
-              POW: <b class="text-[#b8a2d9]">${sum.captured.toLocaleString()}</b> |
-              ESC: <b class="text-[#7cb377]">${sum.escaped.toLocaleString()}</b>
+              KIA: <b class="text-[#8b2e2a]">${sum.dead.toLocaleString()}</b> |
+              WIA: <b class="text-[#7c5b1e]">${sum.wounded.toLocaleString()}</b> |
+              POW: <b class="text-[#563d7c]">${sum.captured.toLocaleString()}</b> |
+              ESC: <b class="text-[#2f5e2c]">${sum.escaped.toLocaleString()}</b>
             </div>
           </div>
           <div class="overflow-x-auto">
-            <table class="w-full text-left text-[11px] font-mono border-collapse">
+            <table class="tradoc-aar-table">
               <thead>
-                <tr class="text-[#7c877b] border-b border-slate-800 uppercase text-[10px]">
-                  <th class="py-1.5 px-2">Formation</th>
-                  <th class="py-1.5 px-2">Status</th>
-                  <th class="py-1.5 px-2 text-right">Strength</th>
-                  <th class="py-1.5 px-2 text-right">Org</th>
-                  <th class="py-1.5 px-2 text-right">KIA / WIA</th>
-                  <th class="py-1.5 px-2 text-right">POW / ESC</th>
-                  <th class="py-1.5 px-2 text-right">AFV (Act/Rec/Tow/KO)</th>
+                <tr>
+                  <th>Formation</th>
+                  <th>Status</th>
+                  <th class="text-right">Strength</th>
+                  <th class="text-right">Org</th>
+                  <th class="text-right">KIA / WIA</th>
+                  <th class="text-right">POW / ESC</th>
+                  <th class="text-right">AFV (Act/Rec/Tow/KO)</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-[#1e241f]">
+              <tbody>
                 ${units.map(u => `
                   <tr>
-                    <td class="py-1.5 px-2 font-semibold text-[#e7ece4]">${escapeHtml(stripEmojisForAAR(u.name))}</td>
-                    <td class="py-1.5 px-2 uppercase text-[10px] ${u.defeated ? 'text-[#d46a64]' : (u.isRallying ? 'text-[#c8a24b]' : 'text-[#7cb377]')}">${u.defeated ? 'OUT OF ACTION' : (u.isRallying ? 'REAR RALLY' : 'OPERATIONAL')}</td>
-                    <td class="py-1.5 px-2 text-right">${u.personnel}/${u.maxPersonnel}</td>
-                    <td class="py-1.5 px-2 text-right">${(u.isMonster || u.isZombie) ? 'N/A' : `${u.org}/${u.maxOrg}`}</td>
-                    <td class="py-1.5 px-2 text-right text-[#d46a64]">${u.dead} / <span class="text-[#c8a24b]">${u.wounded}</span></td>
-                    <td class="py-1.5 px-2 text-right text-[#b8a2d9]">${u.captured || 0} / <span class="text-[#7cb377]">${u.escaped || 0}</span></td>
-                    <td class="py-1.5 px-2 text-right">${(u.originalMaxArmor > 0 || u.maxArmor > 0) ? `${u.armor}/${u.recoverableArmor}/${u.towedArmor || 0}/${u.unrecoverableArmor}` : '—'}</td>
+                    <td class="font-bold">${escapeHtml(stripEmojisForAAR(u.name))}</td>
+                    <td class="uppercase text-[10px] font-bold ${u.defeated ? 'text-[#8b2e2a]' : (u.isRallying ? 'text-[#7c5b1e]' : 'text-[#2f5e2c]')}">${u.defeated ? 'OUT OF ACTION' : (u.isRallying ? 'REAR RALLY' : 'OPERATIONAL')}</td>
+                    <td class="text-right">${u.personnel}/${u.maxPersonnel}</td>
+                    <td class="text-right">${(u.isMonster || u.isZombie) ? 'N/A' : `${u.org}/${u.maxOrg}`}</td>
+                    <td class="text-right"><span class="text-[#8b2e2a] font-bold">${u.dead}</span> / <span class="text-[#7c5b1e]">${u.wounded}</span></td>
+                    <td class="text-right"><span class="text-[#563d7c]">${u.captured || 0}</span> / <span class="text-[#2f5e2c]">${u.escaped || 0}</span></td>
+                    <td class="text-right">${(u.originalMaxArmor > 0 || u.maxArmor > 0) ? `${u.armor}/${u.recoverableArmor}/${u.towedArmor || 0}/${u.unrecoverableArmor}` : '—'}</td>
                   </tr>
                 `).join('')}
               </tbody>
               <tfoot>
-                <tr class="border-t border-[#364038] bg-[#111512] font-bold text-[#e7ece4]">
-                  <td class="py-1.5 px-2 uppercase" colspan="2">TOTALS (${units.length - sum.defeatedCount}/${units.length} ACTIVE)</td>
-                  <td class="py-1.5 px-2 text-right">${sum.rem}/${sum.start}</td>
-                  <td class="py-1.5 px-2 text-right">—</td>
-                  <td class="py-1.5 px-2 text-right text-[#d46a64]">${sum.dead} / <span class="text-[#c8a24b]">${sum.wounded}</span></td>
-                  <td class="py-1.5 px-2 text-right text-[#b8a2d9]">${sum.captured} / <span class="text-[#7cb377]">${sum.escaped}</span></td>
-                  <td class="py-1.5 px-2 text-right">${sum.armorStart > 0 ? `${sum.armorRem}/${sum.armorRec}/${sum.armorTowed}/${sum.armorUnrec}` : '—'}</td>
+                <tr>
+                  <td class="uppercase" colspan="2">TOTALS (${units.length - sum.defeatedCount}/${units.length} ACTIVE)</td>
+                  <td class="text-right">${sum.rem}/${sum.start}</td>
+                  <td class="text-right">—</td>
+                  <td class="text-right">${sum.dead} / ${sum.wounded}</td>
+                  <td class="text-right">${sum.captured} / ${sum.escaped}</td>
+                  <td class="text-right">${sum.armorStart > 0 ? `${sum.armorRem}/${sum.armorRec}/${sum.armorTowed}/${sum.armorUnrec}` : '—'}</td>
                 </tr>
               </tfoot>
             </table>
@@ -1154,63 +1276,63 @@ window.IronDivision = window.IronDivision || {};
     }
 
     bodyEl.innerHTML = `
-      <!-- Official Military AAR Header Block -->
-      <div class="bg-slate-950 border border-[#364038] p-3 font-mono text-[11px] space-y-2">
-        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-[#29312b] pb-1.5 text-[10px] text-[#7c877b] uppercase tracking-widest">
+      <!-- Official Military Paper AAR Header Block -->
+      <div class="tradoc-aar-section font-mono text-[11px] space-y-2">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-[#b5ad98] pb-1.5 text-[10px] text-[#3a4439] uppercase tracking-widest font-bold">
           <span>UNCLASSIFIED // SIMULATION OPS</span>
           <span>DOC-REF: ${escapeHtml(rep.docId || 'AAR-ID-001')} | DTG: ${dtg}</span>
         </div>
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-          <div class="p-2 bg-[#111512] border border-[#242c26]">
-            <span class="text-[#6e7a6d] block text-[9px] uppercase">1. OUTCOME / DEGREE</span>
-            <span class="font-bold text-xs uppercase ${isOver && rep.winner !== 'Draw' ? victoryInfo.badgeClass.split(' ')[0] : 'text-[#c8a24b]'}">${isOver ? (rep.winner === 'Draw' ? 'DRAW' : `SIDE ${rep.winner} — ${victoryInfo.shortLabel}`) : 'IN PROGRESS'}</span>
+          <div class="tradoc-aar-kpi">
+            <span class="text-[#4a5448] block text-[9px] font-bold uppercase">1. OUTCOME / DEGREE</span>
+            <span class="font-extrabold text-xs uppercase text-[#141815]">${isOver ? (rep.winner === 'Draw' ? 'DRAW' : `SIDE ${rep.winner} — ${victoryInfo.shortLabel}`) : 'IN PROGRESS'}</span>
           </div>
-          <div class="p-2 bg-[#111512] border border-[#242c26]">
-            <span class="text-[#6e7a6d] block text-[9px] uppercase">2. DURATION / RATIO</span>
-            <span class="font-bold text-[#e7ece4] text-xs">RD-${String(rep.rounds).padStart(2, '0')} | EXCH ${exchangeRatio}</span>
+          <div class="tradoc-aar-kpi">
+            <span class="text-[#4a5448] block text-[9px] font-bold uppercase">2. DURATION / RATIO</span>
+            <span class="font-extrabold text-[#141815] text-xs">RD-${String(rep.rounds).padStart(2, '0')} | EXCH ${exchangeRatio}</span>
           </div>
-          <div class="p-2 bg-[#111512] border border-[#242c26]">
-            <span class="text-[#6e7a6d] block text-[9px] uppercase">3. SECTOR / FEATURE</span>
-            <span class="font-bold text-[#8ec0e8] text-xs uppercase">${escapeHtml(rep.terrain)} (${escapeHtml(rep.feature)})</span>
+          <div class="tradoc-aar-kpi">
+            <span class="text-[#4a5448] block text-[9px] font-bold uppercase">3. SECTOR / FEATURE</span>
+            <span class="font-extrabold text-[#1d3f5c] text-xs uppercase">${escapeHtml(rep.terrain)} (${escapeHtml(rep.feature)})</span>
           </div>
-          <div class="p-2 bg-[#111512] border border-[#242c26]">
-            <span class="text-[#6e7a6d] block text-[9px] uppercase">4. METEO / POSTURE</span>
-            <span class="font-bold text-[#89b884] text-xs uppercase">${escapeHtml(rep.weather)} | SIDE ${rep.theatreAttackerSide || 'A'} ATK</span>
+          <div class="tradoc-aar-kpi">
+            <span class="text-[#4a5448] block text-[9px] font-bold uppercase">4. METEO / POSTURE</span>
+            <span class="font-extrabold text-[#2f5e2c] text-xs uppercase">${escapeHtml(rep.weather)} | SIDE ${rep.theatreAttackerSide || 'A'} ATK</span>
           </div>
         </div>
       </div>
 
       <!-- Section 2: ORBAT & Casualty Ledgers -->
-      ${renderSideReportTable('SECTION 2A // BLUEFOR (SIDE A — VANGUARD)', rep.commanderA || 'Autonomous Staff', rep.sideA, sumA, 'text-[#8ec0e8]')}
-      ${renderSideReportTable('SECTION 2B // OPFOR (SIDE B — OPPOSING)', rep.commanderB || 'Autonomous Staff', rep.sideB, sumB, 'text-[#e69894]')}
+      ${renderSideReportTable('SECTION 2A // BLUEFOR (SIDE A — VANGUARD)', rep.commanderA || 'Autonomous Staff', rep.sideA, sumA, '#1d486e')}
+      ${renderSideReportTable('SECTION 2B // OPFOR (SIDE B — OPPOSING)', rep.commanderB || 'Autonomous Staff', rep.sideB, sumB, '#8b2e2a')}
 
       <!-- Section 3: Battlefield Salvage & Captured Equipment -->
       ${isOver && salvage && salvage.abandoned > 0 ? `
-        <div class="bg-[#1a1710] border border-[#7d6731] p-3 text-xs font-mono space-y-1.5">
-          <span class="font-bold text-[#c8a24b] uppercase tracking-wider block">SECTION 3 // BATTLEFIELD SALVAGE &amp; CAPTURED MATERIAL</span>
-          <div class="text-[#dde3da]">Side ${rep.winner} field recovery units secured <b>${salvage.abandoned}</b> abandoned enemy combat hulls:</div>
-          <div class="grid grid-cols-3 gap-2 pt-1 text-[11px]">
-            <div class="p-2 bg-[#111512] border border-[#2e3730]">IMPRESSED (BEUTEPANZER): <b class="text-[#7cb377]">${salvage.impressed}</b></div>
-            <div class="p-2 bg-[#111512] border border-[#2e3730]">STRIPPED FOR DEPOT: <b class="text-[#8ec0e8]">+${salvage.supplyScrapped} SUP</b></div>
-            <div class="p-2 bg-[#111512] border border-[#2e3730]">SCUTTLED / WRITE-OFF: <b class="text-[#d46a64]">${salvage.scuttled}</b></div>
+        <div class="tradoc-aar-salvage text-xs font-mono space-y-1.5">
+          <span class="font-extrabold text-[#5e4411] uppercase tracking-wider block">SECTION 3 // BATTLEFIELD SALVAGE &amp; CAPTURED MATERIAL</span>
+          <div>Side ${rep.winner} field recovery units secured <b>${salvage.abandoned}</b> abandoned enemy combat hulls:</div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-[11px]">
+            <div class="p-2 bg-[#faf8f2] border border-[#bfb7a2]">IMPRESSED (BEUTEPANZER): <b class="text-[#2f5e2c]">${salvage.impressed}</b></div>
+            <div class="p-2 bg-[#faf8f2] border border-[#bfb7a2]">STRIPPED FOR DEPOT: <b class="text-[#1d486e]">+${salvage.supplyScrapped} SUP</b></div>
+            <div class="p-2 bg-[#faf8f2] border border-[#bfb7a2]">SCUTTLED / WRITE-OFF: <b class="text-[#8b2e2a]">${salvage.scuttled}</b></div>
           </div>
         </div>
       ` : ''}
 
       <!-- Section 4: Key Engagement Chronology -->
       ${chronology.length > 0 ? `
-        <div class="bg-slate-950 border border-slate-800 p-3 space-y-1.5 font-mono">
-          <span class="font-bold text-[#c8a24b] uppercase tracking-wider text-xs block">SECTION 4 // SIGNIFICANT ENGAGEMENT CHRONOLOGY</span>
-          <div class="max-h-36 overflow-y-auto custom-scroll space-y-1 text-[10.5px] text-[#c8d1c7]">
-            ${chronology.map(l => `<div class="border-l-2 border-[#3c473e] pl-2"><span class="text-[#6e7a6d]">[RD-${String(l.round).padStart(2, '0')}]</span> ${escapeHtml(stripEmojisForAAR(l.text))}</div>`).join('')}
+        <div class="tradoc-aar-section font-mono">
+          <span class="tradoc-aar-sec-title">SECTION 4 // SIGNIFICANT ENGAGEMENT CHRONOLOGY</span>
+          <div class="max-h-36 overflow-y-auto custom-scroll space-y-1 text-[10.5px] text-[#232924]">
+            ${chronology.map(l => `<div class="border-l-2 border-[#2f3b2e] pl-2"><span class="text-[#4a5448] font-bold">[RD-${String(l.round).padStart(2, '0')}]</span> ${escapeHtml(stripEmojisForAAR(l.text))}</div>`).join('')}
           </div>
         </div>
       ` : ''}
 
       <!-- Section 5: Staff Assessment -->
-      <div class="bg-slate-950 border border-slate-800 p-3 space-y-1.5 font-mono">
-        <span class="font-bold text-[#c8a24b] uppercase tracking-wider text-xs block">SECTION 5 // G-3 OPERATIONAL ASSESSMENT</span>
-        <ul class="list-disc list-inside space-y-1 text-[11px] text-[#c8d1c7]">
+      <div class="tradoc-aar-section font-mono">
+        <span class="tradoc-aar-sec-title">SECTION 5 // G-3 OPERATIONAL ASSESSMENT</span>
+        <ul class="list-disc list-inside space-y-1 text-[11px] text-[#232924]">
           ${assessments.map(n => `<li>${escapeHtml(stripEmojisForAAR(n))}</li>`).join('')}
         </ul>
       </div>
@@ -1584,6 +1706,7 @@ window.IronDivision = window.IronDivision || {};
     renderSideUnitCards,
     renderSidePanel,
     renderCenterTelemetry,
+    renderYAxisTracker,
     renderCombatLog,
     renderCombatRound,
     renderBattlefield,

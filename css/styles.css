@@ -754,3 +754,366 @@ body.mil-ui ::selection {
     padding-right: 16px;
   }
 }
+
+
+/* --------------------------------------------------------------------------
+   9. Paper-Like Military Sitrep Log & Form DA-774 AAR Modal
+   -------------------------------------------------------------------------- */
+.paper-sitrep-sheet {
+  background-color: #f4f1e6 !important;
+  color: #181c19 !important;
+  border: 1px solid #bfb7a2 !important;
+  border-left: 4px solid #2f3b2e !important;
+  padding: 6px;
+}
+
+.paper-sitrep-sheet.custom-scroll {
+  scrollbar-color: #9e9682 #e7e1d0;
+}
+
+.paper-sitrep-sheet.custom-scroll::-webkit-scrollbar-track {
+  background: #e7e1d0;
+}
+
+.paper-sitrep-sheet.custom-scroll::-webkit-scrollbar-thumb {
+  background: #9e9682;
+}
+
+.paper-sitrep-row {
+  background-color: #faf8f2;
+  color: #1a201b;
+  border-top: 1px solid #d9d2bf;
+  border-right: 1px solid #d9d2bf;
+  border-bottom: 1px solid #d9d2bf;
+  border-left-width: 3px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  line-height: 1.45;
+  padding: 5px 8px;
+}
+
+.paper-sitrep-rolls {
+  border-left-color: #3a4738;
+  background-color: #faf8f2;
+}
+
+.paper-sitrep-damage {
+  border-left-color: #8b2e2a;
+  background-color: #f7ecea;
+  color: #2b1413;
+}
+
+.paper-sitrep-armor {
+  border-left-color: #8a621c;
+  background-color: #f6f0df;
+  color: #261d0d;
+}
+
+.paper-sitrep-support {
+  border-left-color: #234563;
+  background-color: #eaf0f5;
+  color: #132230;
+}
+
+.paper-sitrep-error {
+  border-left-color: #b91c1c;
+  background-color: #fee2e2;
+  color: #7f1d1d;
+  font-weight: 700;
+}
+
+/* Paper-Like AAR Modal (Form DA-774) */
+#battle-modal .tradoc-aar-card {
+  background-color: #f4f1e6 !important;
+  color: #181c19 !important;
+  border: 2px solid #2f3b2e !important;
+  border-left: 6px solid #2f3b2e !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.65) !important;
+}
+
+#battle-modal .tradoc-aar-card.custom-scroll {
+  scrollbar-color: #9e9682 #e7e1d0;
+}
+
+#battle-modal .tradoc-aar-card.custom-scroll::-webkit-scrollbar-track {
+  background: #e7e1d0;
+}
+
+#battle-modal .tradoc-aar-card.custom-scroll::-webkit-scrollbar-thumb {
+  background: #9e9682;
+}
+
+#battle-modal .tradoc-aar-header {
+  border-bottom: 3px double #181c19 !important;
+  padding-bottom: 10px;
+  margin-bottom: 14px;
+}
+
+#battle-modal .tradoc-aar-section {
+  background-color: #faf8f2 !important;
+  border: 1px solid #bfb7a2 !important;
+  padding: 12px;
+  color: #181c19 !important;
+}
+
+#battle-modal .tradoc-aar-sec-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  background-color: #262f25;
+  color: #f4f1e6;
+  padding: 4px 8px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+#battle-modal .tradoc-aar-kpi {
+  background-color: #efeadd !important;
+  border: 1px solid #bfb7a2 !important;
+  padding: 7px 9px;
+}
+
+#battle-modal .tradoc-aar-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  background-color: #faf8f2;
+}
+
+#battle-modal .tradoc-aar-table th {
+  background-color: #262f25;
+  color: #f4f1e6;
+  border: 1px solid #262f25;
+  padding: 5px 7px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+#battle-modal .tradoc-aar-table td {
+  border: 1px solid #c4bca8;
+  padding: 5px 7px;
+  color: #181c19;
+}
+
+#battle-modal .tradoc-aar-table tbody tr:nth-child(even) {
+  background-color: #efeadd;
+}
+
+#battle-modal .tradoc-aar-table tbody tr:hover {
+  background-color: #e4decb !important;
+}
+
+#battle-modal .tradoc-aar-table tfoot td {
+  background-color: #e5dfce;
+  font-weight: 700;
+  border-top: 2px solid #262f25;
+}
+
+#battle-modal .tradoc-aar-salvage {
+  background-color: #f3ecda !important;
+  border: 1px solid #9c8244 !important;
+  border-left: 4px solid #7c5b1e !important;
+  padding: 10px 12px;
+  color: #1f1b10 !important;
+}
+
+/* --------------------------------------------------------------------------
+   10. Tactical Horizontal Y-Axis Rangefinder (-7 Side A ... 0 ... +7 Side B)
+   -------------------------------------------------------------------------- */
+.yaxis-track-wrap {
+  position: relative;
+  padding: 28px 6px 22px 6px;
+  margin-top: 4px;
+  user-select: none;
+}
+
+.yaxis-line {
+  position: relative;
+  height: 2px;
+  background-color: #465347;
+  width: 100%;
+}
+
+.yaxis-line::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 50%;
+  height: 2px;
+  background-color: rgba(78, 142, 196, 0.55);
+}
+
+.yaxis-line::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 50%;
+  height: 2px;
+  background-color: rgba(194, 82, 76, 0.55);
+}
+
+.yaxis-tick {
+  position: absolute;
+  top: -4px;
+  width: 1px;
+  height: 10px;
+  background-color: #536154;
+  transform: translateX(-50%);
+}
+
+.yaxis-tick-zero {
+  top: -7px;
+  height: 16px;
+  width: 2px;
+  background-color: #c8a24b;
+}
+
+.yaxis-tick-label {
+  position: absolute;
+  top: 11px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: #7c877b;
+  white-space: nowrap;
+}
+
+.yaxis-tick-zero .yaxis-tick-label {
+  color: #c8a24b;
+  font-weight: 800;
+  top: 14px;
+}
+
+/* Reversed Triangle Unit Marker */
+.yaxis-marker {
+  position: absolute;
+  top: -22px;
+  transform: translateX(-50%);
+  cursor: pointer;
+  z-index: 10;
+  padding: 4px 4px 2px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.yaxis-marker:hover,
+.yaxis-marker:focus-within {
+  z-index: 40;
+}
+
+.yaxis-tri {
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-top: 12px solid #4e8ec4;
+  transition: transform 0.12s ease, filter 0.12s ease;
+}
+
+.yaxis-marker:hover .yaxis-tri {
+  transform: scale(1.22);
+  filter: brightness(1.18);
+}
+
+.yaxis-tri-a {
+  border-top-color: #4e8ec4;
+}
+
+.yaxis-tri-b {
+  border-top-color: #c2524c;
+}
+
+.yaxis-tri-both {
+  border-top-color: #9b5de5;
+}
+
+.yaxis-count-dot {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  line-height: 1;
+  font-weight: 800;
+  color: #e7ece4;
+  margin-bottom: 1px;
+}
+
+/* Custom Military UI Hover Tooltip */
+.yaxis-tooltip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 175px;
+  max-width: 245px;
+  background-color: #141815;
+  border: 1px solid #c8a24b;
+  border-top: 3px solid #c8a24b;
+  color: #e7ece4;
+  padding: 6px 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  line-height: 1.4;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.72);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.14s ease, transform 0.14s ease;
+  text-align: left;
+  white-space: normal;
+}
+
+.yaxis-marker.edge-left .yaxis-tooltip {
+  left: 0;
+  transform: translateX(0);
+}
+
+.yaxis-marker.edge-right .yaxis-tooltip {
+  left: auto;
+  right: 0;
+  transform: translateX(0);
+}
+
+.yaxis-marker:hover .yaxis-tooltip,
+.yaxis-marker:focus-within .yaxis-tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+.yaxis-tooltip-head {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #c8a24b;
+  border-bottom: 1px solid #2b342c;
+  padding-bottom: 3px;
+  margin-bottom: 4px;
+}
+
+.yaxis-tooltip-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 1px 0;
+}
+
+.yaxis-rear-strip {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px dashed #2e3730;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px;
+  color: #939e91;
+}
