@@ -42,8 +42,18 @@ window.IronDivision = window.IronDivision || {};
       sideB_cmdHash: '',
       sideA_tplHash: '',
       sideB_tplHash: ''
-    }
+    },
+    renderedLogIds: new Set()
   };
+
+  function escapeHtml(str) {
+    return String(str ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
 
   // Safe accessor shortcuts for combat and data functions
   function getCombat() { return ID.Combat || {}; }
@@ -396,17 +406,25 @@ window.IronDivision = window.IronDivision || {};
       return `
         <div class="bg-slate-950 border ${u.defeated ? 'border-rose-900/70 opacity-60' : 'border-slate-800'} rounded-lg p-3 space-y-2 transition">
           <div class="flex items-start justify-between gap-2">
-            <div>
-              <div class="flex items-center gap-1.5 flex-wrap">
-                <span class="font-bold text-xs sm:text-sm text-white">${u.name}</span>
-                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-amber-300">${u.experience}</span>
-                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800">${u.category.toUpperCase()}</span>
-              </div>
-              <div class="text-[11px] font-mono text-slate-400 mt-0.5">
-                Soft: <b class="text-slate-200">${u.softAttack}</b> | Hard: <b class="text-slate-200">${u.hardAttack}</b> | Def: <b class="text-slate-200">${u.defense}</b> | Pierce: <b class="text-sky-300">${u.piercing}</b> | Hardness: <b class="text-amber-300">${u.hardness}</b> | Pur/Ret: <b class="text-purple-300">${purBonus >= 0 ? '+' : ''}${purBonus}/${retBonus >= 0 ? '+' : ''}${retBonus}</b> | TV: <b class="text-emerald-300">${tv}</b> | ⛏ <b class="text-amber-300">Entrenched: Lvl ${u.entrenchmentLevel || 0}/${entrenchCap}</b> | 📍 <b class="text-cyan-300" title="Y-Axis Coordinate: ${side === 'A' ? '+' : '-'}${unitPos}">Dist: ${unitPos}</b> | 🎯 <b class="${inRangeNow ? 'text-emerald-400' : 'text-amber-400'}" title="Max Engagement Range: ≤${unitRange} Total Distance">Range: ≤${unitRange}${closestEnemyDist !== null ? ` (Enemy: ${closestEnemyDist})` : ''}</b>
-              </div>
+            <div class="flex items-center gap-1.5 flex-wrap min-w-0">
+              <span class="font-bold text-xs sm:text-sm text-white truncate">${escapeHtml(u.name)}</span>
+              <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-amber-300">${escapeHtml(u.experience)}</span>
+              <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800">${escapeHtml(u.category.toUpperCase())}</span>
             </div>
-            <button type="button" onclick="removeUnitFromSide('${side}', '${u.instanceId}')" class="text-slate-500 hover:text-rose-400 text-xs px-1.5 py-0.5 rounded" title="Remove unit">✕</button>
+            <button type="button" onclick="removeUnitFromSide('${side}', '${u.instanceId}')" class="text-slate-500 hover:text-rose-400 text-xs px-1.5 py-0.5 rounded shrink-0" title="Remove unit">✕</button>
+          </div>
+
+          <div class="unit-stat-grid">
+            <div class="unit-stat-cell" title="Soft Attack"><span class="unit-stat-label">Soft</span><span class="unit-stat-val">${u.softAttack}</span></div>
+            <div class="unit-stat-cell" title="Hard Attack"><span class="unit-stat-label">Hard</span><span class="unit-stat-val">${u.hardAttack}</span></div>
+            <div class="unit-stat-cell" title="Defense"><span class="unit-stat-label">Def</span><span class="unit-stat-val">${u.defense}</span></div>
+            <div class="unit-stat-cell" title="Armor Piercing"><span class="unit-stat-label">Pierce</span><span class="unit-stat-val text-sky-300">${u.piercing}</span></div>
+            <div class="unit-stat-cell" title="Armor Hardness"><span class="unit-stat-label">Hrdn</span><span class="unit-stat-val text-amber-300">${u.hardness}</span></div>
+            <div class="unit-stat-cell" title="Pursuit / Retreat Modifier"><span class="unit-stat-label">Pur/Ret</span><span class="unit-stat-val text-purple-300">${purBonus >= 0 ? '+' : ''}${purBonus}/${retBonus >= 0 ? '+' : ''}${retBonus}</span></div>
+            <div class="unit-stat-cell" title="Target Value"><span class="unit-stat-label">TV</span><span class="unit-stat-val text-emerald-300">${tv}</span></div>
+            <div class="unit-stat-cell" title="Entrenchment Level / Max Cap"><span class="unit-stat-label">Dig-In</span><span class="unit-stat-val text-amber-300">${u.entrenchmentLevel || 0}/${entrenchCap}</span></div>
+            <div class="unit-stat-cell" title="Y-Axis Coordinate: ${side === 'A' ? '+' : '-'}${unitPos}"><span class="unit-stat-label">Dist</span><span class="unit-stat-val text-cyan-300">${unitPos}</span></div>
+            <div class="unit-stat-cell" title="Max Engagement Range: ≤${unitRange} Total Distance${closestEnemyDist !== null ? ` (Closest Enemy: ${closestEnemyDist})` : ''}"><span class="unit-stat-label">Range</span><span class="unit-stat-val ${inRangeNow ? 'text-emerald-400' : 'text-amber-400'}">≤${unitRange}${closestEnemyDist !== null ? `/${closestEnemyDist}` : ''}</span></div>
           </div>
 
           ${u.defeated ? `<div class="text-[11px] font-mono text-rose-400 bg-rose-950/50 border border-rose-800/50 px-2 py-1 rounded">🏳 DEFEATED: ${u.defeatReason}</div>` : ''}
@@ -540,6 +558,7 @@ window.IronDivision = window.IronDivision || {};
     const filterVal = filterEl ? filterEl.value : 'all';
 
     if (!state.battle.logs || state.battle.logs.length === 0) {
+      uiState.renderedLogIds.clear();
       container.innerHTML = `<div class="text-slate-500 text-center py-12">No combat events recorded yet. Click "▶ Next Round" or "⏩ Auto Battle" to start simulation.</div>`;
       return;
     }
@@ -552,11 +571,20 @@ window.IronDivision = window.IronDivision || {};
       return;
     }
 
-    container.innerHTML = filtered.slice().reverse().map(item => `
-      <div class="px-2.5 py-1.5 rounded border text-[11px] leading-relaxed ${colorMap[item.category] || colorMap.rolls}">
-        <span class="text-slate-500 mr-1">[R${item.round}]</span> ${item.text}
-      </div>
-    `).join('');
+    container.innerHTML = filtered.slice().reverse().map(item => {
+      const isNew = !uiState.renderedLogIds.has(item.id);
+      if (isNew) uiState.renderedLogIds.add(item.id);
+      return `
+      <div class="${isNew ? 'log-entry-new ' : ''}px-2.5 py-1.5 rounded border text-[11px] leading-relaxed ${colorMap[item.category] || colorMap.rolls}">
+        <span class="text-slate-500 mr-1">[R${item.round}]</span> ${escapeHtml(item.text)}
+      </div>`;
+    }).join('');
+
+    // Keep renderedLogIds bounded when logs grow large
+    if (uiState.renderedLogIds.size > 400) {
+      const activeIds = new Set(logsToRender.map(l => l.id));
+      uiState.renderedLogIds = activeIds;
+    }
   }
 
   /**
