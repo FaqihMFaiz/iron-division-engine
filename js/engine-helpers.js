@@ -365,6 +365,59 @@ window.IronDivision = window.IronDivision || {};
     };
   }
 
+
+  // --------------------------------------------------------------------------
+  // 5. Custom Inline Military & NATO APP-6 SVG Icon Registry
+  // --------------------------------------------------------------------------
+
+  const MIL_SVGS = {
+    infantry: '<svg class="mil-svg-icon" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="1" y="1" width="14" height="10"/><path d="M1 1l14 10M15 1L1 11"/></svg>',
+    tank: '<svg class="mil-svg-icon" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="1" y="1" width="14" height="10"/><rect x="3.5" y="3.5" width="9" height="5" rx="2.5"/></svg>',
+    armored_vehicle: '<svg class="mil-svg-icon" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="1" y="1" width="14" height="10"/><path d="M1 1l14 10M15 1L1 11"/><rect x="4" y="3.5" width="8" height="5" rx="2.5"/></svg>',
+    artillery: '<svg class="mil-svg-icon" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="1" y="1" width="14" height="10"/><circle cx="8" cy="6" r="2.2" fill="currentColor"/></svg>',
+    clash: '<svg class="mil-svg-icon" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 12L12 2M12 12L2 2M9 2h3v3M5 2H2v3"/></svg>',
+    armor: '<svg class="mil-svg-icon" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M7 1.5L12 3.5v4c0 2.6-2.1 4.4-5 5-2.9-.6-5-2.4-5-5v-4L7 1.5z"/><path d="M4.5 7h5"/></svg>',
+    recon: '<svg class="mil-svg-icon" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="M7 1v2.2M7 10.8V13M1 7h2.2M10.8 7H13"/></svg>',
+    damage: '<svg class="mil-svg-icon" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M7 1.5L12.5 7 7 12.5 1.5 7 7 1.5z"/><path d="M5 5l4 4M9 5L5 9"/></svg>',
+    medic: '<svg class="mil-svg-icon" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="1.5" y="1.5" width="11" height="11"/><path d="M7 4v6M4 7h6"/></svg>',
+    org: '<svg class="mil-svg-icon" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 10.5h10M3 7.5h8M4.5 4.5h5"/></svg>',
+    rally: '<svg class="mil-svg-icon" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 12.5v-11h8l-2 3 2 3H3"/></svg>',
+    supply: '<svg class="mil-svg-icon" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="1.5" y="3" width="11" height="8.5"/><path d="M1.5 6h11M5.5 3v8.5"/></svg>',
+    fire_support: '<svg class="mil-svg-icon" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="7" cy="7" r="2.2"/><path d="M7 1.5v2M7 10.5v2M1.5 7h2M10.5 7h2M3 3l1.5 1.5M9.5 9.5L11 11M11 3L9.5 4.5M4.5 9.5L3 11"/></svg>',
+    air: '<svg class="mil-svg-icon" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M7 1.5v11M2 8l5-2.5L12 8M4.5 11.5L7 10.5l2.5 1"/></svg>',
+    salvage: '<svg class="mil-svg-icon" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M10.8 3.2a2.8 2.8 0 0 0-3.7 3.7L2.6 11.4l1.4 1.4 4.5-4.5a2.8 2.8 0 0 0 3.7-3.7l-1.5 1.5-1.4-1.4 1.5-1.5z"/></svg>',
+    victory: '<svg class="mil-svg-icon" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><polygon points="7,1.5 8.7,5 12.5,5.5 9.7,8.1 10.4,12 7,10.1 3.6,12 4.3,8.1 1.5,5.5 5.3,5"/></svg>',
+    alert: '<svg class="mil-svg-icon" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><polygon points="7,1.5 13,12 1,12"/><path d="M7 5.5v3M7 10.3v.4"/></svg>'
+  };
+
+  function getIcon(name) {
+    return MIL_SVGS[name] || MIL_SVGS.clash;
+  }
+
+  function getIconForLog(category, text) {
+    const t = String(text || '');
+    if (category === 'error' || t.includes('[SYS]')) return MIL_SVGS.alert;
+    if (t.includes('[VIC]') || t.includes('[END]') || t.includes('BATTLE OVER')) return MIL_SVGS.victory;
+    if (t.includes('[FS-AIR]') || t.includes('[AA]') || t.includes('[Air Support]')) return MIL_SVGS.air;
+    if (t.includes('[FS-ART]') || t.includes('[FS-MORT]') || t.includes('Barrage') || t.includes('Mortar')) return MIL_SVGS.fire_support;
+    if (t.includes('[MED]') || t.includes('Casualty Recovery') || t.includes('Died of Wounds') || t.includes('Field Medic')) return MIL_SVGS.medic;
+    if (t.includes('[SLV]') || t.includes('[REP]') || t.includes('Salvage') || t.includes('Recovery Tractors')) return MIL_SVGS.salvage;
+    if (t.includes('[RLY]') || t.includes('[ROUT]') || t.includes('Rally') || t.includes('Rout')) return MIL_SVGS.rally;
+    if (t.includes('[REC]') || t.includes('[TGT]') || t.includes('Vigilance')) return MIL_SVGS.recon;
+    if (t.includes('[LOG]') || t.includes('[DEPOT]') || t.includes('Supply') || t.includes('Depot')) return MIL_SVGS.supply;
+    if (t.includes('[ORG]') || t.includes('[ORG+]') || t.includes('[ORG-]')) return MIL_SVGS.org;
+    if (category === 'armor' || t.includes('[AP]') || t.includes('[AFV]')) return MIL_SVGS.armor;
+    if (category === 'damage' || t.includes('[CAS]') || t.includes('[KIA]')) return MIL_SVGS.damage;
+    if (category === 'support') return MIL_SVGS.supply;
+    return MIL_SVGS.clash;
+  }
+
+  ID.Icons = {
+    SVGS: MIL_SVGS,
+    get: getIcon,
+    getForLog: getIconForLog
+  };
+
   // --------------------------------------------------------------------------
   // Expose on IronDivision.Helpers
   // --------------------------------------------------------------------------

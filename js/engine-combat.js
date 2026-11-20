@@ -194,20 +194,20 @@ window.IronDivision = window.IronDivision || {};
       u.escaped = (u.escaped || 0) + scatteredCount;
       u.personnel = retainedCount;
       u.ralliedPersonnel = retainedCount;
-      H.addLog('damage', `🏃 [Rout & Scatter] ${u.name} broke (${reason})! ${scatteredCount} troops scattered and escaped the battlefield; ${retainedCount} disciplined soldiers fall back to regroup (${u.rallyRoundsLeft} rds to rally).`);
+      H.addLog('damage', `[MOV] [Rout & Scatter] ${u.name} broke (${reason})! ${scatteredCount} troops scattered and escaped the battlefield; ${retainedCount} disciplined soldiers fall back to regroup (${u.rallyRoundsLeft} rds to rally).`);
     } else {
       u.ralliedPersonnel = u.personnel;
-      H.addLog('damage', `🏳 [Rout & Fallback] ${u.name} broke (${reason})! Surviving ${u.personnel} troops fall back in order to regroup (${u.rallyRoundsLeft} rds to rally).`);
+      H.addLog('damage', `[ROUT] [Rout & Fallback] ${u.name} broke (${reason})! Surviving ${u.personnel} troops fall back in order to regroup (${u.rallyRoundsLeft} rds to rally).`);
     }
 
     if (u.originalMaxArmor > 0) {
       if (u.armor <= 0) {
         u.isDismounted = true;
         u.maxArmor = 0;
-        H.addLog('armor', `🚜 [Dismounted Rout] ${u.name} has 0 operational armor remaining; surviving crews fall back on foot.`);
+        H.addLog('armor', `[AFV] [Dismounted Rout] ${u.name} has 0 operational armor remaining; surviving crews fall back on foot.`);
       } else {
         u.isDismounted = false;
-        H.addLog('armor', `🚜 [Armor Tactical Fallback] ${u.name} withdraws to the rear with its ${u.armor} active combat vehicles to reorganize.`);
+        H.addLog('armor', `[AFV] [Armor Tactical Fallback] ${u.name} withdraws to the rear with its ${u.armor} active combat vehicles to reorganize.`);
       }
     }
 
@@ -222,7 +222,7 @@ window.IronDivision = window.IronDivision || {};
       u.personnel = 0;
       u.defeated = true;
       u.defeatReason = 'All personnel eliminated';
-      H.addLog('damage', `💀 [${u.side}] ${u.name} has lost all active personnel and is wiped out!`);
+      H.addLog('damage', `[KIA] [${u.side}] ${u.name} has lost all active personnel and is wiped out!`);
       return true;
     }
 
@@ -236,7 +236,7 @@ window.IronDivision = window.IronDivision || {};
       } else {
         u.defeated = true;
         u.defeatReason = 'All combat-ready armor destroyed/disabled';
-        H.addLog('armor', `🔥 [${u.side}] ${u.name} has 0 combat-ready armor remaining and is defeated!`);
+        H.addLog('armor', `[BRK] [${u.side}] ${u.name} has 0 combat-ready armor remaining and is defeated!`);
         return true;
       }
     }
@@ -255,13 +255,13 @@ window.IronDivision = window.IronDivision || {};
         } else {
           u.defeated = true;
           u.defeatReason = 'Organization broke (Permanently routed)';
-          H.addLog('damage', `🏳 [${u.side}] ${u.name} reached 0 Organization! Cohesion broke and the unit is permanently routed!`);
+          H.addLog('damage', `[ROUT] [${u.side}] ${u.name} reached 0 Organization! Cohesion broke and the unit is permanently routed!`);
           return true;
         }
       } else {
         if (u.unbreakableRoundsLeft === null || u.unbreakableRoundsLeft === undefined) {
           u.unbreakableRoundsLeft = 2;
-          H.addLog('damage', `🛡 [Unbreakable Stand] ${u.name} reached 0 Organization! Unbreakable triggers: formation can fight on for 2 rounds at -25% stats before collapsing!`);
+          H.addLog('damage', `[DEF] [Unbreakable Stand] ${u.name} reached 0 Organization! Unbreakable triggers: formation can fight on for 2 rounds at -25% stats before collapsing!`);
         }
         return false;
       }
@@ -392,7 +392,7 @@ window.IronDivision = window.IronDivision || {};
       const manual = eligible.find(t => t.id === sideState.tacticId);
       if (manual) {
         if (manual.id === 'urb_atk_barrage' && sideState.barrageCooldown > 0) {
-          H.addLog('rolls', `⚠ [Side ${side}] Street-by-Street Barrage is on cooldown (${sideState.barrageCooldown} rds left); defaulting to Attack.`);
+          H.addLog('rolls', `[WARN] [Side ${side}] Street-by-Street Barrage is on cooldown (${sideState.barrageCooldown} rds left); defaulting to Attack.`);
           return eligible[0];
         }
         return manual;
@@ -585,7 +585,7 @@ window.IronDivision = window.IronDivision || {};
       defState.nextRoundAtkMod = 0;
 
       H.addLog('rolls', `================================================`);
-      H.addLog('rolls', `⚔ ROUND ${rd} BEGINS — Side ${atkSide} Attacks | Side ${defSide} Defends`);
+      H.addLog('rolls', `[OP] ROUND ${rd} BEGINS — Side ${atkSide} Attacks | Side ${defSide} Defends`);
 
       [...ID.state.battle.sideA.units, ...ID.state.battle.sideB.units].forEach(u => {
         u.roundTemp.defMalus = 0;
@@ -609,7 +609,7 @@ window.IronDivision = window.IronDivision || {};
       atkState.lastChosenTacticId = atkTactic.id;
       defState.lastChosenTacticId = defTactic.id;
 
-      H.addLog('rolls', `📋 Tactics Selected — Side ${atkSide} (Attacker): [${atkTactic.name}${H.formatTacticModifiers(atkTactic)}] | Side ${defSide} (Defender): [${defTactic.name}${H.formatTacticModifiers(defTactic)}]`);
+      H.addLog('rolls', `[TAC] Tactics Selected — Side ${atkSide} (Attacker): [${atkTactic.name}${H.formatTacticModifiers(atkTactic)}] | Side ${defSide} (Defender): [${defTactic.name}${H.formatTacticModifiers(defTactic)}]`);
 
       if (atkState.barrageCooldown > 0 && atkTactic.id !== 'urb_atk_barrage') atkState.barrageCooldown--;
       if (defState.barrageCooldown > 0) defState.barrageCooldown--;
@@ -641,7 +641,7 @@ window.IronDivision = window.IronDivision || {};
       const defenders = defState.units.filter(isUnitActive);
 
       if (attackers.length > 0 && defenders.length === 0) {
-        H.addLog('rolls', `⏳ [Empty Frontline] Side ${defSide} has no active frontline troops (all survivors are regrouping in the rear). Side ${atkSide} holds the sector uncontested.`);
+        H.addLog('rolls', `[HOLD] [Empty Frontline] Side ${defSide} has no active frontline troops (all survivors are regrouping in the rear). Side ${atkSide} holds the sector uncontested.`);
       }
 
       const hasManeuverUnits = attackers.some(u => u.category !== 'artillery');
@@ -673,7 +673,7 @@ window.IronDivision = window.IronDivision || {};
           const newClosestDist = H.getTotalDistance(atkUnit, currentDefenders.reduce((a, b) => (a.pos < b.pos ? a : b)));
           H.addLog(
             'rolls',
-            `🏃 [Advancing on Y-Axis] ${atkUnit.name} (Max Range ≤${unitRange}) has no enemy in range and moves ${oldPos - atkUnit.pos} distance forward (Dist: ${oldPos} ➔ ${atkUnit.pos} | Closest Enemy Total Dist: ${newClosestDist}).`
+            `[MOV] [Advancing on Y-Axis] ${atkUnit.name} (Max Range ≤${unitRange}) has no enemy in range and moves ${oldPos - atkUnit.pos} distance forward (Dist: ${oldPos} -> ${atkUnit.pos} | Closest Enemy Total Dist: ${newClosestDist}).`
           );
           continue;
         }
@@ -697,7 +697,7 @@ window.IronDivision = window.IronDivision || {};
             const prevPos = atkUnit.pos;
             atkUnit.pos = Math.max(1 - targetUnit.pos, atkUnit.pos - 1);
             if (atkUnit.pos !== prevPos) {
-              H.addLog('rolls', `🗡 [Melee Rush] ${atkUnit.name} presses forward into point-blank trench range (Dist: ${prevPos} ➔ ${atkUnit.pos} | Total Dist: ${H.getTotalDistance(atkUnit, targetUnit)})!`);
+              H.addLog('rolls', `[MELEE] [Melee Rush] ${atkUnit.name} presses forward into point-blank trench range (Dist: ${prevPos} -> ${atkUnit.pos} | Total Dist: ${H.getTotalDistance(atkUnit, targetUnit)})!`);
             }
           }
         }
@@ -708,7 +708,7 @@ window.IronDivision = window.IronDivision || {};
         atkState.units.filter(isUnitActive).forEach(u => {
           if (!u.isMonster && !u.isZombie) {
             u.org = Math.max(0, u.org - atkTactic.selfEndOrgDmg);
-            H.addLog('damage', `⚡ [Shock Malus] ${u.name} suffers -${atkTactic.selfEndOrgDmg} Org at end of round.`);
+            H.addLog('damage', `[SHK] [Shock Malus] ${u.name} suffers -${atkTactic.selfEndOrgDmg} Org at end of round.`);
             checkAndMarkUnitDefeat(u);
           }
         });
@@ -726,7 +726,7 @@ window.IronDivision = window.IronDivision || {};
       // 8. Turn Progression & Phase Lock
       ID.state.battle.round++;
       if (!frontlineInRangeThisRound && defenders.length > 0) {
-        H.addLog('rolls', `⏳ [Initiative Locked] Side ${atkSide} has not yet closed into frontline engagement range — Side ${atkSide} remains in the Attacking Phase while Side ${defSide} holds in the Defending Phase!`);
+        H.addLog('rolls', `[HOLD] [Initiative Locked] Side ${atkSide} has not yet closed into frontline engagement range — Side ${atkSide} remains in the Attacking Phase while Side ${defSide} holds in the Defending Phase!`);
       } else {
         ID.state.battle.attackerSide = ID.state.battle.attackerSide === 'A' ? 'B' : 'A';
       }
@@ -813,10 +813,10 @@ window.IronDivision = window.IronDivision || {};
             sideState.supplyDepot = Math.max(0, sideState.supplyDepot - drawnSupply);
             u.supply = H.clamp(u.supply + drawnSupply, 0, u.maxSupply);
 
-            H.addLog('support', `📦 [Depot Refit] ${u.name} draws +${drawnSupply} supply from Depot (➔ Unit: ${u.supply}/${u.maxSupply} | Depot: ${sideState.supplyDepot}/${sideState.maxSupplyDepot}).`);
+            H.addLog('support', `[LOG] [Depot Refit] ${u.name} draws +${drawnSupply} supply from Depot (➔ Unit: ${u.supply}/${u.maxSupply} | Depot: ${sideState.supplyDepot}/${sideState.maxSupplyDepot}).`);
           }
 
-          H.addLog('support', `💚 [Rally Staging Area] ${u.name} reorganizes in the rear: +${totalRallyOrgGain} Org (d3[${baseD3}] + Traits[+${traitBonus}] + Terrain[+${terrainBonus}] + Cmd[+${cmdBonus}] ➔ ${u.org}/${u.maxOrg} Org).`);
+          H.addLog('support', `[ORG+] [Rally Staging Area] ${u.name} reorganizes in the rear: +${totalRallyOrgGain} Org (d3[${baseD3}] + Traits[+${traitBonus}] + Terrain[+${terrainBonus}] + Cmd[+${cmdBonus}] -> ${u.org}/${u.maxOrg} Org).`);
         }
 
         u.rallyRoundsLeft--;
@@ -873,7 +873,7 @@ window.IronDivision = window.IronDivision || {};
             u.name = u.name.includes('(Rallied)') ? u.name : `${u.name} (Rallied)`;
 
             if (u.originalMaxArmor > 0 && !u.isDismounted && u.armor > 0) {
-              H.addLog('rolls', `🚩 [Rallied to the Line] ${u.name} PASSED Rally Check (${breakdownStr} vs DC ${rallyDC})! Intact column returned with ${u.personnel} personnel, ${u.armor} active vehicles, Org: ${u.org}/${u.maxOrg}.`);
+              H.addLog('rolls', `[RLY] [Rallied to the Line] ${u.name} PASSED Rally Check (${breakdownStr} vs DC ${rallyDC})! Intact column returned with ${u.personnel} personnel, ${u.armor} active vehicles, Org: ${u.org}/${u.maxOrg}.`);
             } else {
               u.category = 'infantry';
               u.armorTier = 'unarmored';
@@ -883,12 +883,12 @@ window.IronDivision = window.IronDivision || {};
               u.hardAttack = 6;
               u.piercing = 5;
               u.hardness = 2;
-              H.addLog('rolls', `🚩 [Rallied to the Line] ${u.name} PASSED Rally Check (${breakdownStr} vs DC ${rallyDC})! Reformed as infantry with ${u.personnel} personnel, Org: ${u.org}/${u.maxOrg}.`);
+              H.addLog('rolls', `[RLY] [Rallied to the Line] ${u.name} PASSED Rally Check (${breakdownStr} vs DC ${rallyDC})! Reformed as infantry with ${u.personnel} personnel, Org: ${u.org}/${u.maxOrg}.`);
             }
           } else {
             if (manpowerRatio >= 0.60 && !isCriticalFumble) {
               u.rallyRoundsLeft = 1;
-              H.addLog('support', `⏳ [Rally Delayed] ${u.name} failed rally check (${breakdownStr} vs DC ${rallyDC}), but retaining ${Math.round(manpowerRatio * 100)}% manpower prevents collapse! NCOs re-form ranks (+1 round delay).`);
+              H.addLog('support', `[HOLD] [Rally Delayed] ${u.name} failed rally check (${breakdownStr} vs DC ${rallyDC}), but retaining ${Math.round(manpowerRatio * 100)}% manpower prevents collapse! NCOs re-form ranks (+1 round delay).`);
             } else {
               u.isRallying = false;
               u.defeated = true;
@@ -896,7 +896,7 @@ window.IronDivision = window.IronDivision || {};
                 ? 'Rally shattered by panic (Critical 1)'
                 : `Decimated formation failed to rally (${totalRallyScore} vs DC ${rallyDC})`;
 
-              H.addLog('damage', `💀 [Rally Failed] ${u.name} FAILED Rally Check (${breakdownStr} vs DC ${rallyDC}${isCriticalFumble ? ' [CRIT 1]' : ''})! Depleted force dissolved into panic and deserted.`);
+              H.addLog('damage', `[KIA] [Rally Failed] ${u.name} FAILED Rally Check (${breakdownStr} vs DC ${rallyDC}${isCriticalFumble ? ' [CRIT 1]' : ''})! Depleted force dissolved into panic and deserted.`);
             }
           }
         }
@@ -909,10 +909,10 @@ window.IronDivision = window.IronDivision || {};
 
     let sideRollD3 = 0;
     if (isUncontestedFrontline) {
-      H.addLog('support', `⏳ [Uncontested Frontline] Side ${side} holds the field with no active opposing forces. Supply drain and attrition are paused.`);
+      H.addLog('support', `[HOLD] [Uncontested Frontline] Side ${side} holds the field with no active opposing forces. Supply drain and attrition are paused.`);
     } else {
       sideRollD3 = H.rollDie(3);
-      H.addLog('support', `📦 [Side ${side} Supply] Base operational drain d3 = ${sideRollD3} | Depot Stockpile: ${sideState.supplyDepot}/${sideState.maxSupplyDepot}`);
+      H.addLog('support', `[LOG] [Side ${side} Supply] Base operational drain d3 = ${sideRollD3} | Depot Stockpile: ${sideState.supplyDepot}/${sideState.maxSupplyDepot}`);
     }
 
     // 3. Frontline Unit Loop
@@ -937,7 +937,7 @@ window.IronDivision = window.IronDivision || {};
               actualRegenDrawn = Math.min(sideState.supplyDepot, potentialRegen);
               sideState.supplyDepot = Math.max(0, sideState.supplyDepot - actualRegenDrawn);
             } else {
-              H.addLog('support', `⚠ [Depot Empty] ${u.name} has logistics traits (+${potentialRegen}), but Side ${side}'s Depot is empty! Regeneration failed.`);
+              H.addLog('support', `[WARN] [Depot Empty] ${u.name} has logistics traits (+${potentialRegen}), but Side ${side}'s Depot is empty! Regeneration failed.`);
             }
           }
 
@@ -948,23 +948,23 @@ window.IronDivision = window.IronDivision || {};
           if (u.supply <= 0) {
             const contOrgDmg = 2 + H.rollDie(4);
             u.org = Math.max(0, u.org - contOrgDmg);
-            H.addLog('support', `⚠ [${u.name}] 0% Supply! (-50% stats malus & -${contOrgDmg} continuous Org damage)`);
+            H.addLog('support', `[WARN] [${u.name}] 0% Supply! (-50% stats malus & -${contOrgDmg} continuous Org damage)`);
           } else if (supRatio < 0.20) {
             if (!u.supplyBelow20Triggered) {
               u.supplyBelow20Triggered = true;
               const oneTime = 3 + H.rollDie(10);
               u.org = Math.max(0, u.org - oneTime);
-              H.addLog('support', `⚠ [${u.name}] Supply dropped below 20%! One-time -(3+d10)=-${oneTime} Org damage & -20% malus!`);
+              H.addLog('support', `[WARN] [${u.name}] Supply dropped below 20%! One-time -(3+d10)=-${oneTime} Org damage & -20% malus!`);
             }
             const cont = 1 + H.rollDie(3);
             u.org = Math.max(0, u.org - cont);
-            H.addLog('support', `⚠ [${u.name}] Critical Supply (<20%): suffers -(1+d3)=-${cont} continuous Org damage.`);
+            H.addLog('support', `[WARN] [${u.name}] Critical Supply (<20%): suffers -(1+d3)=-${cont} continuous Org damage.`);
           } else if (supRatio < 0.50) {
             if (!u.supplyBelow50Triggered) {
               u.supplyBelow50Triggered = true;
               const oneTime = 2 + H.rollDie(6);
               u.org = Math.max(0, u.org - oneTime);
-              H.addLog('support', `⚠ [${u.name}] Supply dropped below 50%! One-time -(2+d6)=-${oneTime} Org damage & -10% malus!`);
+              H.addLog('support', `[WARN] [${u.name}] Supply dropped below 50%! One-time -(2+d6)=-${oneTime} Org damage & -10% malus!`);
             }
           }
         }
@@ -978,7 +978,7 @@ window.IronDivision = window.IronDivision || {};
           const oldLvl = u.entrenchmentLevel || 0;
           u.entrenchmentLevel = H.clamp(oldLvl + gain, 0, maxCap);
           if (u.entrenchmentLevel > oldLvl) {
-            H.addLog('support', `⛏ [Entrenching] ${u.name} digs in deeper (Entrenchment Lvl ${u.entrenchmentLevel}/${maxCap}).`);
+            H.addLog('support', `[ENTR] [Entrenching] ${u.name} digs in deeper (Entrenchment Lvl ${u.entrenchmentLevel}/${maxCap}).`);
           }
         }
 
@@ -1002,9 +1002,9 @@ window.IronDivision = window.IronDivision || {};
         if (netOrgChange !== 0) {
           u.org = H.clamp(u.org + netOrgChange, 0, u.maxOrg);
           if (netOrgChange > 0) {
-            H.addLog('support', `💚 [${u.name}] Net Organization +${netOrgChange} (Regen +${orgDelta}${isUncontestedFrontline ? ', Frontline Rest' : `, Fatigue -${fatigueLoss}`} ➔ ${u.org}/${u.maxOrg}).`);
+            H.addLog('support', `[ORG+] [${u.name}] Net Organization +${netOrgChange} (Regen +${orgDelta}${isUncontestedFrontline ? ', Frontline Rest' : `, Fatigue -${fatigueLoss}`} -> ${u.org}/${u.maxOrg}).`);
           } else {
-            H.addLog('support', `🔻 [${u.name}] Net Organization ${netOrgChange} (Regen +${orgDelta}, Combat Fatigue -${fatigueLoss} ➔ ${u.org}/${u.maxOrg}).`);
+            H.addLog('support', `[ORG-] [${u.name}] Net Organization ${netOrgChange} (Regen +${orgDelta}, Combat Fatigue -${fatigueLoss} -> ${u.org}/${u.maxOrg}).`);
           }
         }
       }
@@ -1021,12 +1021,12 @@ window.IronDivision = window.IronDivision || {};
           u.unbreakableRoundsLeft = null;
         } else if (u.unbreakableRoundsLeft !== null) {
           if (u.unbreakableRoundsLeft > 0) {
-            H.addLog('damage', `⏳ [Unbreakable Stand] ${u.name} is at 0 Org! (${u.unbreakableRoundsLeft} round${u.unbreakableRoundsLeft === 1 ? '' : 's'} remaining before collapse).`);
+            H.addLog('damage', `[HOLD] [Unbreakable Stand] ${u.name} is at 0 Org! (${u.unbreakableRoundsLeft} round${u.unbreakableRoundsLeft === 1 ? '' : 's'} remaining before collapse).`);
             u.unbreakableRoundsLeft--;
           } else {
             u.unbreakableRoundsLeft = -1;
             const minRallyPersonnel = Math.min(20, Math.max(5, Math.ceil(u.maxPersonnel * 0.15)));
-            H.addLog('damage', `💀 [Unbreakable Shattered] ${u.name}'s 2-round last stand has expired! Cohesion collapses completely!`);
+            H.addLog('damage', `[KIA] [Unbreakable Shattered] ${u.name}'s 2-round last stand has expired! Cohesion collapses completely!`);
             if (!u.ralliedOnce && u.personnel >= minRallyPersonnel) {
               triggerUnitRally(u, 'Unbreakable last stand expired');
             } else {
@@ -1043,7 +1043,7 @@ window.IronDivision = window.IronDivision || {};
         u.wounded -= healed;
         u.personnel = Math.min(u.maxPersonnel, u.personnel + healed);
         if (healed > 0) {
-          H.addLog('support', `➕ [Field Medic] ${u.name} heals ${healed} wounded back to active duty (${u.personnel} active).`);
+          H.addLog('support', `[MED] [Field Medic] ${u.name} heals ${healed} wounded back to active duty (${u.personnel} active).`);
         }
       }
 
@@ -1075,7 +1075,7 @@ window.IronDivision = window.IronDivision || {};
             dowCasualties = Math.min(u.wounded, dowCasualties);
             u.wounded -= dowCasualties;
             u.dead += dowCasualties;
-            H.addLog('damage', `🏥 [Died of Wounds] ${u.name}: ${dowCasualties} wounded succumbed to injuries (WIA ➔ KIA, Rate: ${finalRate}%).`);
+            H.addLog('damage', `[MED] [Died of Wounds] ${u.name}: ${dowCasualties} wounded succumbed to injuries (WIA -> KIA, Rate: ${finalRate}%).`);
           }
         }
       }
@@ -1100,7 +1100,7 @@ window.IronDivision = window.IronDivision || {};
             }
             u.recoverableArmor -= repaired;
             u.armor = Math.min(u.maxArmor, u.armor + repaired);
-            H.addLog('armor', `🔧 [Field Repair Crew] ${u.name} (${u.experience}, d${repDie}${extraRepairBonus ? '+1 SimpleEng' : ''}, Cost ${repSupCost} Sup) restores ${repaired} armor in-field (${u.armor} active, ${u.recoverableArmor} awaiting post-battle recovery).`);
+            H.addLog('armor', `[REP] [Field Repair Crew] ${u.name} (${u.experience}, d${repDie}${extraRepairBonus ? '+1 SimpleEng' : ''}, Cost ${repSupCost} Sup) restores ${repaired} armor in-field (${u.armor} active, ${u.recoverableArmor} awaiting post-battle recovery).`);
           }
         }
       }
@@ -1182,14 +1182,14 @@ window.IronDivision = window.IronDivision || {};
 
     H.addLog(
       'rolls',
-      `🔭 [Vigilance/Recon Roll] Side ${atkSide}: d100(${atkRoll}) + ${atkMod} = ${atkTotal} vs Side ${defSide}: d100(${defRoll}) + ${defMod} = ${defTotal} ➔ ` +
+      `[REC] [Vigilance/Recon Roll] Side ${atkSide}: d100(${atkRoll}) + ${atkMod} = ${atkTotal} vs Side ${defSide}: d100(${defRoll}) + ${defMod} = ${defTotal} -> ` +
       `Side ${attackerWonVig ? atkSide : defSide} wins by ${diff} (+${statBoost} flat Stat Boost!)`
     );
 
     if (!attackerWonVig && defTactic.id === 'urb_def_ambush' && diff >= 15) {
       const atkState = atkSide === 'A' ? ID.state.battle.sideA : ID.state.battle.sideB;
       atkState.nextRoundVigMod -= 10;
-      H.addLog('rolls', `🎯 [Urban Ambush] Side ${defSide} won Vigilance by >=15! Side ${atkSide} suffers -10 Vigilance next round.`);
+      H.addLog('rolls', `[TGT] [Urban Ambush] Side ${defSide} won Vigilance by >=15! Side ${atkSide} suffers -10 Vigilance next round.`);
     }
 
     return { atkTotal, defTotal, diff, statBoost, attackerWonVig };
@@ -1215,7 +1215,7 @@ window.IronDivision = window.IronDivision || {};
         enemyState.units.filter(isUnitActive).forEach(eu => {
           eu.roundTemp.defMalus += defRed;
         });
-        H.addLog('support', `💥 [Street-by-Street Barrage] Side ${firingSide} expends ${supCost} supply: Enemy Defense reduced by -(2+d6)=-${defRed}!`);
+        H.addLog('support', `[BRCH] [Street-by-Street Barrage] Side ${firingSide} expends ${supCost} supply: Enemy Defense reduced by -(2+d6)=-${defRed}!`);
       }
     }
 
@@ -1246,23 +1246,23 @@ window.IronDivision = window.IronDivision || {};
             orgShock = H.rollDie(3);
             target.org = Math.max(0, target.org - orgShock);
           }
-          H.addLog('support', `💣 [Mortar Plunging Fire] ${u.name} ➔ ${target.name} (Infantry): Def -${defRed}, Entrenchment DENIED, ${cas} casualties, -${orgShock} Org suppression shock!`);
+          H.addLog('support', `[FS-MORT] [Mortar Plunging Fire] ${u.name} -> ${target.name} (Infantry): Def -${defRed}, Entrenchment DENIED, ${cas} casualties, -${orgShock} Org suppression shock!`);
         } else {
           const defRed = 1 + H.rollDie(3);
           target.roundTemp.defMalus += defRed;
 
           const d6 = H.rollDie(6);
           if (d6 <= 4) {
-            H.addLog('support', `💣 [Mortar Shells on Armor] ${u.name} ➔ ${target.name}: Shrapnel bounces off armor plate. 0 Hardness reduction. Def -${defRed} (Buttoned up).`);
+            H.addLog('support', `[FS-MORT] [Mortar Shells on Armor] ${u.name} -> ${target.name}: Shrapnel bounces off armor plate. 0 Hardness reduction. Def -${defRed} (Buttoned up).`);
           } else if (d6 === 5) {
             target.roundTemp.defMalus += 5;
             const targetSideState = enemySide === 'A' ? ID.state.battle.sideA : ID.state.battle.sideB;
             targetSideState.nextRoundVigMod -= 15;
-            H.addLog('support', `🎯 [Mortar Optics Hit!] ${u.name} ➔ ${target.name}: Periscopes shattered! Def -${defRed + 5}, -15 Vigilance next round.`);
+            H.addLog('support', `[TGT] [Mortar Optics Hit!] ${u.name} -> ${target.name}: Periscopes shattered! Def -${defRed + 5}, -15 Vigilance next round.`);
           } else if (d6 === 6) {
             processArmorLossAndCrewCasualties(target, 1, 'Mortar Track Hit', 'Mortar Mobility Hit');
             target.mobilityClassPenalty = (target.mobilityClassPenalty || 0) + 2;
-            H.addLog('armor', `💥 [MORTAR TRACK BLOWN!] ${u.name} lands direct shell on ${target.name}'s suspension! 1 vehicle immobilized, -2 Mobility Class!`);
+            H.addLog('armor', `[BRCH] [MORTAR TRACK BLOWN!] ${u.name} lands direct shell on ${target.name}'s suspension! 1 vehicle immobilized, -2 Mobility Class!`);
           }
         }
       }
@@ -1295,7 +1295,7 @@ window.IronDivision = window.IronDivision || {};
         }
 
         const fireSourceLabel = u.category === 'artillery' ? 'Inherent Battery Barrage' : 'Off-Map Artillery Support';
-        H.addLog('support', `🎆 [${fireSourceLabel}] ${u.name} ➔ ${target.name} (Roll d12=${d12}, Cost ${cost} Sup, CD ${u.supportCooldowns.heavy_artillery}): Def -${defRed}, Hardness -${hardRed}, Cas: ${cas}, Armor Dis: ${armDis}`);
+        H.addLog('support', `[FS-ART] [${fireSourceLabel}] ${u.name} -> ${target.name} (Roll d12=${d12}, Cost ${cost} Sup, CD ${u.supportCooldowns.heavy_artillery}): Def -${defRed}, Hardness -${hardRed}, Cas: ${cas}, Armor Dis: ${armDis}`);
       }
 
       // Air Support & AA Interception
@@ -1311,7 +1311,7 @@ window.IronDivision = window.IronDivision || {};
             const red = 4 + H.rollDie(6);
             aaReduction += red;
             firingState.nextRoundVigMod -= 10;
-            H.addLog('support', `🛡 [AA Defense] ${eu.name} reduces airstrike by 4+d6 = ${red} and forces recon planes high (-10 Enemy Vigilance next round)!`);
+            H.addLog('support', `[DEF] [AA Defense] ${eu.name} reduces airstrike by 4+d6 = ${red} and forces recon planes high (-10 Enemy Vigilance next round)!`);
           }
           if (eu.traits.includes('aa_gun')) {
             const d8 = H.rollDie(8);
@@ -1320,13 +1320,13 @@ window.IronDivision = window.IronDivision || {};
             if (d8 >= 5 && d8 <= 7) {
               const extraCd = H.rollDie(2);
               u.supportCooldowns.air_support += extraCd;
-              H.addLog('support', `🎯 [AA Gun] ${eu.name} rolled ${d8} on d8 (-${red} dmg) and adds +${extraCd} cooldown to enemy Air Support!`);
+              H.addLog('support', `[TGT] [AA Gun] ${eu.name} rolled ${d8} on d8 (-${red} dmg) and adds +${extraCd} cooldown to enemy Air Support!`);
             } else if (d8 === 8) {
               shotDownAll = true;
               firingState.airstrikeDisabled = true;
-              H.addLog('support', `💥 [AA Gun CRITICAL 8!] ${eu.name} shot down the majority of Side ${firingSide}'s strike aircraft! Air Support banned for rest of battle!`);
+              H.addLog('support', `[BRCH] [AA Gun CRITICAL 8!] ${eu.name} shot down the majority of Side ${firingSide}'s strike aircraft! Air Support banned for rest of battle!`);
             } else {
-              H.addLog('support', `🎯 [AA Gun] ${eu.name} reduces airstrike by 4+d8 = ${red}.`);
+              H.addLog('support', `[TGT] [AA Gun] ${eu.name} reduces airstrike by 4+d8 = ${red}.`);
             }
           }
         }
@@ -1356,7 +1356,7 @@ window.IronDivision = window.IronDivision || {};
           if (cas > 0 || armDis > 0) {
             applySupportCasualtiesAndArmor(target, cas, armDis, 'Airstrike');
           }
-          H.addLog('support', `✈ [Air Support] ${u.name} ➔ ${target.name} (Roll d20=${d20}, AA Red: -${aaReduction}): Def -${defRed}, Hardness -${hardRed}, Cas: ${cas}, Armor Dis: ${armDis}`);
+          H.addLog('support', `[FS-AIR] [Air Support] ${u.name} -> ${target.name} (Roll d20=${d20}, AA Red: -${aaReduction}): Def -${defRed}, Hardness -${hardRed}, Cas: ${cas}, Armor Dis: ${armDis}`);
         }
       }
     }
@@ -1400,7 +1400,7 @@ window.IronDivision = window.IronDivision || {};
 
     H.addLog(
       'armor',
-      `🚜 [${sourceLabel} Armor Hit] ${target.name} (${bracketDesc}): ${actualDisabled} vehicles knocked out! Recovery (50+d50[${rawD50}])=${recRoll}+${armorRecBonus}=${totalRecPct}% ➔ ` +
+      `[AFV] [${sourceLabel} Armor Hit] ${target.name} (${bracketDesc}): ${actualDisabled} vehicles knocked out! Recovery (50+d50[${rawD50}])=${recRoll}+${armorRecBonus}=${totalRecPct}% -> ` +
       `${recVehicles} Recoverable, ${unrecVehicles} Destroyed (${target.armor}/${target.maxArmor} active) | Crew Casualties: ${crewDowned} downed, -${vehOrgShock} Org shock!`
     );
 
@@ -1456,7 +1456,7 @@ window.IronDivision = window.IronDivision || {};
       if (backline.length > 0) {
         backline.sort((a, b) => getUnitTargetValue(b, attacker, atkTactic) - getUnitTargetValue(a, attacker, atkTactic));
         const picked = backline[0];
-        H.addLog('rolls', `🥷 [Bypass Success] ${attacker.name} bypasses frontline screening to strike high-value ${picked.name} (TV ${getUnitTargetValue(picked, attacker, atkTactic)})!`);
+        H.addLog('rolls', `[INFIL] [Bypass Success] ${attacker.name} bypasses frontline screening to strike high-value ${picked.name} (TV ${getUnitTargetValue(picked, attacker, atkTactic)})!`);
         return picked;
       }
     }
@@ -1474,14 +1474,14 @@ window.IronDivision = window.IronDivision || {};
           activeFrontliners.sort((a, b) => getUnitTargetValue(b, attacker, atkTactic) - getUnitTargetValue(a, attacker, atkTactic));
           const bestFrontliner = activeFrontliners[0];
           if (getUnitTargetValue(bestFrontliner, attacker, atkTactic) > getUnitTargetValue(desiredUnit, attacker, atkTactic)) {
-            H.addLog('rolls', `🛡 [Frontliner Intercept] ${bestFrontliner.name} (TV ${getUnitTargetValue(bestFrontliner, attacker, atkTactic)}) intercepts Anti-Unit attack aimed at ${desiredUnit.name}!`);
+            H.addLog('rolls', `[DEF] [Frontliner Intercept] ${bestFrontliner.name} (TV ${getUnitTargetValue(bestFrontliner, attacker, atkTactic)}) intercepts Anti-Unit attack aimed at ${desiredUnit.name}!`);
             return bestFrontliner;
           } else {
             if (Math.random() < 0.6) {
-              H.addLog('rolls', `🎯 [Anti-Unit Priority] ${attacker.name} bypasses screening to strike high-threat ${desiredUnit.name}!`);
+              H.addLog('rolls', `[TGT] [Anti-Unit Priority] ${attacker.name} bypasses screening to strike high-threat ${desiredUnit.name}!`);
               return desiredUnit;
             } else {
-              H.addLog('rolls', `🛡 [Frontliner Intercept] ${bestFrontliner.name} blocks ${attacker.name} from reaching ${desiredUnit.name}!`);
+              H.addLog('rolls', `[DEF] [Frontliner Intercept] ${bestFrontliner.name} blocks ${attacker.name} from reaching ${desiredUnit.name}!`);
               return bestFrontliner;
             }
           }
@@ -1496,7 +1496,7 @@ window.IronDivision = window.IronDivision || {};
         return activeFrontliners[0];
       }
       const randTarget = defenders[Math.floor(Math.random() * defenders.length)];
-      H.addLog('rolls', `🎲 [Failed Vigilance] ${attacker.name} acquires targets blindly, firing at ${randTarget.name}.`);
+      H.addLog('rolls', `[RNG] [Failed Vigilance] ${attacker.name} acquires targets blindly, firing at ${randTarget.name}.`);
       return randTarget;
     }
 
@@ -1550,7 +1550,7 @@ window.IronDivision = window.IronDivision || {};
 
       H.addLog(
         'rolls',
-        `🕳️ [Cover & Dispersion] ${defender.name} makes Cover Save: d20(${d20}) + Cover(${coverRating}) = ${totalCoverSave} vs DC ${targetDC} ➔ ` +
+        `[CVR] [Cover & Dispersion] ${defender.name} makes Cover Save: d20(${d20}) + Cover(${coverRating}) = ${totalCoverSave} vs DC ${targetDC} -> ` +
         (inCover ? `DUG-IN / IN DEFILADE (Half soft damage, explosive negated)` : `CAUGHT IN OPEN (Exposed to full fire & suppression shock!)`)
       );
     } else {
@@ -1569,7 +1569,7 @@ window.IronDivision = window.IronDivision || {};
 
       H.addLog(
         'armor',
-        `🔩 [Piercing Check] ${attacker.name} (d6[${atkPierceDie}]+${effPiercing}=${totalPierceRoll}) vs ${defender.name} Eff.Hardness (d6[${defHardDie}]+${effHardness}=${totalHardnessRoll}) ➔ ` +
+        `[AP] [Piercing Check] ${attacker.name} (d6[${atkPierceDie}]+${effPiercing}=${totalPierceRoll}) vs ${defender.name} Eff.Hardness (d6[${defHardDie}]+${effHardness}=${totalHardnessRoll}) -> ` +
         (pierced ? `PIERCED! (Diff: +${totalPierceRoll - totalHardnessRoll})` : `ARMOR HELD (Unpierced — Soft/Close-Assault Chip Active)`)
       );
     }
@@ -1637,7 +1637,7 @@ window.IronDivision = window.IronDivision || {};
 
     H.addLog(
       'rolls',
-      `⚔ [Clash] ${attacker.name} Atk: Base(${combinedBaseAtk.toFixed(1)}) + d${atkDieSides}(${atkDieRoll}) + Flat(${atkTotals.flatBonus}) × Mod(${atkTotals.netPct >= 0 ? '+' : ''}${atkTotals.netPct}%) = ${atkTotals.finalValue} ` +
+      `[OP] [Clash] ${attacker.name} Atk: Base(${combinedBaseAtk.toFixed(1)}) + d${atkDieSides}(${atkDieRoll}) + Flat(${atkTotals.flatBonus}) × Mod(${atkTotals.netPct >= 0 ? '+' : ''}${atkTotals.netPct}%) = ${atkTotals.finalValue} ` +
       `VS ${defender.name} Def: Base(${baseDef}) + d${defDieSides}(${defDieRoll}) + Flat(${defTotals.flatBonus}) × Mod(${defTotals.netPct >= 0 ? '+' : ''}${defTotals.netPct}%) = ${defTotals.finalValue}`
     );
 
@@ -1661,7 +1661,7 @@ window.IronDivision = window.IronDivision || {};
         let orgGain = atkTactic.hitOrgHeal || 0;
         if (defender.defeated || inflictedRatio >= 0.10) {
           orgGain += H.rollDie(2);
-          H.addLog('damage', `🔥 [Decisive Breakthrough] ${attacker.name} gains +${orgGain} Org for smashing ${defender.name}!`);
+          H.addLog('damage', `[BRK] [Decisive Breakthrough] ${attacker.name} gains +${orgGain} Org for smashing ${defender.name}!`);
         }
         if (orgGain > 0) attacker.org = Math.min(attacker.maxOrg, attacker.org + orgGain);
       }
@@ -1677,12 +1677,12 @@ window.IronDivision = window.IronDivision || {};
           const wasBelow50 = (defender.supply / Math.max(1, defender.maxSupply)) < 0.50;
           defender.supply -= stolen;
           attacker.supply = Math.min(attacker.maxSupply, attacker.supply + stolen);
-          H.addLog('support', `🏴 [Supply Stolen] ${attacker.name} steals ${stolen} Supply from ${defender.name}!`);
+          H.addLog('support', `[RAID] [Supply Stolen] ${attacker.name} steals ${stolen} Supply from ${defender.name}!`);
 
           if (hasRaiders && wasBelow50) {
             const depotShock = H.rollDie(4);
             defender.org = Math.max(0, defender.org - depotShock);
-            H.addLog('damage', `⚡ [Supply Depot Sabotaged] ${defender.name} was below 50% supply! Supply Raiders inflict -${depotShock} Org shock on ammo depots!`);
+            H.addLog('damage', `[SHK] [Supply Depot Sabotaged] ${defender.name} was below 50% supply! Supply Raiders inflict -${depotShock} Org shock on ammo depots!`);
           }
         }
       }
@@ -1702,16 +1702,16 @@ window.IronDivision = window.IronDivision || {};
       const grazeResult = H.calculateGrazingCasualties(attacker, defender, atkTotals.finalValue, defTotals.finalValue, pierced, false);
 
       if (grazeResult.immune) {
-        H.addLog('rolls', `🛡 [COMPLETELY IMMUNE] ${defender.name} holds the line (${defTotals.finalValue} vs ${atkTotals.finalValue}): ${grazeResult.reason} (0 casualties)!`);
+        H.addLog('rolls', `[DEF] [COMPLETELY IMMUNE] ${defender.name} holds the line (${defTotals.finalValue} vs ${atkTotals.finalValue}): ${grazeResult.reason} (0 casualties)!`);
       } else {
-        H.addLog('damage', `🛡 [Grazing Fire] ${defender.name} repels breakthrough (${defTotals.finalValue} vs ${atkTotals.finalValue}), but suffers ${grazeResult.casualties} grazing casualties (${grazeResult.reason})!`);
+        H.addLog('damage', `[DEF] [Grazing Fire] ${defender.name} repels breakthrough (${defTotals.finalValue} vs ${atkTotals.finalValue}), but suffers ${grazeResult.casualties} grazing casualties (${grazeResult.reason})!`);
         applyPersonnelCasualties(defender, grazeResult.casualties, false, false, 'Grazing Fire', atkTactic, defTactic);
       }
 
       if (defTactic.id === 'def_delay') {
         const atkSideState = atkSide === 'A' ? ID.state.battle.sideA : ID.state.battle.sideB;
         atkSideState.nextRoundAtkMod = -10;
-        H.addLog('rolls', `⏳ [Delay Tactic] Successful defense imposes -10% Attack on Side ${atkSide} next round.`);
+        H.addLog('rolls', `[HOLD] [Delay Tactic] Successful defense imposes -10% Attack on Side ${atkSide} next round.`);
       }
     }
 
@@ -1723,7 +1723,7 @@ window.IronDivision = window.IronDivision || {};
     const canDefenderReachAttacker = H.canUnitEngageTarget(defender, attacker, defTactic);
 
     if (!canDefenderReachAttacker) {
-      H.addLog('rolls', `🎯 [Out of Return-Fire Range] ${defender.name} (Max Range ≤${defMaxRange}) cannot return fire against ${attacker.name} firing from Total Distance ${engagementTotalDist}!`);
+      H.addLog('rolls', `[TGT] [Out of Return-Fire Range] ${defender.name} (Max Range ≤${defMaxRange}) cannot return fire against ${attacker.name} firing from Total Distance ${engagementTotalDist}!`);
       return;
     }
 
@@ -1732,7 +1732,7 @@ window.IronDivision = window.IronDivision || {};
 
     if (attacker.traits.includes('melee_attack') && engagementTotalDist <= 1) {
       retDefVig -= 20;
-      H.addLog('rolls', `🗡 [Point-Blank Melee Disruption] ${attacker.name}'s close-quarters assault at Total Distance ${engagementTotalDist} disrupts ${defender.name} (-20 Return Fire Vigilance & -30% Return Fire Attack)!`);
+      H.addLog('rolls', `[MELEE] [Point-Blank Melee Disruption] ${attacker.name}'s close-quarters assault at Total Distance ${engagementTotalDist} disrupts ${defender.name} (-20 Return Fire Vigilance & -30% Return Fire Attack)!`);
     }
 
     const entrenchedReturnFire = (retDefVig + 15 >= retAtkVig) || (D.TERRAIN_FEATURES[ID.state.environment.feature]?.fortified);
@@ -1758,7 +1758,7 @@ window.IronDivision = window.IronDivision || {};
 
       H.addLog(
         'armor',
-        `🔩 [Return Fire Piercing Check] ${defender.name} (d6[${retPierceDie}]+${retEffPiercing}=${retPierceRoll}) vs ${attacker.name} Eff.Hardness (d6[${retHardDie}]+${retEffHardness}=${retHardRoll}) ➔ ` +
+        `[AP] [Return Fire Piercing Check] ${defender.name} (d6[${retPierceDie}]+${retEffPiercing}=${retPierceRoll}) vs ${attacker.name} Eff.Hardness (d6[${retHardDie}]+${retEffHardness}=${retHardRoll}) -> ` +
         (retPierced ? `PIERCED! (Diff: +${retPierceRoll - retHardRoll})` : `ARMOR HELD (Unpierced — Soft/Close-Assault Chip Active)`)
       );
 
@@ -1813,18 +1813,18 @@ window.IronDivision = window.IronDivision || {};
 
       H.addLog(
         'rolls',
-        `↩ [Return Fire Clash] ${defender.name} RetAtk: Base(${retBaseAtk.toFixed(1)}) + d${retDieSides}(${retDieRoll}) + Flat(${defRetAtkTotals.flatBonus}) × Mod(${defRetAtkTotals.netPct >= 0 ? '+' : ''}${defRetAtkTotals.netPct}%) = ${defRetAtkTotals.finalValue} ` +
+        `[RET] [Return Fire Clash] ${defender.name} RetAtk: Base(${retBaseAtk.toFixed(1)}) + d${retDieSides}(${retDieRoll}) + Flat(${defRetAtkTotals.flatBonus}) × Mod(${defRetAtkTotals.netPct >= 0 ? '+' : ''}${defRetAtkTotals.netPct}%) = ${defRetAtkTotals.finalValue} ` +
         `VS ${attacker.name} Breakthrough/Def: ${atkBreakTotals.finalValue}`
       );
 
       if (defRetAtkTotals.finalValue > atkBreakTotals.finalValue) {
         const retMargin = Math.max(1, Math.round(defRetAtkTotals.finalValue - atkBreakTotals.finalValue));
-        H.addLog('rolls', `↩ [Return Fire Hit!] ${defender.name} (RetAtk ${defRetAtkTotals.finalValue} > Breakthrough ${atkBreakTotals.finalValue}) strikes back at ${attacker.name}!`);
+        H.addLog('rolls', `[RET] [Return Fire Hit!] ${defender.name} (RetAtk ${defRetAtkTotals.finalValue} > Breakthrough ${atkBreakTotals.finalValue}) strikes back at ${attacker.name}!`);
         inflictCombatDamage(defender, attacker, retMargin, defSide, atkSide, defTactic, atkTactic, 'Return Fire');
 
         if (defTactic.id === 'def_counterattack' && !defender.isMonster && !defender.isZombie) {
           defender.org = Math.min(defender.maxOrg, defender.org + 2);
-          H.addLog('damage', `⚡ [Counterattack] ${defender.name} gains +2 Organization!`);
+          H.addLog('damage', `[SHK] [Counterattack] ${defender.name} gains +2 Organization!`);
         }
         if (defTactic.id === 'urb_def_ambush') {
           const ambRoll = H.rollDie(6);
@@ -1836,14 +1836,14 @@ window.IronDivision = window.IronDivision || {};
         const retGrazeResult = H.calculateGrazingCasualties(defender, attacker, defRetAtkTotals.finalValue, atkBreakTotals.finalValue, retPierced, true);
 
         if (retGrazeResult.immune) {
-          H.addLog('rolls', `↩ [BREAKTHROUGH IMMUNE] ${attacker.name}'s Breakthrough (${atkBreakTotals.finalValue}) deflects ${defender.name}'s Return Fire (${defRetAtkTotals.finalValue}): ${retGrazeResult.reason} (0 casualties)!`);
+          H.addLog('rolls', `[RET] [BREAKTHROUGH IMMUNE] ${attacker.name}'s Breakthrough (${atkBreakTotals.finalValue}) deflects ${defender.name}'s Return Fire (${defRetAtkTotals.finalValue}): ${retGrazeResult.reason} (0 casualties)!`);
         } else {
-          H.addLog('damage', `↩ [Grazing Return Fire] ${attacker.name}'s Breakthrough (${atkBreakTotals.finalValue}) holds vs ${defender.name} (${defRetAtkTotals.finalValue}), but takes ${retGrazeResult.casualties} suppressing casualties (${retGrazeResult.reason})!`);
+          H.addLog('damage', `[RET] [Grazing Return Fire] ${attacker.name}'s Breakthrough (${atkBreakTotals.finalValue}) holds vs ${defender.name} (${defRetAtkTotals.finalValue}), but takes ${retGrazeResult.casualties} suppressing casualties (${retGrazeResult.reason})!`);
           applyPersonnelCasualties(attacker, retGrazeResult.casualties, false, false, 'Grazing Return Fire', defTactic, atkTactic);
         }
       }
     } else {
-      H.addLog('rolls', `↩ [No Return Fire] ${defender.name} failed Return Fire Vigilance (${retDefVig} vs ${retAtkVig}).`);
+      H.addLog('rolls', `[RET] [No Return Fire] ${defender.name} failed Return Fire Vigilance (${retDefVig} vs ${retAtkVig}).`);
     }
   }
 
@@ -2060,13 +2060,13 @@ window.IronDivision = window.IronDivision || {};
     if (defender.isZombie && (hasHighCal || hasExplosive)) {
       const zombieExtra = Math.round(rawDowned * 0.50);
       rawDowned += zombieExtra;
-      H.addLog('damage', `🧟 [Zombie Dismemberment] High-Caliber / Explosive fire shreds the horde for +${zombieExtra} extra casualties!`);
+      H.addLog('damage', `[BIO] [Zombie Dismemberment] High-Caliber / Explosive fire shreds the horde for +${zombieExtra} extra casualties!`);
     }
 
     if ((defender.armorTier === 'unarmored' || defender.maxArmor <= 0) && defender.roundTemp && !defender.roundTemp.inCover && !defender.isMonster && !defender.isZombie) {
       const openSuppression = 1 + H.rollDie(4);
       defender.org = Math.max(0, defender.org - openSuppression);
-      H.addLog('damage', `⚡ [Caught in Open Shock] ${defender.name} pinned without defilade, taking -${openSuppression} Org shock!`);
+      H.addLog('damage', `[SHK] [Caught in Open Shock] ${defender.name} pinned without defilade, taking -${openSuppression} Org shock!`);
     }
     if (defTactic.id === 'atk_mass_charge' && (hasHighCal || hasExplosive)) {
       rawDowned = Math.round(rawDowned * 1.15);
@@ -2083,7 +2083,7 @@ window.IronDivision = window.IronDivision || {};
 
     H.addLog(
       'damage',
-      `🩸 [${phaseLabel} Damage] ${attacker.name} ➔ ${defender.name}: Roll d${diffDieSides}(${baseCasRoll})` +
+      `[CAS] [${phaseLabel} Damage] ${attacker.name} -> ${defender.name}: Roll d${diffDieSides}(${baseCasRoll})` +
       (hasHighCal ? ` + HighCal(${highCalRoll})` : '') +
       (hasExplosive ? ` + Explosive(${explosiveRoll})` : '') +
       ` = ${rawDowned} personnel downed!`
@@ -2100,7 +2100,7 @@ window.IronDivision = window.IronDivision || {};
 
     if (defender.isMonster) {
       defender.dead += actualDowned;
-      H.addLog('damage', `💀 [Monster Permanent Wound] ${defender.name} has no recovery capacity: all ${actualDowned} damage directly reduces vital mass (100% KIA) (${defender.personnel}/${defender.maxPersonnel} active).`);
+      H.addLog('damage', `[KIA] [Monster Permanent Wound] ${defender.name} has no recovery capacity: all ${actualDowned} damage directly reduces vital mass (100% KIA) (${defender.personnel}/${defender.maxPersonnel} active).`);
       checkAndMarkUnitDefeat(defender);
       return;
     }
@@ -2126,10 +2126,10 @@ window.IronDivision = window.IronDivision || {};
 
     if (defender.isZombie) {
       defender.personnel += woundedCount;
-      H.addLog('damage', `🧟 [Zombie Reanimation] Recovery Roll (d100[${rawRecRoll}])+${recMod}=${finalRecScore}: ${deadCount} permanently destroyed, while ${woundedCount} rise back into battle! (${defender.personnel} active)`);
+      H.addLog('damage', `[BIO] [Zombie Reanimation] Recovery Roll (d100[${rawRecRoll}])+${recMod}=${finalRecScore}: ${deadCount} permanently destroyed, while ${woundedCount} rise back into battle! (${defender.personnel} active)`);
     } else {
       defender.wounded += woundedCount;
-      H.addLog('damage', `🏥 [Casualty Recovery] ${defender.name} (50+d50[${rawRecRoll - 50}])=${baseRec}+${recMod}=${finalRecScore}: ${deadCount} KIA (Dead), ${woundedCount} WIA (Wounded) (${defender.personnel}/${defender.maxPersonnel} active).`);
+      H.addLog('damage', `[MED] [Casualty Recovery] ${defender.name} (50+d50[${rawRecRoll - 50}])=${baseRec}+${recMod}=${finalRecScore}: ${deadCount} KIA (Dead), ${woundedCount} WIA (Wounded) (${defender.personnel}/${defender.maxPersonnel} active).`);
     }
 
     if (!defender.isMonster && !defender.isZombie) {
@@ -2204,7 +2204,7 @@ window.IronDivision = window.IronDivision || {};
       }
 
       defender.org = Math.max(0, defender.org - orgDmg);
-      H.addLog('damage', `📉 [Org Damage] ${defender.name} loses -${orgDmg} Organization (${orgReasons.join(', ')}) ➔ ${defender.org}/${defender.maxOrg} Org remaining.`);
+      H.addLog('damage', `[ORG] [Org Damage] ${defender.name} loses -${orgDmg} Organization (${orgReasons.join(', ')}) -> ${defender.org}/${defender.maxOrg} Org remaining.`);
     }
 
     checkAndMarkUnitDefeat(defender);

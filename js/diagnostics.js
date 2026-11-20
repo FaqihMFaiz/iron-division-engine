@@ -10,14 +10,14 @@ window.IronDivision = window.IronDivision || {};
   function logSystemError(context, error) {
     console.error(`[Iron Division Diagnostic: ${context}]`, error);
     const errMsg = error ? (error.message || String(error)) : 'Unknown exception';
-    const logText = `🚨 [CRITICAL ERROR: ${context}] ${errMsg} (Check Developer Console for full stack trace)`;
+    const logText = `[SYS] [CRITICAL ERROR: ${context}] ${errMsg} (Check Developer Console for full stack trace)`;
 
     if (ID.Helpers && typeof ID.Helpers.addLog === 'function') {
       ID.Helpers.addLog('error', logText);
     }
 
     if (ID.Helpers && typeof ID.Helpers.showToast === 'function') {
-      ID.Helpers.showToast(`🚨 System Error: ${errMsg}`, 'danger');
+      ID.Helpers.showToast(`[SYS] System Error: ${errMsg}`, 'danger');
     }
 
     if (ID.state) {

@@ -407,6 +407,7 @@ window.IronDivision = window.IronDivision || {};
         <div class="unit-dossier ${u.defeated ? 'unit-dossier-defeated' : (side === 'A' ? 'unit-dossier-a' : 'unit-dossier-b')} p-2.5 space-y-2">
           <div class="flex items-start justify-between gap-2">
             <div class="flex items-center gap-1.5 flex-wrap min-w-0">
+              <span class="${side === 'A' ? 'text-[#8ec0e8]' : 'text-[#e69894]'} shrink-0" title="${escapeHtml(u.category.toUpperCase())} NATO Symbol">${ID.Icons ? ID.Icons.get(u.category) : ''}</span>
               <span class="font-bold font-mono text-xs text-[#e7ece4] uppercase tracking-wide truncate">${escapeHtml(u.name)}</span>
               <span class="text-[9.5px] font-mono uppercase px-1.5 py-0.5 bg-[#232016] text-[#c8a24b] border border-[#594b27]">${escapeHtml(u.experience)}</span>
               <span class="text-[9.5px] font-mono uppercase px-1.5 py-0.5 bg-[#151a16] text-[#939e91] border border-[#2d362f]">${escapeHtml(u.category.replace('_', ' '))}</span>
@@ -696,9 +697,11 @@ window.IronDivision = window.IronDivision || {};
     container.innerHTML = filtered.slice().reverse().map(item => {
       const isNew = !uiState.renderedLogIds.has(item.id);
       if (isNew) uiState.renderedLogIds.add(item.id);
+      const iconHtml = ID.Icons ? ID.Icons.getForLog(item.category, item.text) : '';
       return `
-      <div class="${isNew ? 'log-entry-new ' : ''}${colorMap[item.category] || colorMap.rolls}">
-        <span class="text-[#4a5448] mr-1.5 font-bold">[RD-${String(item.round).padStart(2, '0')}]</span>${escapeHtml(item.text)}
+      <div class="${isNew ? 'log-entry-new ' : ''}${colorMap[item.category] || colorMap.rolls} flex items-start gap-1.5">
+        <span class="mil-log-icon shrink-0 mt-0.5">${iconHtml}</span>
+        <div class="min-w-0 flex-1"><span class="text-[#4a5448] mr-1.5 font-bold">[RD-${String(item.round).padStart(2, '0')}]</span>${escapeHtml(stripEmojisForAAR(item.text))}</div>
       </div>`;
     }).join('');
 

@@ -233,12 +233,15 @@
             <div id="yaxis-line-container"></div>
           </div>
 
-          <!-- Combat Sitrep Ticker -->
-          <div class="mil-panel p-3.5 flex-1 flex flex-col min-h-[500px]">
-            <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-2">
-              <h3 class="font-bold font-mono text-xs uppercase tracking-widest text-[#c8d1c7]">
-                SITREP // COMBAT LOG
-              </h3>
+          <!-- Combat Sitrep Logbook (Archival Paper Theme) -->
+          <div class="paper-sitrep-panel p-3.5 flex-1 flex flex-col min-h-[500px]">
+            <div class="paper-sitrep-header flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <span class="block font-mono text-[9px] font-bold uppercase tracking-widest text-[#4a5448]">OPERATIONAL LOGBOOK // FORM DA-1594</span>
+                <h3 class="font-extrabold font-mono text-xs uppercase tracking-widest text-[#141815]">
+                  SITREP // COMBAT LOG
+                </h3>
+              </div>
               <div class="flex items-center gap-1.5">
                 <select id="log-filter" onchange="renderCombatLog()" class="px-2 py-0.5 text-[11px]">
                   <option value="all">ALL CHANNELS</option>
@@ -248,8 +251,8 @@
                   <option value="support">LOGISTICS / FS</option>
                   <option value="error">SYS ERRORS</option>
                 </select>
-                <button type="button" onclick="copyCombatLog()" class="mil-btn text-[10px] text-[#c8a24b] hover:text-white px-2 py-0.5 bg-[#1c221d] border border-[#3a453c]">COPY</button>
-                <button type="button" onclick="clearCombatLog()" class="mil-btn text-[10px] text-[#939e91] hover:text-white px-2 py-0.5 bg-[#1c221d] border border-[#2f3831]">CLR</button>
+                <button type="button" onclick="copyCombatLog()" class="paper-sitrep-btn paper-sitrep-btn-primary">COPY</button>
+                <button type="button" onclick="clearCombatLog()" class="paper-sitrep-btn paper-sitrep-btn-muted">CLR</button>
               </div>
             </div>
             <div id="combat-log-container" class="paper-sitrep-sheet flex-1 overflow-y-auto custom-scroll space-y-1 font-mono text-xs max-h-[520px]"></div>

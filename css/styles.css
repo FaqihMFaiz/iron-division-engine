@@ -759,11 +759,70 @@ body.mil-ui ::selection {
 /* --------------------------------------------------------------------------
    9. Paper-Like Military Sitrep Log & Form DA-774 AAR Modal
    -------------------------------------------------------------------------- */
+
+.paper-sitrep-panel {
+  background-color: #ebe5d5 !important;
+  color: #181c19 !important;
+  border: 1px solid #bfb7a2 !important;
+  border-left: 5px solid #2f3b2e !important;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4) !important;
+}
+
+.paper-sitrep-header {
+  border-bottom: 2px solid #2f3b2e !important;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+}
+
+.paper-sitrep-panel select {
+  background-color: #faf8f2 !important;
+  border: 1px solid #8f8773 !important;
+  color: #181c19 !important;
+  font-weight: 600;
+}
+
+.paper-sitrep-panel select:focus {
+  border-color: #2f3b2e !important;
+  box-shadow: inset 0 0 0 1px rgba(47, 59, 46, 0.35) !important;
+}
+
+.paper-sitrep-btn {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 3px 8px;
+  border-radius: 2px !important;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.paper-sitrep-btn-primary {
+  background-color: #262f25;
+  border: 1px solid #181c19;
+  color: #f4f1e6;
+}
+
+.paper-sitrep-btn-primary:hover {
+  background-color: #364435;
+}
+
+.paper-sitrep-btn-muted {
+  background-color: #ded7c3;
+  border: 1px solid #9e9682;
+  color: #232924;
+}
+
+.paper-sitrep-btn-muted:hover {
+  background-color: #cfc6ae;
+  color: #141815;
+}
+
 .paper-sitrep-sheet {
   background-color: #f4f1e6 !important;
   color: #181c19 !important;
   border: 1px solid #bfb7a2 !important;
-  border-left: 4px solid #2f3b2e !important;
+  border-left: 1px solid #bfb7a2 !important;
   padding: 6px;
 }
 
@@ -1117,3 +1176,18 @@ body.mil-ui ::selection {
   gap: 6px;
   color: #939e91;
 }
+
+/* Custom Inline Military & NATO APP-6 SVG Icons */
+.mil-svg-icon {
+  display: inline-block;
+  width: 14px;
+  height: 12px;
+  vertical-align: -1px;
+  flex-shrink: 0;
+}
+
+.paper-sitrep-rolls .mil-log-icon { color: #3a4738; }
+.paper-sitrep-damage .mil-log-icon { color: #8b2e2a; }
+.paper-sitrep-armor .mil-log-icon { color: #8a621c; }
+.paper-sitrep-support .mil-log-icon { color: #234563; }
+.paper-sitrep-error .mil-log-icon { color: #b91c1c; }

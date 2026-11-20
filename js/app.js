@@ -371,8 +371,8 @@ window.IronDivision = window.IronDivision || {};
 
       const btn = document.getElementById('btn-auto-run');
       if (btn) {
-        btn.textContent = '⏸ Pause Auto';
-        btn.className = 'px-3 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs sm:text-sm transition';
+        btn.textContent = 'PAUSE OPS';
+        btn.className = 'mil-btn px-3 py-2 bg-[#7c5b1e] hover:bg-[#966e24] text-[#f4f1e6] font-semibold text-xs border border-[#c8a24b]';
       }
 
       ID.state.battle.autoInterval = setInterval(() => {
@@ -394,8 +394,8 @@ window.IronDivision = window.IronDivision || {};
     }
     const btn = document.getElementById('btn-auto-run');
     if (btn) {
-      btn.textContent = '⏩ Auto Battle';
-      btn.className = 'px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs sm:text-sm transition';
+      btn.textContent = 'AUTO-OPS';
+      btn.className = 'mil-btn px-3 py-2 bg-[#2d472b] hover:bg-[#385936] text-[#d9ead7] font-semibold text-xs border border-[#4c7548]';
     }
   }
 
@@ -441,7 +441,7 @@ window.IronDivision = window.IronDivision || {};
       ID.state.battle[k].barrageCooldown = 0;
     });
 
-    H.addLog('rolls', `↺ Current battle fully reset to Round 1. All deployed formations restored to 100% strength.`);
+    H.addLog('rolls', `[RST] Current battle fully reset to Round 1. All deployed formations restored to 100% strength.`);
     H.showToast('Battle reset to Round 1.', 'success');
 
     if (ID.UI) {
@@ -462,7 +462,7 @@ window.IronDivision = window.IronDivision || {};
     ID.state.battle.salvageReport = null;
     ID.state.battle.logs = [];
 
-    H.addLog('rolls', `🧹 Battlefield emptied. Select units from dropdowns to deploy new formations.`);
+    H.addLog('rolls', `[CLR] Battlefield emptied. Select units from dropdowns to deploy new formations.`);
     H.showToast('Battlefield cleared of all units.', 'info');
 
     if (ID.UI) {
@@ -504,7 +504,7 @@ window.IronDivision = window.IronDivision || {};
       ID.state.battle.sideB.supplyDepot = ID.state.battle.sideB.maxSupplyDepot;
     }
 
-    H.addLog('rolls', `⚔ Loaded Sample Combined-Arms Battle: Side A (Medium Tank, Mechanized, Artillery) vs Side B (Heavy Infantry, Anti-Tank, Heavy Tank).`);
+    H.addLog('rolls', `[OP] Loaded Sample Combined-Arms Battle: Side A (Medium Tank, Mechanized, Artillery) vs Side B (Heavy Infantry, Anti-Tank, Heavy Tank).`);
 
     if (ID.UI) {
       ID.UI.renderBattlefield(true);

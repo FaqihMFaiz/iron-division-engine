@@ -76,10 +76,10 @@ window.IronDivision = window.IronDivision || {};
     H.addLog('rolls', `================================================`);
     if (winnerSide === 'Draw') {
       state.battle.salvageReport = null;
-      H.addLog('rolls', `🏁 BATTLE OVER — Mutual Exhaustion after ${state.battle.round} rounds!`);
+      H.addLog('rolls', `[END] BATTLE OVER — Mutual Exhaustion after ${state.battle.round} rounds!`);
     } else {
       const loserSide = winnerSide === 'A' ? 'B' : 'A';
-      H.addLog('rolls', `🏆 BATTLE OVER — Side ${winnerSide} achieves victory over Side ${loserSide} in Round ${state.battle.round}!`);
+      H.addLog('rolls', `[VIC] BATTLE OVER — Side ${winnerSide} achieves victory over Side ${loserSide} in Round ${state.battle.round}!`);
       resolveRetreatAndPursuit(winnerSide, loserSide);
     }
 
@@ -118,9 +118,9 @@ window.IronDivision = window.IronDivision || {};
     // Check if victor includes Monsters or Zombies (triggers No Quarter doctrine)
     const victorIsMonstersOrZombies = winUnits.some(u => u.isMonster || u.isZombie);
 
-    H.addLog('rolls', `🏃 [Post-Battle Mobility Pursuit] Side ${winnerSide} (Avg Speed: Class ${avgWinSpeed}) pursues retreating Side ${loserSide}!`);
+    H.addLog('rolls', `[MOV] [Post-Battle Mobility Pursuit] Side ${winnerSide} (Avg Speed: Class ${avgWinSpeed}) pursues retreating Side ${loserSide}!`);
     if (victorIsMonstersOrZombies) {
-      H.addLog('damage', `🩸 [NO QUARTER] The victorious Monster/Zombie horde takes NO prisoners! All captured troops and wounded left on the field are slaughtered or devoured!`);
+      H.addLog('damage', `[CAS] [NO QUARTER] The victorious Monster/Zombie horde takes NO prisoners! All captured troops and wounded left on the field are slaughtered or devoured!`);
     }
 
     for (const u of loseState.units) {
@@ -144,12 +144,12 @@ window.IronDivision = window.IronDivision || {};
           escapedActive = Math.round(u.personnel * 0.25);
           capturedActive = u.personnel - escapedActive;
           escapePct = 25;
-          H.addLog('rolls', `⚡ [Desperate Scatter] ${u.name} rolled Critical 100! 25% scatter into brush, 75% captured.`);
+          H.addLog('rolls', `[SHK] [Desperate Scatter] ${u.name} rolled Critical 100! 25% scatter into brush, 75% captured.`);
         } else {
           capturedActive = Math.round(u.personnel * 0.90);
           escapedActive = u.personnel - capturedActive;
           escapePct = 10;
-          H.addLog('rolls', `🚨 [AUTOMATIC OVERRUN] ${u.name} overrun across open ground! 90% (${capturedActive}) captured, 10% scattered.`);
+          H.addLog('rolls', `[SYS] [AUTOMATIC OVERRUN] ${u.name} overrun across open ground! 90% (${capturedActive}) captured, 10% scattered.`);
         }
       } else {
         // RULE 2: Contested Pursuit
@@ -167,23 +167,23 @@ window.IronDivision = window.IronDivision || {};
           escapedActive = u.personnel;
           capturedActive = 0;
           escapePct = 100;
-          H.addLog('rolls', `✨ [CRITICAL RETREAT 100!] ${u.name} slips away cleanly! 100% active personnel escape!`);
+          H.addLog('rolls', `[CRIT] [CRITICAL RETREAT 100!] ${u.name} slips away cleanly! 100% active personnel escape!`);
         } else if (rawPurRoll === 100) {
           capturedActive = u.personnel;
           escapedActive = 0;
           escapePct = 0;
-          H.addLog('rolls', `⛓ [CRITICAL PURSUIT 100!] ${u.name} encircled completely! 100% active personnel captured!`);
+          H.addLog('rolls', `[POW] [CRITICAL PURSUIT 100!] ${u.name} encircled completely! 100% active personnel captured!`);
         } else if (totalRet >= totalPur) {
           escapePct = H.clamp(50 + (totalRet - totalPur), 10, 100);
           escapedActive = Math.round(u.personnel * (escapePct / 100));
           capturedActive = u.personnel - escapedActive;
-          H.addLog('rolls', `🏃 [Retreat Success] ${u.name}: Ret ${totalRet} vs Pur ${totalPur} ➔ ${escapePct}% (${escapedActive}) escaped, ${capturedActive} captured.`);
+          H.addLog('rolls', `[MOV] [Retreat Success] ${u.name}: Ret ${totalRet} vs Pur ${totalPur} -> ${escapePct}% (${escapedActive}) escaped, ${capturedActive} captured.`);
         } else {
           const capturePct = H.clamp(50 + (totalPur - totalRet), 10, 100);
           escapePct = 100 - capturePct;
           capturedActive = Math.round(u.personnel * (capturePct / 100));
           escapedActive = u.personnel - capturedActive;
-          H.addLog('rolls', `⛓ [Pursuit Catch] ${u.name}: Pur ${totalPur} > Ret ${totalRet} ➔ ${capturePct}% (${capturedActive}) captured, ${escapedActive} escaped.`);
+          H.addLog('rolls', `[POW] [Pursuit Catch] ${u.name}: Pur ${totalPur} > Ret ${totalRet} -> ${capturePct}% (${capturedActive}) captured, ${escapedActive} escaped.`);
         }
       }
 
@@ -197,7 +197,7 @@ window.IronDivision = window.IronDivision || {};
         u.captured = 0;
         u.wounded = 0;
         if (slaughtered > 0) {
-          H.addLog('damage', `💀 [Devoured / Slaughtered] ${u.name}: ${slaughtered} captured & wounded troops are devoured by the horde (Converted to KIA)!`);
+          H.addLog('damage', `[KIA] [Devoured / Slaughtered] ${u.name}: ${slaughtered} captured & wounded troops are devoured by the horde (Converted to KIA)!`);
         }
       } else {
         u.captured = (u.captured || 0) + capturedActive + (u.wounded || 0);
@@ -210,7 +210,7 @@ window.IronDivision = window.IronDivision || {};
         if (towedArmor > 0) {
           u.recoverableArmor = Math.max(0, u.recoverableArmor - towedArmor);
           u.towedArmor = (u.towedArmor || 0) + towedArmor;
-          H.addLog('armor', `🚜 [Recovery Tractors] ${u.name} (${escapePct}% retreat) towed ${towedArmor} repairable hulls back to depot (${u.recoverableArmor} left on field).`);
+          H.addLog('armor', `[AFV] [Recovery Tractors] ${u.name} (${escapePct}% retreat) towed ${towedArmor} repairable hulls back to depot (${u.recoverableArmor} left on field).`);
         }
       }
     }
@@ -229,7 +229,7 @@ window.IronDivision = window.IronDivision || {};
         scuttledHulls = totalAbandonedHulls;
         impressedTanks = 0;
         supplyScrapped = 0;
-        H.addLog('armor', `🦖 [BEAST RAMPAGE] The victorious horde smashed and crushed all ${totalAbandonedHulls} abandoned vehicles into useless scrap iron.`);
+        H.addLog('armor', `[NO-QTR] [BEAST RAMPAGE] The victorious horde smashed and crushed all ${totalAbandonedHulls} abandoned vehicles into useless scrap iron.`);
       } else {
         const victorHasEngineers = winUnits.some(u => (u.traits || []).includes('engineering_support') || (u.traits || []).includes('repair_crew'));
         const salvageRoll = 50 + H.rollDie(50) + (victorHasEngineers ? 15 : 0);
@@ -257,7 +257,7 @@ window.IronDivision = window.IronDivision || {};
         scuttledHulls = totalAbandonedHulls - impressedTanks - scrappedCount;
         supplyScrapped = scrappedCount * 5;
 
-        H.addLog('armor', `🚜 [FIELD SALVAGE] Side ${winnerSide} (Roll ${salvageScore}) secured ${totalAbandonedHulls} abandoned hulls: ` +
+        H.addLog('armor', `[AFV] [FIELD SALVAGE] Side ${winnerSide} (Roll ${salvageScore}) secured ${totalAbandonedHulls} abandoned hulls: ` +
           `${impressedTanks} Beutepanzers restored, ${scrappedCount} stripped (+${supplyScrapped} Supply), ${scuttledHulls} scuttled/burned.`);
       }
     }
