@@ -409,7 +409,7 @@ window.IronDivision = window.IronDivision || {};
             <div class="flex items-center gap-1.5 flex-wrap min-w-0">
               <span class="${side === 'A' ? 'text-[#8ec0e8]' : 'text-[#e69894]'} shrink-0" title="${escapeHtml(u.category.toUpperCase())} NATO Symbol">${ID.Icons ? ID.Icons.get(u.category) : ''}</span>
               <span class="font-bold font-mono text-xs text-[#e7ece4] uppercase tracking-wide truncate">${escapeHtml(u.name)}</span>
-              <span class="text-[9.5px] font-mono uppercase px-1.5 py-0.5 bg-[#232016] text-[#c8a24b] border border-[#594b27]">${escapeHtml(u.experience)}</span>
+              <span class="mil-rank-patch" title="${escapeHtml(u.experience)} Rank Insignia">${ID.Icons && ID.Icons.getRank ? ID.Icons.getRank(u.experience) : escapeHtml(u.experience)}</span>
             </div>
             <button type="button" onclick="removeUnitFromSide('${side}', '${u.instanceId}')" class="text-[#667065] hover:text-[#d46a64] font-mono text-xs px-1 shrink-0" title="Remove unit">[X]</button>
           </div>
@@ -420,6 +420,10 @@ window.IronDivision = window.IronDivision || {};
               <div class="flex items-center justify-between border-b border-[#2b342c] pb-1 font-mono text-[9.5px] uppercase">
                 <span class="text-[#c8a24b] font-bold truncate">${escapeHtml(u.name)}</span>
                 <span class="text-[#939e91] shrink-0 ml-2">${escapeHtml(u.category.replace('_', ' '))}</span>
+              </div>
+              <div class="flex items-center justify-between font-mono text-[9.5px] uppercase px-1.5 py-0.5 bg-[#1b211c] border border-[#2f3930]">
+                <span class="text-[#7c877b]">EXPERIENCE TIER</span>
+                <span class="text-[#c8a24b] font-bold">${escapeHtml(u.experience)}</span>
               </div>
               <div class="unit-stat-grid">
                 <div class="unit-stat-cell"><span class="unit-stat-label">Soft</span><span class="unit-stat-val">${u.softAttack}</span></div>

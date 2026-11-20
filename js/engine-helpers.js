@@ -412,9 +412,32 @@ window.IronDivision = window.IronDivision || {};
     return MIL_SVGS.clash;
   }
 
+
+  // Military Rank Insignia SVGs (Experience Tiers)
+  const RANK_SVGS = {
+    // Green: Blank rank patch (no chevrons)
+    Green: '<svg class="mil-rank-svg" viewBox="0 0 18 20" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><rect x="2" y="2" width="14" height="16" rx="1" stroke-opacity="0.45" stroke-dasharray="2 1.5"/></svg>',
+    // Trained: Private (1 upward chevron)
+    Trained: '<svg class="mil-rank-svg" viewBox="0 0 18 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M4 12.5L9 7.5L14 12.5"/></svg>',
+    // Regular: Corporal (2 upward chevrons)
+    Regular: '<svg class="mil-rank-svg" viewBox="0 0 18 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M4 10.5L9 5.5L14 10.5"/><path d="M4 14.5L9 9.5L14 14.5"/></svg>',
+    // Seasoned: Sergeant (3 upward chevrons)
+    Seasoned: '<svg class="mil-rank-svg" viewBox="0 0 18 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M4 8.5L9 3.8L14 8.5"/><path d="M4 12.2L9 7.5L14 12.2"/><path d="M4 15.9L9 11.2L14 15.9"/></svg>',
+    // Veteran: Staff Sergeant (3 upward chevrons + 1 bottom rocker arc)
+    Veteran: '<svg class="mil-rank-svg" viewBox="0 0 18 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true"><path d="M4 7.5L9 3L14 7.5"/><path d="M4 10.7L9 6.2L14 10.7"/><path d="M4 13.9L9 9.4L14 13.9"/><path d="M4 16.2Q9 18.8 14 16.2"/></svg>',
+    // Elite: One Star (5-point command star)
+    Elite: '<svg class="mil-rank-svg" viewBox="0 0 18 20" fill="currentColor" stroke="currentColor" stroke-width="0.6" aria-hidden="true"><polygon points="9,3.5 10.8,7.9 15.5,8.2 11.9,11.3 13,15.9 9,13.4 5,15.9 6.1,11.3 2.5,8.2 7.2,7.9"/></svg>'
+  };
+
+  function getRankIcon(exp) {
+    return RANK_SVGS[exp] || RANK_SVGS.Regular;
+  }
+
   ID.Icons = {
     SVGS: MIL_SVGS,
+    RANKS: RANK_SVGS,
     get: getIcon,
+    getRank: getRankIcon,
     getForLog: getIconForLog
   };
 

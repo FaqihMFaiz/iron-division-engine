@@ -89,7 +89,7 @@
     <!-- ==================== TAB 1: BATTLEFIELD ==================== -->
     <section id="view-battlefield" class="space-y-4">
       <!-- Theatre Controls Bar -->
-      <div class="mil-panel mil-panel-brackets mil-panel-cmd p-3 sm:p-3.5">
+      <div class="mil-monitor-frame p-3 sm:p-3.5">
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
           <!-- Terrain Selector -->
           <div>
@@ -309,7 +309,7 @@
     <section id="view-units" class="hidden space-y-4">
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
         <!-- Form -->
-        <div class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-lg">
+        <div class="lg:col-span-5 mil-monitor-frame p-4">
           <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
             <h2 class="font-bold text-base text-amber-400" id="unit-form-title">Create / Edit Unit Template</h2>
             <button type="button" onclick="resetUnitForm()" class="text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300">+ New Blank</button>
@@ -403,7 +403,7 @@
         </div>
 
         <!-- Library Grid -->
-        <div class="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-lg">
+        <div class="lg:col-span-7 mil-monitor-frame p-4">
           <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3 mb-3">
             <div>
               <h2 class="font-bold text-base text-white">Unit Templates Library</h2>
@@ -422,7 +422,7 @@
     <section id="view-traits" class="hidden space-y-4">
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
         <!-- Form -->
-        <div class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-lg">
+        <div class="lg:col-span-5 mil-monitor-frame p-4">
           <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
             <h2 class="font-bold text-base text-amber-400" id="trait-form-title">Create / Edit Custom Trait</h2>
             <button type="button" onclick="resetTraitForm()" class="text-xs px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300">+ New Trait</button>
@@ -556,7 +556,7 @@
           </button>
         </div>
 
-        <div class="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-lg">
+        <div class="lg:col-span-7 mil-monitor-frame p-4">
           <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
             <div>
               <h2 class="font-bold text-base text-white">Traits &amp; Support Modules Directory</h2>
@@ -572,7 +572,7 @@
     <section id="view-commanders" class="hidden space-y-4">
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
         <!-- Commander Form -->
-        <div class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-lg space-y-4">
+        <div class="lg:col-span-5 mil-monitor-frame p-4 space-y-4">
           <div class="border-b border-slate-800 pb-3">
             <div class="flex items-center justify-between">
               <h2 class="font-bold text-base text-amber-400" id="cmd-form-title">Add / Edit Commander</h2>
@@ -645,7 +645,7 @@
         </div>
 
         <!-- Roster Column -->
-        <div class="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-lg">
+        <div class="lg:col-span-7 mil-monitor-frame p-4">
           <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
             <div>
               <h2 class="font-bold text-base text-white">Active Commanders Roster</h2>
@@ -835,7 +835,7 @@
     <!-- ==================== TAB 5: TERRAIN & WEATHER ==================== -->
     <section id="view-terrain" class="hidden space-y-4">
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        <div class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-lg">
+        <div class="lg:col-span-5 mil-monitor-frame p-4">
           <h2 class="font-bold text-base text-amber-400 border-b border-slate-800 pb-3 mb-3">Customize Base Terrain</h2>
           <div class="space-y-2.5 text-xs">
             <div>
@@ -901,7 +901,7 @@
         </div>
 
         <div class="lg:col-span-7 space-y-4">
-          <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-lg">
+          <div class="mil-monitor-frame p-4">
             <h3 class="font-bold text-sm sm:text-base text-white mb-2">Base Terrains Matrix</h3>
             <div class="overflow-x-auto">
               <table class="w-full text-left text-xs border-collapse">
@@ -921,11 +921,11 @@
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-lg">
+            <div class="mil-monitor-frame p-4">
               <h3 class="font-bold text-sm text-amber-400 mb-2">Features Matrix</h3>
               <div id="features-matrix-list" class="space-y-2 text-xs"></div>
             </div>
-            <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-lg">
+            <div class="mil-monitor-frame p-4">
               <h3 class="font-bold text-sm text-sky-400 mb-2">Weather Matrix</h3>
               <div id="weather-matrix-list" class="space-y-2 text-xs"></div>
             </div>
