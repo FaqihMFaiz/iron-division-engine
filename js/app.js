@@ -69,6 +69,7 @@ window.IronDivision = window.IronDivision || {};
       },
       initialSnapshot: null,
       afterActionReport: null,
+      salvageReport: null,
       logs: []
     }
   };
@@ -423,6 +424,7 @@ window.IronDivision = window.IronDivision || {};
     ID.state.battle.winner = null;
     ID.state.battle.initialSnapshot = null;
     ID.state.battle.afterActionReport = null;
+    ID.state.battle.salvageReport = null;
     ID.state.battle.logs = [];
 
     // Reset Supply Depots
@@ -457,6 +459,7 @@ window.IronDivision = window.IronDivision || {};
     ID.state.battle.winner = null;
     ID.state.battle.initialSnapshot = null;
     ID.state.battle.afterActionReport = null;
+    ID.state.battle.salvageReport = null;
     ID.state.battle.logs = [];
 
     H.addLog('rolls', `🧹 Battlefield emptied. Select units from dropdowns to deploy new formations.`);
@@ -476,6 +479,8 @@ window.IronDivision = window.IronDivision || {};
     ID.state.battle.attackerSide = 'A';
     ID.state.battle.isOver = false;
     ID.state.battle.winner = null;
+    ID.state.battle.afterActionReport = null;
+    ID.state.battle.salvageReport = null;
     ID.state.battle.logs = [];
 
     const pickA = ['tpl_medium_tank', 'tpl_mechanized', 'tpl_artillery'];
@@ -997,6 +1002,7 @@ window.IronDivision = window.IronDivision || {};
     clearCombatLog,
     openBattleSummaryModal: () => ID.UI && ID.UI.openBattleSummaryModal(),
     closeBattleSummaryModal: () => ID.UI && ID.UI.closeBattleSummaryModal(),
+    exportAARToPDF: () => ID.UI && ID.UI.exportAARToPDF(),
 
     // Simulation Controls
     runSingleRound: () => ID.Combat && ID.Combat.runSingleRound(),

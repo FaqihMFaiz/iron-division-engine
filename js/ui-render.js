@@ -845,8 +845,111 @@ window.IronDivision = window.IronDivision || {};
   }
 
   // --------------------------------------------------------------------------
-  // After-Action Report (AAR) Modal
+  // After-Action Report (AAR) Modal & Official PDF Export (Form DA-774)
   // --------------------------------------------------------------------------
+
+  function formatMilitaryDTG(isoString) {
+    const d = isoString ? new Date(isoString) : new Date();
+    const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    const dd = String(d.getUTCDate()).padStart(2, '0');
+    const hh = String(d.getUTCHours()).padStart(2, '0');
+    const mm = String(d.getUTCMinutes()).padStart(2, '0');
+    const mon = months[d.getUTCMonth()];
+    const yyyy = d.getUTCFullYear();
+    return `${dd}${hh}${mm}Z ${mon} ${yyyy}`;
+  }
+
+  function summarizeSideMetrics(units = []) {
+    return units.reduce((acc, u) => {
+      acc.start += (u.maxPersonnel || 0);
+      acc.rem += (u.personnel || 0);
+      acc.dead += (u.dead || 0);
+      acc.wounded += (u.wounded || 0);
+      acc.captured += (u.captured || 0);
+      acc.escaped += (u.escaped || 0);
+      acc.armorStart += (u.originalMaxArmor || u.maxArmor || 0);
+      acc.armorRem += (u.armor || 0);
+      acc.armorRec += (u.recoverableArmor || 0);
+      acc.armorTowed += (u.towedArmor || 0);
+      acc.armorUnrec += (u.unrecoverableArmor || 0);
+      if (u.defeated) acc.defeatedCount += 1;
+      return acc;
+    }, {
+      start: 0, rem: 0, dead: 0, wounded: 0, captured: 0, escaped: 0,
+      armorStart: 0, armorRem: 0, armorRec: 0, armorTowed: 0, armorUnrec: 0, defeatedCount: 0
+    });
+  }
+
+  function extractAARChronology(logs = []) {
+    if (!logs || logs.length === 0) return [];
+    const keywords = [
+      'BATTLE OVER', 'AUTOMATIC OVERRUN', 'FIELD SALVAGE', 'BEAST RAMPAGE',
+      'NO QUARTER', 'Rallied to the Line', 'Rally Failed', 'Unbreakable Stand',
+      'Unbreakable Shattered', 'Rout & Scatter', 'Rout & Fallback', 'wiped out',
+      'permanently routed', 'AA Gun CRITICAL', 'MORTAR TRACK BLOWN', 'Decisive Breakthrough'
+    ];
+    const filtered = logs.filter(l => keywords.some(k => (l.text || '').includes(k)));
+    return filtered.slice(-18);
+  }
+
+  function buildAARAssessment(rep, sumA, sumB, isOver) {
+    const notes = [];
+    const lossA = sumA.dead + sumA.wounded + sumA.captured;
+    const lossB = sumB.dead + sumB.wounded + sumB.captured;
+    const pctA = sumA.start > 0 ? Math.round((lossA / sumA.start) * 100) : 0;
+    const pctB = sumB.start > 0 ? Math.round((lossB / sumB.start) * 100) : 0;
+
+    if (!isOver) {
+      notes.push(`Engagement remains active at Round ${rep.rounds}; telemetry reflects live frontline status.`);
+    } else if (rep.winner === 'Draw') {
+      notes.push(`Mutual combat exhaustion reached in Round ${rep.rounds}; neither force retained operational capacity to hold the sector.`);
+    } else {
+      const winLabel = rep.winner === 'A' ? 'BLUEFOR (Side A)' : 'OPFOR (Side B)';
+      const loseLabel = rep.winner === 'A' ? 'OPFOR (Side B)' : 'BLUEFOR (Side A)';
+      notes.push(`${winLabel} secured the ${rep.terrain} (${rep.feature}) sector in Round ${rep.rounds} after neutralizing ${loseLabel}'s frontline cohesion.`);
+    }
+
+    notes.push(`Personnel attrition stands at ${pctA}% for BLUEFOR (${lossA.toLocaleString()} total losses) versus ${pctB}% for OPFOR (${lossB.toLocaleString()} total losses).`);
+
+    const totalArmorKoA = sumA.armorUnrec + sumA.armorRec;
+    const totalArmorKoB = sumB.armorUnrec + sumB.armorRec;
+    if (sumA.armorStart > 0 || sumB.armorStart > 0) {
+      notes.push(`Armored vehicle losses: BLUEFOR ${totalArmorKoA} knocked out (${sumA.armorUnrec} total write-offs), OPFOR ${totalArmorKoB} knocked out (${sumB.armorUnrec} total write-offs).`);
+    }
+
+    if (isOver && rep.salvage && rep.salvage.abandoned > 0) {
+      notes.push(`Field recovery teams secured ${rep.salvage.abandoned} abandoned enemy hulls (${rep.salvage.impressed} impressed into service, +${rep.salvage.supplyScrapped} depot supply stripped).`);
+    }
+    return notes;
+  }
+
+  function getActiveAARData() {
+    const state = ID.state;
+    if (!state || !state.battle) return null;
+
+    const C = getCombat();
+    const getCmdName = (side) => C.getSideCommander ? (C.getSideCommander(side)?.name || 'Autonomous Staff') : 'Autonomous Staff';
+
+    if (state.battle.isOver && state.battle.afterActionReport) {
+      return state.battle.afterActionReport;
+    }
+
+    return {
+      docId: `SITREP-RD${String(state.battle.round).padStart(2, '0')}`,
+      timestamp: new Date().toISOString(),
+      winner: state.battle.winner,
+      rounds: state.battle.round,
+      terrain: state.environment.terrain,
+      feature: state.environment.feature,
+      weather: state.environment.weather,
+      theatreAttackerSide: state.environment.theatreAttackerSide || 'A',
+      commanderA: getCmdName('A'),
+      commanderB: getCmdName('B'),
+      sideA: state.battle.sideA.units,
+      sideB: state.battle.sideB.units,
+      salvage: state.battle.isOver ? (state.battle.salvageReport || null) : null
+    };
+  }
 
   function openBattleSummaryModal() {
     const state = ID.state;
@@ -856,123 +959,483 @@ window.IronDivision = window.IronDivision || {};
     if (!modal || !bodyEl || !state || !state.battle) return;
 
     const P = getPursuit();
-    if (!state.battle.afterActionReport && P.buildAfterActionReport) {
+    if (state.battle.isOver && !state.battle.afterActionReport && P.buildAfterActionReport) {
       P.buildAfterActionReport();
     }
-    const rep = state.battle.afterActionReport || {
-      winner: state.battle.winner,
-      rounds: state.battle.round,
-      terrain: state.environment.terrain,
-      feature: state.environment.feature,
-      weather: state.environment.weather,
-      sideA: state.battle.sideA.units,
-      sideB: state.battle.sideB.units
-    };
 
-    if (state.battle.isOver) {
+    const rep = getActiveAARData();
+    if (!rep) return;
+
+    const isOver = !!state.battle.isOver;
+    const dtg = formatMilitaryDTG(rep.timestamp);
+    const sumA = summarizeSideMetrics(rep.sideA);
+    const sumB = summarizeSideMetrics(rep.sideB);
+    const lossA = sumA.dead + sumA.wounded + sumA.captured;
+    const lossB = sumB.dead + sumB.wounded + sumB.captured;
+    const exchangeRatio = lossA > 0 ? `1 : ${(lossB / lossA).toFixed(2)}` : (lossB > 0 ? `0 : ${lossB}` : '0 : 0');
+    const chronology = extractAARChronology(state.battle.logs);
+    const assessments = buildAARAssessment(rep, sumA, sumB, isOver);
+    const salvage = isOver ? (rep.salvage || state.battle.salvageReport) : null;
+
+    if (isOver) {
       titleEl.textContent = rep.winner === 'Draw'
-        ? `Mutual Exhaustion — Draw after ${rep.rounds} Rounds`
-        : `Victory for Side ${rep.winner} in ${rep.rounds} Rounds!`;
+        ? `MUTUAL EXHAUSTION — DRAW (RD-${String(rep.rounds).padStart(2, '0')})`
+        : `VICTORY: ${rep.winner === 'A' ? 'BLUEFOR (SIDE A)' : 'OPFOR (SIDE B)'} — RD-${String(rep.rounds).padStart(2, '0')}`;
     } else {
-      titleEl.textContent = `Live Battle Telemetry — Round ${state.battle.round} (In Progress)`;
+      titleEl.textContent = `LIVE OPERATIONAL SITREP — RD-${String(rep.rounds).padStart(2, '0')} (IN PROGRESS)`;
     }
 
-    function renderSideReportTable(sideLabel, units = [], colorClass) {
-      const totStart = units.reduce((s, u) => s + (u.maxPersonnel || 0), 0);
-      const totRem = units.reduce((s, u) => s + (u.personnel || 0), 0);
-      const totDead = units.reduce((s, u) => s + (u.dead || 0), 0);
-      const totWounded = units.reduce((s, u) => s + (u.wounded || 0), 0);
-      const totCaptured = units.reduce((s, u) => s + (u.captured || 0), 0);
-      const totEscaped = units.reduce((s, u) => s + (u.escaped || 0), 0);
-      const totArmorRem = units.reduce((s, u) => s + (u.armor || 0), 0);
-      const totArmorRec = units.reduce((s, u) => s + (u.recoverableArmor || 0), 0);
-      const totArmorUnrec = units.reduce((s, u) => s + (u.unrecoverableArmor || 0), 0);
-
+    function renderSideReportTable(sideLabel, commanderName, units = [], sum, colorClass) {
       return `
-        <div class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 space-y-2">
+        <div class="bg-slate-950 border border-slate-800 p-3 space-y-2">
           <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
-            <h4 class="font-bold text-sm ${colorClass}">${sideLabel}</h4>
-            <div class="text-xs font-mono text-slate-300">
-              Remaining Active: <b>${totRem.toLocaleString()}</b> / ${totStart.toLocaleString()} |
-              Dead (KIA): <b class="text-rose-400">${totDead.toLocaleString()}</b> |
-              Wounded (WIA): <b class="text-amber-300">${totWounded.toLocaleString()}</b> |
-              Total Captured: <b class="text-purple-300">${totCaptured.toLocaleString()}</b> |
-              Escaped: <b class="text-emerald-300">${totEscaped.toLocaleString()}</b>
+            <div>
+              <h4 class="font-bold font-mono text-xs uppercase tracking-wider ${colorClass}">${sideLabel}</h4>
+              <div class="text-[10px] font-mono text-[#7c877b]">COMMANDER: ${escapeHtml(commanderName)}</div>
+            </div>
+            <div class="text-[10.5px] font-mono text-[#c8d1c7]">
+              EFF: <b>${sum.rem.toLocaleString()}</b>/${sum.start.toLocaleString()} |
+              KIA: <b class="text-[#d46a64]">${sum.dead.toLocaleString()}</b> |
+              WIA: <b class="text-[#c8a24b]">${sum.wounded.toLocaleString()}</b> |
+              POW: <b class="text-[#b8a2d9]">${sum.captured.toLocaleString()}</b> |
+              ESC: <b class="text-[#7cb377]">${sum.escaped.toLocaleString()}</b>
             </div>
           </div>
           <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs font-mono">
+            <table class="w-full text-left text-[11px] font-mono border-collapse">
               <thead>
-                <tr class="text-slate-400 border-b border-slate-800">
-                  <th class="py-1.5 px-2">Unit</th>
+                <tr class="text-[#7c877b] border-b border-slate-800 uppercase text-[10px]">
+                  <th class="py-1.5 px-2">Formation</th>
                   <th class="py-1.5 px-2">Status</th>
-                  <th class="py-1.5 px-2">Active HP</th>
-                  <th class="py-1.5 px-2">Org</th>
-                  <th class="py-1.5 px-2">KIA / WIA</th>
-                  <th class="py-1.5 px-2">Captured / Escaped</th>
-                  <th class="py-1.5 px-2">Armor (Act/Rec/Lost)</th>
+                  <th class="py-1.5 px-2 text-right">Strength</th>
+                  <th class="py-1.5 px-2 text-right">Org</th>
+                  <th class="py-1.5 px-2 text-right">KIA / WIA</th>
+                  <th class="py-1.5 px-2 text-right">POW / ESC</th>
+                  <th class="py-1.5 px-2 text-right">AFV (Act/Rec/Tow/KO)</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-slate-900">
+              <tbody class="divide-y divide-[#1e241f]">
                 ${units.map(u => `
                   <tr>
-                    <td class="py-1.5 px-2 font-sans font-semibold text-white">${u.name}</td>
-                    <td class="py-1.5 px-2 ${u.defeated ? 'text-rose-400' : 'text-emerald-400'}">${u.defeated ? 'Defeated' : 'Operational'}</td>
-                    <td class="py-1.5 px-2">${u.personnel} / ${u.maxPersonnel}</td>
-                    <td class="py-1.5 px-2">${(u.isMonster || u.isZombie) ? 'N/A' : `${u.org}/${u.maxOrg}`}</td>
-                    <td class="py-1.5 px-2 text-rose-300">${u.dead} / <span class="text-amber-300">${u.wounded}</span></td>
-                    <td class="py-1.5 px-2 text-purple-300">${u.captured || 0} / <span class="text-emerald-300">${u.escaped || 0}</span></td>
-                    <td class="py-1.5 px-2">${(u.originalMaxArmor > 0 || u.maxArmor > 0) ? `${u.armor} / ${u.recoverableArmor} / ${u.unrecoverableArmor}` : '—'}</td>
+                    <td class="py-1.5 px-2 font-semibold text-[#e7ece4]">${escapeHtml(u.name)}</td>
+                    <td class="py-1.5 px-2 uppercase text-[10px] ${u.defeated ? 'text-[#d46a64]' : (u.isRallying ? 'text-[#c8a24b]' : 'text-[#7cb377]')}">${u.defeated ? 'OUT OF ACTION' : (u.isRallying ? 'REAR RALLY' : 'OPERATIONAL')}</td>
+                    <td class="py-1.5 px-2 text-right">${u.personnel}/${u.maxPersonnel}</td>
+                    <td class="py-1.5 px-2 text-right">${(u.isMonster || u.isZombie) ? 'N/A' : `${u.org}/${u.maxOrg}`}</td>
+                    <td class="py-1.5 px-2 text-right text-[#d46a64]">${u.dead} / <span class="text-[#c8a24b]">${u.wounded}</span></td>
+                    <td class="py-1.5 px-2 text-right text-[#b8a2d9]">${u.captured || 0} / <span class="text-[#7cb377]">${u.escaped || 0}</span></td>
+                    <td class="py-1.5 px-2 text-right">${(u.originalMaxArmor > 0 || u.maxArmor > 0) ? `${u.armor}/${u.recoverableArmor}/${u.towedArmor || 0}/${u.unrecoverableArmor}` : '—'}</td>
                   </tr>
                 `).join('')}
               </tbody>
+              <tfoot>
+                <tr class="border-t border-[#364038] bg-[#111512] font-bold text-[#e7ece4]">
+                  <td class="py-1.5 px-2 uppercase" colspan="2">TOTALS (${units.length - sum.defeatedCount}/${units.length} ACTIVE)</td>
+                  <td class="py-1.5 px-2 text-right">${sum.rem}/${sum.start}</td>
+                  <td class="py-1.5 px-2 text-right">—</td>
+                  <td class="py-1.5 px-2 text-right text-[#d46a64]">${sum.dead} / <span class="text-[#c8a24b]">${sum.wounded}</span></td>
+                  <td class="py-1.5 px-2 text-right text-[#b8a2d9]">${sum.captured} / <span class="text-[#7cb377]">${sum.escaped}</span></td>
+                  <td class="py-1.5 px-2 text-right">${sum.armorStart > 0 ? `${sum.armorRem}/${sum.armorRec}/${sum.armorTowed}/${sum.armorUnrec}` : '—'}</td>
+                </tr>
+              </tfoot>
             </table>
           </div>
-          ${(totArmorRem + totArmorRec + totArmorUnrec) > 0 ? `
-            <div class="text-[11px] font-mono text-slate-400 pt-1 border-t border-slate-900">
-              🚜 Armor Summary — Combat-Ready: <b class="text-orange-300">${totArmorRem}</b> | Recoverable Disabled: <b class="text-emerald-300">${totArmorRec}</b> | Unrecoverable Destroyed: <b class="text-rose-400">${totArmorUnrec}</b>
-            </div>
-          ` : ''}
         </div>
       `;
     }
 
     bodyEl.innerHTML = `
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-center font-mono text-xs">
-        <div class="bg-slate-950 border border-slate-800 rounded-lg p-2.5">
-          <span class="text-slate-400 block text-[10px]">OUTCOME</span>
-          <span class="font-bold text-amber-400 text-sm">${state.battle.isOver ? `Side ${rep.winner} Won` : 'In Progress'}</span>
+      <!-- Official Military AAR Header Block -->
+      <div class="bg-slate-950 border border-[#364038] p-3 font-mono text-[11px] space-y-2">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-[#29312b] pb-1.5 text-[10px] text-[#7c877b] uppercase tracking-widest">
+          <span>UNCLASSIFIED // SIMULATION OPS</span>
+          <span>DOC-REF: ${escapeHtml(rep.docId || 'AAR-ID-001')} | DTG: ${dtg}</span>
         </div>
-        <div class="bg-slate-950 border border-slate-800 rounded-lg p-2.5">
-          <span class="text-slate-400 block text-[10px]">ROUNDS PASSED</span>
-          <span class="font-bold text-white text-sm">${rep.rounds}</span>
-        </div>
-        <div class="bg-slate-950 border border-slate-800 rounded-lg p-2.5">
-          <span class="text-slate-400 block text-[10px]">TERRAIN &amp; FEATURE</span>
-          <span class="font-bold text-sky-300 text-sm">${rep.terrain} (${rep.feature})</span>
-        </div>
-        <div class="bg-slate-950 border border-slate-800 rounded-lg p-2.5">
-          <span class="text-slate-400 block text-[10px]">WEATHER</span>
-          <span class="font-bold text-emerald-300 text-sm">${rep.weather}</span>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+          <div class="p-2 bg-[#111512] border border-[#242c26]">
+            <span class="text-[#6e7a6d] block text-[9px] uppercase">1. OUTCOME</span>
+            <span class="font-bold text-[#c8a24b] text-xs uppercase">${isOver ? (rep.winner === 'Draw' ? 'DRAW' : `SIDE ${rep.winner} VICTORY`) : 'IN PROGRESS'}</span>
+          </div>
+          <div class="p-2 bg-[#111512] border border-[#242c26]">
+            <span class="text-[#6e7a6d] block text-[9px] uppercase">2. DURATION / RATIO</span>
+            <span class="font-bold text-[#e7ece4] text-xs">RD-${String(rep.rounds).padStart(2, '0')} | EXCH ${exchangeRatio}</span>
+          </div>
+          <div class="p-2 bg-[#111512] border border-[#242c26]">
+            <span class="text-[#6e7a6d] block text-[9px] uppercase">3. SECTOR / FEATURE</span>
+            <span class="font-bold text-[#8ec0e8] text-xs uppercase">${escapeHtml(rep.terrain)} (${escapeHtml(rep.feature)})</span>
+          </div>
+          <div class="p-2 bg-[#111512] border border-[#242c26]">
+            <span class="text-[#6e7a6d] block text-[9px] uppercase">4. METEO / POSTURE</span>
+            <span class="font-bold text-[#89b884] text-xs uppercase">${escapeHtml(rep.weather)} | SIDE ${rep.theatreAttackerSide || 'A'} ATK</span>
+          </div>
         </div>
       </div>
-      ${renderSideReportTable('Side A — Vanguard Force', rep.sideA, 'text-sky-400')}
-      ${renderSideReportTable('Side B — Opposing Force', rep.sideB, 'text-rose-400')}
-      ${state.battle.salvageReport && state.battle.salvageReport.abandoned > 0 ? `
-        <div class="bg-amber-950/40 border border-amber-600/50 rounded-xl p-3 text-xs font-mono text-amber-200">
-          <span class="font-bold text-amber-400 uppercase tracking-wider block mb-1">🚜 Battlefield Salvage &amp; Captured Equipment</span>
-          <div>Side ${state.battle.winner} swept the field and claimed <b>${state.battle.salvageReport.abandoned}</b> abandoned enemy combat vehicles:</div>
-          <ul class="list-disc list-inside mt-1 space-y-0.5 text-slate-300">
-            <li>Repaired &amp; Impressed into Service (Beutepanzer): <b class="text-emerald-400">${state.battle.salvageReport.impressed}</b> hulls</li>
-            <li>Stripped for Logistics &amp; Spare Parts: <b class="text-sky-400">+${state.battle.salvageReport.supplyScrapped} Supply Points</b></li>
-            <li>Scuttled / Burned Hulks: <b class="text-rose-400">${state.battle.salvageReport.scuttled}</b> hulls</li>
-          </ul>
+
+      <!-- Section 2: ORBAT & Casualty Ledgers -->
+      ${renderSideReportTable('SECTION 2A // BLUEFOR (SIDE A — VANGUARD)', rep.commanderA || 'Autonomous Staff', rep.sideA, sumA, 'text-[#8ec0e8]')}
+      ${renderSideReportTable('SECTION 2B // OPFOR (SIDE B — OPPOSING)', rep.commanderB || 'Autonomous Staff', rep.sideB, sumB, 'text-[#e69894]')}
+
+      <!-- Section 3: Battlefield Salvage & Captured Equipment -->
+      ${isOver && salvage && salvage.abandoned > 0 ? `
+        <div class="bg-[#1a1710] border border-[#7d6731] p-3 text-xs font-mono space-y-1.5">
+          <span class="font-bold text-[#c8a24b] uppercase tracking-wider block">SECTION 3 // BATTLEFIELD SALVAGE &amp; CAPTURED MATERIAL</span>
+          <div class="text-[#dde3da]">Side ${rep.winner} field recovery units secured <b>${salvage.abandoned}</b> abandoned enemy combat hulls:</div>
+          <div class="grid grid-cols-3 gap-2 pt-1 text-[11px]">
+            <div class="p-2 bg-[#111512] border border-[#2e3730]">IMPRESSED (BEUTEPANZER): <b class="text-[#7cb377]">${salvage.impressed}</b></div>
+            <div class="p-2 bg-[#111512] border border-[#2e3730]">STRIPPED FOR DEPOT: <b class="text-[#8ec0e8]">+${salvage.supplyScrapped} SUP</b></div>
+            <div class="p-2 bg-[#111512] border border-[#2e3730]">SCUTTLED / WRITE-OFF: <b class="text-[#d46a64]">${salvage.scuttled}</b></div>
+          </div>
         </div>
       ` : ''}
+
+      <!-- Section 4: Key Engagement Chronology -->
+      ${chronology.length > 0 ? `
+        <div class="bg-slate-950 border border-slate-800 p-3 space-y-1.5 font-mono">
+          <span class="font-bold text-[#c8a24b] uppercase tracking-wider text-xs block">SECTION 4 // SIGNIFICANT ENGAGEMENT CHRONOLOGY</span>
+          <div class="max-h-36 overflow-y-auto custom-scroll space-y-1 text-[10.5px] text-[#c8d1c7]">
+            ${chronology.map(l => `<div class="border-l-2 border-[#3c473e] pl-2"><span class="text-[#6e7a6d]">[RD-${String(l.round).padStart(2, '0')}]</span> ${escapeHtml(l.text)}</div>`).join('')}
+          </div>
+        </div>
+      ` : ''}
+
+      <!-- Section 5: Staff Assessment -->
+      <div class="bg-slate-950 border border-slate-800 p-3 space-y-1.5 font-mono">
+        <span class="font-bold text-[#c8a24b] uppercase tracking-wider text-xs block">SECTION 5 // G-3 OPERATIONAL ASSESSMENT</span>
+        <ul class="list-disc list-inside space-y-1 text-[11px] text-[#c8d1c7]">
+          ${assessments.map(n => `<li>${escapeHtml(n)}</li>`).join('')}
+        </ul>
+      </div>
     `;
 
     modal.classList.remove('hidden');
     modal.classList.add('flex');
+  }
+
+  /**
+   * Generates a standalone, print-formatted Military After-Action Report (Form DA-774)
+   * and triggers the browser Save-as-PDF / Print dialog.
+   */
+  function buildPrintableAARHtml(rep) {
+    const state = ID.state;
+    const isOver = !!(state && state.battle && state.battle.isOver);
+    const dtg = formatMilitaryDTG(rep.timestamp);
+    const sumA = summarizeSideMetrics(rep.sideA);
+    const sumB = summarizeSideMetrics(rep.sideB);
+    const lossA = sumA.dead + sumA.wounded + sumA.captured;
+    const lossB = sumB.dead + sumB.wounded + sumB.captured;
+    const exchangeRatio = lossA > 0 ? `1 : ${(lossB / lossA).toFixed(2)}` : (lossB > 0 ? `0 : ${lossB}` : '0 : 0');
+    const chronology = extractAARChronology(state?.battle?.logs || []);
+    const assessments = buildAARAssessment(rep, sumA, sumB, isOver);
+    const salvage = isOver ? (rep.salvage || state?.battle?.salvageReport) : null;
+    const docTitle = `Iron_Division_AAR_${rep.docId || 'REPORT'}_${rep.terrain}`;
+
+    const renderForceTable = (heading, cmdName, units, sum) => `
+      <h3>${escapeHtml(heading)}</h3>
+      <div class="meta-sub">COMMANDING OFFICER: <strong>${escapeHtml(cmdName)}</strong> &nbsp;|&nbsp; FORMATIONS ACTIVE: <strong>${units.length - sum.defeatedCount}/${units.length}</strong></div>
+      <table>
+        <thead>
+          <tr>
+            <th>Unit Designation</th>
+            <th>Class / Exp</th>
+            <th>Final Status</th>
+            <th class="num">Start</th>
+            <th class="num">Rem</th>
+            <th class="num">KIA</th>
+            <th class="num">WIA</th>
+            <th class="num">POW</th>
+            <th class="num">ESC</th>
+            <th class="num">AFV (Act/Rec/Tow/KO)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${units.map(u => `
+            <tr>
+              <td><strong>${escapeHtml(u.name)}</strong></td>
+              <td>${escapeHtml((u.category || '').toUpperCase())} / ${escapeHtml(u.experience || '')}</td>
+              <td>${u.defeated ? 'OUT OF ACTION' : (u.isRallying ? 'REAR RALLY' : 'OPERATIONAL')}</td>
+              <td class="num">${u.maxPersonnel}</td>
+              <td class="num">${u.personnel}</td>
+              <td class="num">${u.dead}</td>
+              <td class="num">${u.wounded}</td>
+              <td class="num">${u.captured || 0}</td>
+              <td class="num">${u.escaped || 0}</td>
+              <td class="num">${(u.originalMaxArmor > 0 || u.maxArmor > 0) ? `${u.armor}/${u.recoverableArmor}/${u.towedArmor || 0}/${u.unrecoverableArmor}` : '—'}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3"><strong>FORCE TOTALS</strong></td>
+            <td class="num"><strong>${sum.start}</strong></td>
+            <td class="num"><strong>${sum.rem}</strong></td>
+            <td class="num"><strong>${sum.dead}</strong></td>
+            <td class="num"><strong>${sum.wounded}</strong></td>
+            <td class="num"><strong>${sum.captured}</strong></td>
+            <td class="num"><strong>${sum.escaped}</strong></td>
+            <td class="num"><strong>${sum.armorStart > 0 ? `${sum.armorRem}/${sum.armorRec}/${sum.armorTowed}/${sum.armorUnrec}` : '—'}</strong></td>
+          </tr>
+        </tfoot>
+      </table>
+    `;
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>${escapeHtml(docTitle)}</title>
+  <style>
+    @page { size: A4; margin: 14mm; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Courier New', Courier, monospace;
+      color: #111111;
+      background: #ffffff;
+      margin: 0;
+      padding: 16px;
+      font-size: 10.5pt;
+      line-height: 1.38;
+    }
+    .class-banner {
+      text-align: center;
+      font-weight: bold;
+      font-size: 9pt;
+      letter-spacing: 0.14em;
+      border-top: 2px solid #111;
+      border-bottom: 2px solid #111;
+      padding: 4px 0;
+      margin-bottom: 12px;
+    }
+    .doc-header {
+      border: 1.5px solid #111;
+      padding: 10px 12px;
+      margin-bottom: 14px;
+    }
+    .doc-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      border-bottom: 1px solid #111;
+      padding-bottom: 6px;
+      margin-bottom: 8px;
+    }
+    .doc-title {
+      font-size: 14pt;
+      font-weight: bold;
+      letter-spacing: 0.06em;
+    }
+    .doc-form {
+      font-size: 9pt;
+      font-weight: bold;
+    }
+    .memo-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px 16px;
+      font-size: 9.5pt;
+    }
+    h2 {
+      font-size: 10.5pt;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: #eceee9;
+      border: 1px solid #111;
+      border-left: 5px solid #111;
+      padding: 4px 8px;
+      margin: 14px 0 8px 0;
+      page-break-after: avoid;
+    }
+    h3 {
+      font-size: 10pt;
+      text-transform: uppercase;
+      margin: 10px 0 2px 0;
+      page-break-after: avoid;
+    }
+    .meta-sub {
+      font-size: 8.8pt;
+      margin-bottom: 5px;
+      color: #333;
+    }
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border: 1px solid #111;
+      margin-bottom: 10px;
+    }
+    .kpi-cell {
+      padding: 6px 8px;
+      border-right: 1px solid #111;
+    }
+    .kpi-cell:last-child { border-right: none; }
+    .kpi-label { font-size: 8pt; color: #444; display: block; text-transform: uppercase; }
+    .kpi-val { font-size: 10pt; font-weight: bold; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 10px;
+      font-size: 8.8pt;
+    }
+    thead { display: table-header-group; }
+    tr { break-inside: avoid; }
+    th, td {
+      border: 1px solid #333;
+      padding: 4px 6px;
+      text-align: left;
+    }
+    th {
+      background: #f2f2ef;
+      text-transform: uppercase;
+      font-size: 8pt;
+    }
+    tfoot td { background: #eceee9; }
+    .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .box {
+      border: 1px solid #111;
+      padding: 8px 10px;
+      margin-bottom: 10px;
+      font-size: 9.2pt;
+      break-inside: avoid;
+    }
+    .chron-item {
+      font-size: 8.5pt;
+      margin-bottom: 3px;
+      border-left: 2px solid #555;
+      padding-left: 6px;
+    }
+    ul { margin: 4px 0 0 18px; padding: 0; }
+    li { margin-bottom: 4px; font-size: 9.2pt; }
+    .sig-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-top: 22px;
+      break-inside: avoid;
+    }
+    .sig-block {
+      border-top: 1px solid #111;
+      padding-top: 4px;
+      font-size: 8.5pt;
+    }
+    .footer-banner {
+      margin-top: 18px;
+    }
+  </style>
+</head>
+<body>
+  <div class="class-banner">UNCLASSIFIED // IRON DIVISION OPERATIONAL SIMULATION</div>
+
+  <div class="doc-header">
+    <div class="doc-title-row">
+      <div class="doc-title">AFTER-ACTION REPORT (AAR)</div>
+      <div class="doc-form">FORM DA-774 // ${escapeHtml(rep.docId || 'AAR-001')}</div>
+    </div>
+    <div class="memo-grid">
+      <div><strong>FROM:</strong> HQ COMBINED-ARMS SIMULATION</div>
+      <div><strong>DTG:</strong> ${dtg}</div>
+      <div><strong>TO:</strong> THEATRE OPERATIONS (G-3)</div>
+      <div><strong>STATUS:</strong> ${isOver ? 'FINAL DEBRIEF' : 'INTERIM SITREP'}</div>
+      <div><strong>SUBJECT:</strong> ${escapeHtml(rep.terrain.toUpperCase())} (${escapeHtml(rep.feature.toUpperCase())}) ENGAGEMENT</div>
+      <div><strong>METEO:</strong> ${escapeHtml(rep.weather.toUpperCase())}</div>
+    </div>
+  </div>
+
+  <h2>1. Operational Executive Summary</h2>
+  <div class="kpi-grid">
+    <div class="kpi-cell">
+      <span class="kpi-label">Operation Outcome</span>
+      <span class="kpi-val">${isOver ? (rep.winner === 'Draw' ? 'MUTUAL EXHAUSTION' : `SIDE ${rep.winner} VICTORY`) : 'IN PROGRESS'}</span>
+    </div>
+    <div class="kpi-cell">
+      <span class="kpi-label">Rounds Elapsed</span>
+      <span class="kpi-val">RD-${String(rep.rounds).padStart(2, '0')}</span>
+    </div>
+    <div class="kpi-cell">
+      <span class="kpi-label">Theatre Posture</span>
+      <span class="kpi-val">SIDE ${rep.theatreAttackerSide || 'A'} ASSAULT</span>
+    </div>
+    <div class="kpi-cell">
+      <span class="kpi-label">Loss Ratio (A : B)</span>
+      <span class="kpi-val">${exchangeRatio}</span>
+    </div>
+  </div>
+
+  <h2>2. Order of Battle &amp; Casualty Ledger</h2>
+  ${renderForceTable('2A. BLUEFOR — Side A (Vanguard Force)', rep.commanderA || 'Autonomous Staff', rep.sideA, sumA)}
+  ${renderForceTable('2B. OPFOR — Side B (Opposing Force)', rep.commanderB || 'Autonomous Staff', rep.sideB, sumB)}
+
+  <h2>3. Material Recovery &amp; Battlefield Salvage</h2>
+  <div class="box">
+    ${isOver && salvage && salvage.abandoned > 0 ? `
+      <div><strong>VICTOR FIELD POSSESSION (SIDE ${rep.winner}):</strong> ${salvage.abandoned} abandoned enemy armored hulls secured on the objective.</div>
+      <ul>
+        <li><strong>Repaired &amp; Impressed (Beutepanzers):</strong> ${salvage.impressed} vehicle(s)</li>
+        <li><strong>Stripped for Depot Logistics:</strong> +${salvage.supplyScrapped} Supply Points</li>
+        <li><strong>Scuttled / Destroyed Write-Offs:</strong> ${salvage.scuttled} vehicle(s)</li>
+      </ul>
+    ` : `<div>No abandoned enemy armored vehicles were claimed during this reporting period.</div>`}
+  </div>
+
+  <h2>4. Significant Engagement Chronology</h2>
+  <div class="box">
+    ${chronology.length > 0
+      ? chronology.map(l => `<div class="chron-item"><strong>[RD-${String(l.round).padStart(2, '0')}]</strong> ${escapeHtml(l.text)}</div>`).join('')
+      : '<div>No major milestone events recorded in sitrep log.</div>'}
+  </div>
+
+  <h2>5. G-3 Operational Assessment &amp; Authentication</h2>
+  <div class="box">
+    <ul>
+      ${assessments.map(n => `<li>${escapeHtml(n)}</li>`).join('')}
+    </ul>
+    <div class="sig-grid">
+      <div class="sig-block">
+        <strong>PREPARING OFFICER (G-3 OPS)</strong><br>
+        IRON DIVISION COMMAND STAFF — ${dtg}
+      </div>
+      <div class="sig-block">
+        <strong>REVIEWING COMMANDER</strong><br>
+        ${escapeHtml(rep.winner === 'B' ? (rep.commanderB || 'OPFOR HQ') : (rep.commanderA || 'BLUEFOR HQ'))}
+      </div>
+    </div>
+  </div>
+
+  <div class="class-banner footer-banner">UNCLASSIFIED // END OF AFTER-ACTION REPORT</div>
+</body>
+</html>`;
+  }
+
+  function exportAARToPDF() {
+    const rep = getActiveAARData();
+    if (!rep) {
+      H.showToast('No active battle telemetry available to export.', 'warn');
+      return;
+    }
+
+    const htmlDoc = buildPrintableAARHtml(rep);
+    const printWin = window.open('', '_blank', 'width=960,height=1100');
+
+    if (!printWin) {
+      H.showToast('Pop-up blocked — falling back to direct browser print dialog.', 'warn');
+      window.print();
+      return;
+    }
+
+    printWin.document.open();
+    printWin.document.write(htmlDoc);
+    printWin.document.close();
+
+    const triggerPrint = () => {
+      try {
+        printWin.focus();
+        printWin.print();
+      } catch (e) {
+        window.print();
+      }
+    };
+
+    if (printWin.document.readyState === 'complete') {
+      setTimeout(triggerPrint, 180);
+    } else {
+      printWin.onload = () => setTimeout(triggerPrint, 180);
+    }
   }
 
   function closeBattleSummaryModal() {
@@ -1020,6 +1483,8 @@ window.IronDivision = window.IronDivision || {};
     renderTacticsGuide,
     openBattleSummaryModal,
     closeBattleSummaryModal,
+    buildPrintableAARHtml,
+    exportAARToPDF,
     renderAll
   };
 
@@ -1032,6 +1497,7 @@ window.IronDivision = window.IronDivision || {};
   window.renderBattlefield = renderBattlefield;
   window.openBattleSummaryModal = openBattleSummaryModal;
   window.closeBattleSummaryModal = closeBattleSummaryModal;
+  window.exportAARToPDF = exportAARToPDF;
   window.renderAll = renderAll;
 
 })(window.IronDivision);

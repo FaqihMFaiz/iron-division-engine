@@ -944,13 +944,18 @@
 
       <div id="modal-report-body" class="space-y-4 text-xs sm:text-sm"></div>
 
-      <div class="mt-5 pt-3 border-t border-slate-800 flex flex-wrap justify-end gap-2">
-        <button type="button" onclick="resetCurrentBattle(); closeBattleSummaryModal();" class="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs sm:text-sm">
-          ↺ Reset Current Battle
+      <div class="mt-5 pt-3 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2">
+        <button type="button" onclick="exportAARToPDF()" id="btn-export-aar-pdf" class="mil-btn px-4 py-2 bg-[#234563] hover:bg-[#2d587d] border border-[#4e8ec4] text-[#d9ecfc] font-bold text-xs">
+          DOWNLOAD OFFICIAL AAR (PDF)
         </button>
-        <button type="button" onclick="closeBattleSummaryModal()" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs sm:text-sm">
-          Close Report
-        </button>
+        <div class="flex flex-wrap gap-2">
+          <button type="button" onclick="resetCurrentBattle(); closeBattleSummaryModal();" class="mil-btn px-4 py-2 bg-[#c8a24b] hover:bg-[#d8b45c] border border-[#e0be6a] text-[#0d100d] font-bold text-xs">
+            RESET OPERATION
+          </button>
+          <button type="button" onclick="closeBattleSummaryModal()" class="mil-btn px-4 py-2 bg-[#1c221d] hover:bg-[#272f29] border border-[#3a453c] text-[#dde3da] font-semibold text-xs">
+            CLOSE
+          </button>
+        </div>
       </div>
     </div>
   </div>

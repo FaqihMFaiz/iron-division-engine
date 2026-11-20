@@ -75,6 +75,7 @@ window.IronDivision = window.IronDivision || {};
 
     H.addLog('rolls', `================================================`);
     if (winnerSide === 'Draw') {
+      state.battle.salvageReport = null;
       H.addLog('rolls', `🏁 BATTLE OVER — Mutual Exhaustion after ${state.battle.round} rounds!`);
     } else {
       const loserSide = winnerSide === 'A' ? 'B' : 'A';
@@ -276,14 +277,27 @@ window.IronDivision = window.IronDivision || {};
     const state = ID.state;
     if (!state || !state.battle) return;
 
+    const getCmdName = (side) => {
+      if (ID.Combat && typeof ID.Combat.getSideCommander === 'function') {
+        return ID.Combat.getSideCommander(side)?.name || 'Autonomous Staff';
+      }
+      return 'Autonomous Staff';
+    };
+
     state.battle.afterActionReport = {
+      docId: `AAR-ID-${String(Date.now()).slice(-6)}`,
+      timestamp: new Date().toISOString(),
       winner: state.battle.winner,
       rounds: state.battle.round,
       terrain: state.environment.terrain,
       feature: state.environment.feature,
       weather: state.environment.weather,
+      theatreAttackerSide: state.environment.theatreAttackerSide || 'A',
+      commanderA: getCmdName('A'),
+      commanderB: getCmdName('B'),
       sideA: structuredClone(state.battle.sideA.units),
-      sideB: structuredClone(state.battle.sideB.units)
+      sideB: structuredClone(state.battle.sideB.units),
+      salvage: state.battle.salvageReport ? structuredClone(state.battle.salvageReport) : null
     };
   }
 
