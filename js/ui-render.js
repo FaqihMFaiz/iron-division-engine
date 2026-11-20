@@ -405,27 +405,50 @@ window.IronDivision = window.IronDivision || {};
 
       return `
         <div class="unit-dossier ${u.defeated ? 'unit-dossier-defeated' : (side === 'A' ? 'unit-dossier-a' : 'unit-dossier-b')} p-2.5 space-y-2">
-          <div class="flex items-start justify-between gap-2">
+          <div class="unit-dossier-header relative flex items-start justify-between gap-2">
             <div class="flex items-center gap-1.5 flex-wrap min-w-0">
               <span class="${side === 'A' ? 'text-[#8ec0e8]' : 'text-[#e69894]'} shrink-0" title="${escapeHtml(u.category.toUpperCase())} NATO Symbol">${ID.Icons ? ID.Icons.get(u.category) : ''}</span>
               <span class="font-bold font-mono text-xs text-[#e7ece4] uppercase tracking-wide truncate">${escapeHtml(u.name)}</span>
               <span class="text-[9.5px] font-mono uppercase px-1.5 py-0.5 bg-[#232016] text-[#c8a24b] border border-[#594b27]">${escapeHtml(u.experience)}</span>
-              <span class="text-[9.5px] font-mono uppercase px-1.5 py-0.5 bg-[#151a16] text-[#939e91] border border-[#2d362f]">${escapeHtml(u.category.replace('_', ' '))}</span>
+              <span class="unit-tooltip-trigger" tabindex="0">INTEL</span>
             </div>
             <button type="button" onclick="removeUnitFromSide('${side}', '${u.instanceId}')" class="text-[#667065] hover:text-[#d46a64] font-mono text-xs px-1 shrink-0" title="Remove unit">[X]</button>
+
+            <!-- Hover Tooltip: Full Combat Stats & Doctrine Traits -->
+            <div class="unit-dossier-tooltip space-y-2">
+              <div class="flex items-center justify-between border-b border-[#2b342c] pb-1 font-mono text-[9.5px] uppercase">
+                <span class="text-[#c8a24b] font-bold">UNIT DOSSIER // ${escapeHtml(u.category.replace('_', ' '))}</span>
+                <span class="text-[#939e91]">${escapeHtml(u.armorTier.toUpperCase())}</span>
+              </div>
+              <div class="unit-stat-grid">
+                <div class="unit-stat-cell"><span class="unit-stat-label">Soft</span><span class="unit-stat-val">${u.softAttack}</span></div>
+                <div class="unit-stat-cell"><span class="unit-stat-label">Hard</span><span class="unit-stat-val">${u.hardAttack}</span></div>
+                <div class="unit-stat-cell"><span class="unit-stat-label">Def</span><span class="unit-stat-val">${u.defense}</span></div>
+                <div class="unit-stat-cell"><span class="unit-stat-label">Pierce</span><span class="unit-stat-val text-[#8ec0e8]">${u.piercing}</span></div>
+                <div class="unit-stat-cell"><span class="unit-stat-label">Hrdn</span><span class="unit-stat-val text-[#c8a24b]">${u.hardness}</span></div>
+              </div>
+              <div class="grid grid-cols-2 gap-1 font-mono text-[10px]">
+                <div class="px-2 py-1 bg-[#181d19] border border-[#29312b] flex justify-between">
+                  <span class="text-[#7c877b]">PUR/RET</span>
+                  <span class="text-[#b8a2d9] font-bold">${purBonus >= 0 ? '+' : ''}${purBonus}/${retBonus >= 0 ? '+' : ''}${retBonus}</span>
+                </div>
+                <div class="px-2 py-1 bg-[#181d19] border border-[#29312b] flex justify-between">
+                  <span class="text-[#7c877b]">RANGE</span>
+                  <span class="${inRangeNow ? 'text-[#7cb377]' : 'text-[#c8a24b]'} font-bold">≤${unitRange}${closestEnemyDist !== null ? `/${closestEnemyDist}` : ''}</span>
+                </div>
+              </div>
+              <div>
+                <div class="font-mono text-[9px] uppercase text-[#7c877b] mb-1">TRAITS &amp; SUPPORT</div>
+                <div class="flex flex-wrap gap-1">${traitBadges || '<span class="text-[10px] font-mono text-[#667065]">NONE</span>'}</div>
+              </div>
+            </div>
           </div>
 
-          <div class="unit-stat-grid">
-            <div class="unit-stat-cell" title="Soft Attack"><span class="unit-stat-label">Soft</span><span class="unit-stat-val">${u.softAttack}</span></div>
-            <div class="unit-stat-cell" title="Hard Attack"><span class="unit-stat-label">Hard</span><span class="unit-stat-val">${u.hardAttack}</span></div>
-            <div class="unit-stat-cell" title="Defense"><span class="unit-stat-label">Def</span><span class="unit-stat-val">${u.defense}</span></div>
-            <div class="unit-stat-cell" title="Armor Piercing"><span class="unit-stat-label">Pierce</span><span class="unit-stat-val text-[#8ec0e8]">${u.piercing}</span></div>
-            <div class="unit-stat-cell" title="Armor Hardness"><span class="unit-stat-label">Hrdn</span><span class="unit-stat-val text-[#c8a24b]">${u.hardness}</span></div>
-            <div class="unit-stat-cell" title="Pursuit / Retreat Modifier"><span class="unit-stat-label">Pur/Ret</span><span class="unit-stat-val text-[#b8a2d9]">${purBonus >= 0 ? '+' : ''}${purBonus}/${retBonus >= 0 ? '+' : ''}${retBonus}</span></div>
+          <!-- Compact On-Card Telemetry (TV, Dig-In, Distance only) -->
+          <div class="unit-stat-grid-3">
             <div class="unit-stat-cell" title="Target Value"><span class="unit-stat-label">TV</span><span class="unit-stat-val text-[#7cb377]">${tv}</span></div>
             <div class="unit-stat-cell" title="Entrenchment Level / Max Cap"><span class="unit-stat-label">Dig-In</span><span class="unit-stat-val text-[#c8a24b]">${u.entrenchmentLevel || 0}/${entrenchCap}</span></div>
-            <div class="unit-stat-cell" title="Y-Axis Coordinate: ${side === 'A' ? '+' : '-'}${unitPos}"><span class="unit-stat-label">Dist</span><span class="unit-stat-val text-[#8ec0e8]">${unitPos}</span></div>
-            <div class="unit-stat-cell" title="Max Engagement Range: ≤${unitRange} Total Distance${closestEnemyDist !== null ? ` (Closest Enemy: ${closestEnemyDist})` : ''}"><span class="unit-stat-label">Range</span><span class="unit-stat-val ${inRangeNow ? 'text-[#7cb377]' : 'text-[#c8a24b]'}">≤${unitRange}${closestEnemyDist !== null ? `/${closestEnemyDist}` : ''}</span></div>
+            <div class="unit-stat-cell" title="Y-Axis Coordinate: ${side === 'A' ? 'A-' : 'B-'}${unitPos}"><span class="unit-stat-label">Dist</span><span class="unit-stat-val text-[#8ec0e8]">${unitPos}</span></div>
           </div>
 
           ${u.defeated ? `<div class="text-[10px] font-mono uppercase text-[#e69894] bg-[#2b1514] border border-[#6e3532] px-2 py-1">STATUS: OUT OF ACTION // ${escapeHtml(u.defeatReason)}</div>` : ''}
@@ -479,10 +502,6 @@ window.IronDivision = window.IronDivision || {};
               <div class="text-[9.5px] text-[#7c877b] mt-0.5">RECOV <span class="text-[#89b884]">${u.recoverableArmor}</span> | KO <span class="text-[#d46a64]">${u.unrecoverableArmor}</span></div>
             </div>
             ` : `<div class="text-[9.5px] font-mono uppercase text-[#667065] flex items-center">UNARMORED // FOOT ELEMENT</div>`}
-          </div>
-
-          <div class="flex flex-wrap gap-1 pt-1.5 border-t border-[#1e241f]">
-            ${traitBadges}
           </div>
         </div>
       `;

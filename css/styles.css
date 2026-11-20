@@ -253,23 +253,85 @@ body.mil-ui ::selection {
 }
 
 .unit-dossier {
-  background-color: var(--bg-inset);
-  border: 1px solid var(--border-grid);
-  border-left-width: 3px;
+  position: relative;
+  border: 3px solid transparent;
+  background:
+    linear-gradient(var(--bg-inset), var(--bg-inset)) padding-box,
+    linear-gradient(135deg, #4b574d, #262e28) border-box;
 }
 
 .unit-dossier-a {
-  border-left-color: var(--bluefor);
+  background:
+    linear-gradient(var(--bg-inset), var(--bg-inset)) padding-box,
+    linear-gradient(135deg, #7cc0f5 0%, #4283b8 48%, #1d4266 100%) border-box;
 }
 
 .unit-dossier-b {
-  border-left-color: var(--opfor);
+  background:
+    linear-gradient(var(--bg-inset), var(--bg-inset)) padding-box,
+    linear-gradient(135deg, #eb8680 0%, #c24b44 48%, #691f1b 100%) border-box;
 }
 
 .unit-dossier-defeated {
-  border-color: #4f2624;
-  border-left-color: #7c2d2a;
+  background:
+    linear-gradient(var(--bg-inset), var(--bg-inset)) padding-box,
+    linear-gradient(135deg, #7d3633 0%, #3d1816 100%) border-box;
   opacity: 0.62;
+}
+
+.unit-stat-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  background-color: var(--border-grid);
+  border: 1px solid var(--border-grid);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.unit-tooltip-trigger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 1px 6px;
+  background-color: #19201b;
+  border: 1px solid #3c473e;
+  color: #c8a24b;
+  cursor: help;
+}
+
+.unit-tooltip-trigger:hover,
+.unit-tooltip-trigger:focus {
+  background-color: #242d26;
+  border-color: #c8a24b;
+  outline: none;
+}
+
+.unit-dossier-tooltip {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 45;
+  background-color: #121613;
+  border: 2px solid #c8a24b;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.85);
+  padding: 8px;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.14s ease;
+}
+
+.unit-dossier-header:hover .unit-dossier-tooltip,
+.unit-dossier-header:focus-within .unit-dossier-tooltip {
+  opacity: 1;
+  visibility: visible;
 }
 
 .unit-stat-grid {
@@ -761,11 +823,33 @@ body.mil-ui ::selection {
    -------------------------------------------------------------------------- */
 
 .paper-sitrep-panel {
+  position: relative;
   background-color: #ebe5d5 !important;
   color: #181c19 !important;
-  border: 1px solid #bfb7a2 !important;
-  border-left: 5px solid #2f3b2e !important;
-  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4) !important;
+  border: 3px solid #2f3b2e !important;
+  box-shadow:
+    inset 0 0 0 2px #f4f1e6,
+    inset 0 0 0 3px #b5ad98,
+    4px 4px 0 0 #d7cfb9,
+    5px 5px 0 1px #6e6858,
+    8px 8px 0 0 #c5bca4,
+    9px 9px 0 1px #47443a !important;
+  margin-right: 9px;
+  margin-bottom: 9px;
+}
+
+.paper-sitrep-panel::after {
+  content: "";
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 20px 20px 0;
+  border-color: transparent #0e110f transparent transparent;
+  box-shadow: -2px 2px 0 rgba(47, 59, 46, 0.45);
+  pointer-events: none;
 }
 
 .paper-sitrep-header {
@@ -841,10 +925,7 @@ body.mil-ui ::selection {
 .paper-sitrep-row {
   background-color: #faf8f2;
   color: #1a201b;
-  border-top: 1px solid #d9d2bf;
-  border-right: 1px solid #d9d2bf;
-  border-bottom: 1px solid #d9d2bf;
-  border-left-width: 3px;
+  border: 1px solid #cfc7b2;
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   line-height: 1.45;
@@ -852,30 +933,30 @@ body.mil-ui ::selection {
 }
 
 .paper-sitrep-rolls {
-  border-left-color: #3a4738;
+  border-color: #cfc7b2;
   background-color: #faf8f2;
 }
 
 .paper-sitrep-damage {
-  border-left-color: #8b2e2a;
+  border-color: #cfa6a3;
   background-color: #f7ecea;
   color: #2b1413;
 }
 
 .paper-sitrep-armor {
-  border-left-color: #8a621c;
+  border-color: #cfb982;
   background-color: #f6f0df;
   color: #261d0d;
 }
 
 .paper-sitrep-support {
-  border-left-color: #234563;
+  border-color: #a6bdd1;
   background-color: #eaf0f5;
   color: #132230;
 }
 
 .paper-sitrep-error {
-  border-left-color: #b91c1c;
+  border-color: #dc2626;
   background-color: #fee2e2;
   color: #7f1d1d;
   font-weight: 700;
