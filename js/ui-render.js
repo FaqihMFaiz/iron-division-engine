@@ -1438,11 +1438,12 @@ window.IronDivision = window.IronDivision || {};
 <head>
   <meta charset="UTF-8">
   <title>${escapeHtml(docTitle)}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     @page { size: A4; margin: 14mm; }
     * { box-sizing: border-box; }
     body {
-      font-family: 'Courier New', Courier, monospace;
+      font-family: 'IBM Plex Mono', 'Courier New', Courier, monospace;
       color: #111111;
       background: #ffffff;
       margin: 0;
@@ -1474,9 +1475,10 @@ window.IronDivision = window.IronDivision || {};
       margin-bottom: 8px;
     }
     .doc-title {
-      font-size: 14pt;
-      font-weight: bold;
-      letter-spacing: 0.06em;
+      font-family: 'Chakra Petch', 'IBM Plex Mono', sans-serif;
+      font-size: 15pt;
+      font-weight: 700;
+      letter-spacing: 0.08em;
     }
     .doc-form {
       font-size: 9pt;

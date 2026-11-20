@@ -30,7 +30,7 @@ html {
 }
 
 body.mil-ui {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'IBM Plex Sans Condensed', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background-color: var(--bg-map);
   background-image:
     linear-gradient(to right, rgba(163, 177, 138, 0.032) 1px, transparent 1px),
@@ -91,7 +91,7 @@ body.mil-ui ::selection {
   background-color: var(--bg-inset) !important;
   border: 1px solid var(--border-hi) !important;
   color: var(--ink-main) !important;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 12px;
 }
 
@@ -107,7 +107,7 @@ body.mil-ui ::selection {
   padding-right: 26px !important;
   border: 1px solid #3c473e !important;
   color: var(--ink-main) !important;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 11.5px;
   cursor: pointer;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 1px 2px rgba(0, 0, 0, 0.45);
@@ -127,7 +127,7 @@ body.mil-ui ::selection {
 .mil-ui select option {
   background-color: #121613;
   color: #dde3da;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'IBM Plex Mono', monospace;
 }
 
 .mil-ui select:focus,
@@ -170,30 +170,26 @@ body.mil-ui ::selection {
   border-right: 2px solid var(--brass-dim);
 }
 
+.mil-monitor-frame,
 .mil-panel-bluefor,
 .mil-panel-opfor {
-  border: 6px solid #232a24 !important;
+  background-color: #1f2520 !important;
+  border: 6px solid #171c18 !important;
   border-radius: 3px !important;
-}
-
-.mil-panel-bluefor {
   box-shadow:
     inset 0 2px 0 rgba(255, 255, 255, 0.06),
     inset 0 -2px 0 rgba(0, 0, 0, 0.55),
-    inset 0 0 0 2px #0b0e0c,
-    inset 0 0 0 4px #274c6e,
-    0 0 0 2px #0a0c0b,
+    inset 0 0 0 2px #0a0c0b,
+    inset 0 0 0 3px #333d35,
+    0 0 0 2px #080a09,
     0 6px 18px rgba(0, 0, 0, 0.65) !important;
 }
 
-.mil-panel-opfor {
-  box-shadow:
-    inset 0 2px 0 rgba(255, 255, 255, 0.06),
-    inset 0 -2px 0 rgba(0, 0, 0, 0.55),
-    inset 0 0 0 2px #0b0e0c,
-    inset 0 0 0 4px #6b2926,
-    0 0 0 2px #0a0c0b,
-    0 6px 18px rgba(0, 0, 0, 0.65) !important;
+.side-title-plate {
+  border-radius: 0 !important;
+  border: 1px solid #404a42;
+  background: linear-gradient(90deg, #1d211f 0%, #2c312e 50%, #1d211f 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .mil-panel-cmd {
@@ -203,7 +199,7 @@ body.mil-ui ::selection {
 .mil-classification-bar {
   background-color: #0b0e0c;
   border-bottom: 1px solid var(--border-grid);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 10px;
   letter-spacing: 0.08em;
   color: var(--ink-dim);
@@ -250,7 +246,7 @@ body.mil-ui ::selection {
 }
 
 .mil-btn {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'IBM Plex Mono', monospace;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   border-radius: 2px !important;
@@ -306,7 +302,7 @@ body.mil-ui ::selection {
 
 .unit-dossier {
   position: relative;
-  background-color: var(--bg-inset);
+  background-color: #242b25;
   border: 3px solid #2b342d;
   transition: border-color 0.14s ease, background-color 0.14s ease;
 }
@@ -317,7 +313,7 @@ body.mil-ui ::selection {
 
 .unit-dossier-a:hover {
   border-color: #34628c;
-  background-color: #0e1317;
+  background-color: #262f34;
 }
 
 .unit-dossier-b {
@@ -326,7 +322,7 @@ body.mil-ui ::selection {
 
 .unit-dossier-b:hover {
   border-color: #8a342f;
-  background-color: #160e0e;
+  background-color: #2f2626;
 }
 
 .unit-dossier-defeated {
@@ -340,7 +336,7 @@ body.mil-ui ::selection {
   gap: 1px;
   background-color: var(--border-grid);
   border: 1px solid var(--border-grid);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'IBM Plex Mono', monospace;
 }
 
 /* Cursor-Following Floating Unit Dossier Tooltip */
@@ -373,7 +369,7 @@ body.mil-ui ::selection {
   gap: 1px;
   background-color: var(--border-grid);
   border: 1px solid var(--border-grid);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'IBM Plex Mono', monospace;
 }
 
 .unit-stat-cell {
@@ -409,7 +405,7 @@ body.mil-ui ::selection {
 
 .mil-tag {
   display: inline-block;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 9.5px;
   line-height: 1.25;
   letter-spacing: 0.03em;
@@ -424,7 +420,7 @@ body.mil-ui ::selection {
    5. Header Navigation Tabs (Command Console Strip)
    -------------------------------------------------------------------------- */
 .tab-btn {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 11px;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -574,18 +570,18 @@ body.mil-ui ::selection {
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
   max-width: 1180px;
   margin: 0 auto;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'IBM Plex Sans Condensed', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.6;
 }
 
 .tradoc-doc .tradoc-mono {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'IBM Plex Mono', monospace;
 }
 
 .tradoc-doc .tradoc-class-strip {
   background-color: #252e24;
   color: #f4f1e6;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 10.5px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -610,7 +606,7 @@ body.mil-ui ::selection {
   border-bottom: 1px solid #b5ad98;
   padding: 10px 0;
   margin-top: 14px;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 11px;
   color: #343c33;
 }
@@ -636,7 +632,7 @@ body.mil-ui ::selection {
   background-color: #f4f1e6;
   border: 1px solid #c4bca8;
   color: #1c241b;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 11px;
   font-weight: 600;
   text-decoration: none;
@@ -677,7 +673,7 @@ body.mil-ui ::selection {
 }
 
 .tradoc-doc .tradoc-chapter-num {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -702,7 +698,7 @@ body.mil-ui ::selection {
 }
 
 .tradoc-doc .tradoc-para-id {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'IBM Plex Mono', monospace;
   font-weight: 700;
   color: #2f3b2e;
   margin-right: 6px;
@@ -714,7 +710,7 @@ body.mil-ui ::selection {
   border-left: 4px solid #2f3b2e;
   padding: 10px 14px;
   margin: 10px 0 12px 0;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 12.5px;
   color: #141815;
   overflow-x: auto;
@@ -778,7 +774,7 @@ body.mil-ui ::selection {
 }
 
 .tradoc-doc .tradoc-card-title {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 11.5px;
   font-weight: 700;
   text-transform: uppercase;
@@ -807,7 +803,7 @@ body.mil-ui ::selection {
 .tradoc-doc table.tradoc-table th {
   background-color: #262f25;
   color: #f4f1e6;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 10.5px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -831,7 +827,7 @@ body.mil-ui ::selection {
   background-color: #eae4d4;
   border-top: 3px double #181c19;
   padding: 16px 28px;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 11px;
   color: #343c33;
   display: flex;
@@ -916,7 +912,7 @@ body.mil-ui ::selection {
 }
 
 .paper-sitrep-btn {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
@@ -971,7 +967,7 @@ body.mil-ui ::selection {
   background-color: #faf8f2;
   color: #1a201b;
   border: 1px solid #cfc7b2;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 11px;
   line-height: 1.45;
   padding: 5px 8px;
@@ -1042,7 +1038,7 @@ body.mil-ui ::selection {
 }
 
 #battle-modal .tradoc-aar-sec-title {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 11px;
   font-weight: 800;
   text-transform: uppercase;
@@ -1063,7 +1059,7 @@ body.mil-ui ::selection {
 #battle-modal .tradoc-aar-table {
   width: 100%;
   border-collapse: collapse;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 11px;
   background-color: #faf8f2;
 }
@@ -1164,7 +1160,7 @@ body.mil-ui ::selection {
   top: 11px;
   left: 50%;
   transform: translateX(-50%);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 9px;
   color: #7c877b;
   white-space: nowrap;
@@ -1221,7 +1217,7 @@ body.mil-ui ::selection {
 }
 
 .yaxis-count-dot {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 8px;
   line-height: 1;
   font-weight: 800;
@@ -1242,7 +1238,7 @@ body.mil-ui ::selection {
   border-top: 3px solid #c8a24b;
   color: #e7ece4;
   padding: 6px 8px;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 10px;
   line-height: 1.4;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.72);
@@ -1294,7 +1290,7 @@ body.mil-ui ::selection {
   margin-top: 8px;
   padding-top: 6px;
   border-top: 1px dashed #2e3730;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'IBM Plex Mono', monospace;
   font-size: 10px;
   display: flex;
   flex-wrap: wrap;
@@ -1317,3 +1313,21 @@ body.mil-ui ::selection {
 .paper-sitrep-armor .mil-log-icon { color: #8a621c; }
 .paper-sitrep-support .mil-log-icon { color: #234563; }
 .paper-sitrep-error .mil-log-icon { color: #b91c1c; }
+
+/* --------------------------------------------------------------------------
+   11. Military Display & Technical Typography Hierarchy
+   -------------------------------------------------------------------------- */
+.mil-ui h1,
+.mil-ui h2,
+.mil-ui h3,
+.mil-ui h4,
+.mil-ui .tab-btn,
+.mil-ui .mil-btn,
+.mil-ui .side-title-plate h2,
+.tradoc-doc .tradoc-chapter-title,
+.tradoc-doc h2,
+#battle-modal .tradoc-aar-sec-title,
+#battle-modal #modal-winner-title {
+  font-family: 'Chakra Petch', 'IBM Plex Sans Condensed', sans-serif !important;
+  letter-spacing: 0.06em;
+}
