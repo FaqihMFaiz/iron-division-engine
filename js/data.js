@@ -326,7 +326,7 @@ window.IronDivision = window.IronDivision || {};
     },
     {
       id: 'zombie_unit', name: 'Zombie Swarm',
-      desc: 'N/A Organization & Supplies. Uses d100 Recovery Roll (surviving wounded stand back up). Takes +50% casualties from High-Caliber and Explosives.',
+      desc: 'N/A Organization & Supplies. Cannot take tactical cover or human tactics. Takes 2x casualties from High-Caliber/Explosives (reanimation capped at <=15%) and cannot breach sealed Medium/Heavy/Super-Heavy armor.',
       atkPct: 10, atkFlat: 2, defPct: 0, defFlat: 0, softFlat: 0, hardFlat: 0, pierceFlat: 0, hardnessFlat: 0,
       vigilance: -10, orgRegen: 0, supplyRegen: 0, supplySteal: 0, recBonus: 0, armorRecBonus: 0,
       enemyDefMalus: 0, enemyHardMalus: 0, terrainTarget: '', terrainBonus: 0, antiCategory: '', antiBonus: 0,
@@ -659,7 +659,7 @@ window.IronDivision = window.IronDivision || {};
     {
       id: 'tpl_zombie_horde', name: 'Undead Zombie Horde (Special)', category: 'infantry', armorTier: 'unarmored',
       personnel: 1600, maxOrg: 100, armorCount: 0, maxSupply: 100,
-      softAttack: 18, hardAttack: 4, defense: 14, piercing: 4, hardness: 2,
+      softAttack: 18, hardAttack: 1, defense: 8, piercing: 1, hardness: 1,
       experience: 'Regular', traits: ['zombie_unit']
     },
     {

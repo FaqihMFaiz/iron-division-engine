@@ -384,6 +384,25 @@ window.IronDivision = window.IronDivision || {};
 
   function selectTacticForSide(side, role) {
     const sideState = side === 'A' ? ID.state.battle.sideA : ID.state.battle.sideB;
+    const activeSideUnits = sideState.units.filter(isUnitActive);
+    if (activeSideUnits.length > 0 && activeSideUnits.every(u => u.isZombie)) {
+      return {
+        id: 'zombie_horde_rush',
+        name: 'Mindless Horde Rush',
+        role: role,
+        urbanOnly: false,
+        personality: 'Aggressive',
+        atkPct: 0,
+        defPct: -10,
+        vigMod: -15,
+        flatAtk: 0,
+        flatDef: 0,
+        flatPierce: 0,
+        supplyAdd: 0,
+        summary: 'Mindless swarm advance: -10% Def, -15 Vig. No human tactical doctrine bonuses.'
+      };
+    }
+
     const terrainObj = ID.state.terrains[ID.state.environment.terrain] || D.DEFAULT_TERRAINS.Plains;
     const isUrban = !!terrainObj.isUrban || ID.state.environment.feature === 'Fort';
     const eligible = getEligibleTactics(role, isUrban);
@@ -419,13 +438,18 @@ window.IronDivision = window.IronDivision || {};
     return units.filter(isUnitActive).reduce((sum, u) => sum + u.personnel, 0);
   }
 
+  function getSideEffectiveForcePower(side) {
+    const units = side === 'A' ? ID.state.battle.sideA.units : ID.state.battle.sideB.units;
+    return units.filter(isUnitActive).reduce((sum, u) => sum + u.personnel + ((u.armor || 0) * 15), 0);
+  }
+
   function getOutnumberingBonusPct(mySide, enemySide) {
-    const myTotal = getSideActivePersonnel(mySide);
-    const enemyTotal = getSideActivePersonnel(enemySide);
+    const myTotal = getSideEffectiveForcePower(mySide);
+    const enemyTotal = getSideEffectiveForcePower(enemySide);
     if (enemyTotal <= 0 || myTotal <= enemyTotal) return 0;
     const ratioAdvantage = (myTotal - enemyTotal) / enemyTotal;
     const steps = Math.floor((ratioAdvantage + 0.0001) / 0.5);
-    return steps * 20;
+    return Math.min(100, steps * 20);
   }
 
   function getOrgRemainingMalusPct(u) {
@@ -614,9 +638,19 @@ window.IronDivision = window.IronDivision || {};
       if (atkState.barrageCooldown > 0 && atkTactic.id !== 'urb_atk_barrage') atkState.barrageCooldown--;
       if (defState.barrageCooldown > 0) defState.barrageCooldown--;
 
+      // Check if any unit on either side is within engagement range before burning combat ammo
+      const preActiveA = ID.state.battle.sideA.units.filter(isUnitActive);
+      const preActiveB = ID.state.battle.sideB.units.filter(isUnitActive);
+      const tacA = atkSide === 'A' ? atkTactic : defTactic;
+      const tacB = atkSide === 'B' ? atkTactic : defTactic;
+      const anyUnitInRange =
+        preActiveA.some(uA => preActiveB.some(uB => H.canUnitEngageTarget(uA, uB, tacA))) ||
+        preActiveB.some(uB => preActiveA.some(uA => H.canUnitEngageTarget(uB, uA, tacB)));
+      const isPreContact = !anyUnitInRange;
+
       // 2. Supply Upkeep, DOW & Rallying
-      processSupplyAndStartOfRoundTraits('A', atkSide === 'A' ? atkTactic : defTactic);
-      processSupplyAndStartOfRoundTraits('B', atkSide === 'B' ? atkTactic : defTactic);
+      processSupplyAndStartOfRoundTraits('A', tacA, isPreContact);
+      processSupplyAndStartOfRoundTraits('B', tacB, isPreContact);
 
       const isBattleOver = ID.Pursuit ? ID.Pursuit.checkBattleEndCondition() : false;
       if (isBattleOver) {
@@ -646,6 +680,7 @@ window.IronDivision = window.IronDivision || {};
 
       const hasManeuverUnits = attackers.some(u => u.category !== 'artillery');
       let frontlineInRangeThisRound = false;
+      const overwatchFiredThisRound = new Set();
 
       for (const atkUnit of attackers) {
         const currentDefenders = defState.units.filter(isUnitActive);
@@ -675,6 +710,23 @@ window.IronDivision = window.IronDivision || {};
             'rolls',
             `[MOV] [Advancing on Y-Axis] ${atkUnit.name} (Max Range ≤${unitRange}) has no enemy in range and moves ${oldPos - atkUnit.pos} distance forward (Dist: ${oldPos} -> ${atkUnit.pos} | Closest Enemy Total Dist: ${newClosestDist}).`
           );
+
+          // Defensive Overwatch: in-range defenders fire uncontested volleys at the approaching unit
+          for (const defUnit of currentDefenders) {
+            if (!isUnitActive(atkUnit)) break;
+            if (overwatchFiredThisRound.has(defUnit.instanceId)) continue;
+            if (H.canUnitEngageTarget(defUnit, atkUnit, defTactic)) {
+              overwatchFiredThisRound.add(defUnit.instanceId);
+              H.addLog(
+                'rolls',
+                `[FS-OVR] [Defensive Overwatch] ${defUnit.name} (Range ≤${H.getUnitEngagementRange(defUnit)}) opens uncontested overwatch fire on advancing ${atkUnit.name} at Total Dist ${H.getTotalDistance(defUnit, atkUnit)}!`
+              );
+              resolveUnitEngagement(defUnit, atkUnit, defSide, atkSide, defTactic, atkTactic, {
+                ...vigResult,
+                attackerWonVig: !vigResult.attackerWonVig
+              }, true);
+            }
+          }
           continue;
         }
 
@@ -753,7 +805,7 @@ window.IronDivision = window.IronDivision || {};
   // 6. Logistics, Upkeep, DOW & Rally Engine
   // --------------------------------------------------------------------------
 
-  function processSupplyAndStartOfRoundTraits(side, chosenTactic) {
+  function processSupplyAndStartOfRoundTraits(side, chosenTactic, isPreContact = false) {
     const sideState = side === 'A' ? ID.state.battle.sideA : ID.state.battle.sideB;
     const enemyState = side === 'A' ? ID.state.battle.sideB : ID.state.battle.sideA;
     const cmd = getSideCommander(side);
@@ -910,6 +962,8 @@ window.IronDivision = window.IronDivision || {};
     let sideRollD3 = 0;
     if (isUncontestedFrontline) {
       H.addLog('support', `[HOLD] [Uncontested Frontline] Side ${side} holds the field with no active opposing forces. Supply drain and attrition are paused.`);
+    } else if (isPreContact) {
+      H.addLog('support', `[LOG] [Side ${side} Approach March] No units in engagement range yet — combat ammunition burn paused (0 base drain) | Depot: ${sideState.supplyDepot}/${sideState.maxSupplyDepot}`);
     } else {
       sideRollD3 = H.rollDie(3);
       H.addLog('support', `[LOG] [Side ${side} Supply] Base operational drain d3 = ${sideRollD3} | Depot Stockpile: ${sideState.supplyDepot}/${sideState.maxSupplyDepot}`);
@@ -921,7 +975,7 @@ window.IronDivision = window.IronDivision || {};
       const expObj = D.EXPERIENCE_TIERS[u.experience] || D.EXPERIENCE_TIERS.Regular;
 
       if (!u.isMonster && !u.isZombie) {
-        if (!isUncontestedFrontline) {
+        if (!isUncontestedFrontline && !isPreContact) {
           let drain = sideRollD3 + (terr.supplyDrain || 0) + (feat.supplyAdd || 0) + (weath.supplyAdd || 0) + (chosenTactic.supplyAdd || 0);
           if (chosenTactic.id === 'urb_atk_armour_supported' && u.maxArmor > 0) drain += 1;
           const supplyCut = getCommanderUnitBonus(side, u, 'supplyDrainReduction');
@@ -1519,7 +1573,7 @@ window.IronDivision = window.IronDivision || {};
   // 10. Main Combat Engagement & Resolution
   // --------------------------------------------------------------------------
 
-  function resolveUnitEngagement(attacker, defender, atkSide, defSide, atkTactic, defTactic, vigResult) {
+  function resolveUnitEngagement(attacker, defender, atkSide, defSide, atkTactic, defTactic, vigResult, isOverwatch = false) {
     const atkTraits = attacker.traits.map(getTraitById).filter(Boolean);
     const defTraits = defender.traits.map(getTraitById).filter(Boolean);
 
@@ -1534,25 +1588,30 @@ window.IronDivision = window.IronDivision || {};
     const isTargetUnarmored = (defender.armorTier === 'unarmored' || defender.maxArmor <= 0);
 
     if (isTargetUnarmored) {
-      const d20 = H.rollDie(20);
-      let coverRating = defender.roundTemp.coverDenied ? 0 : H.getTerrainCoverRating(defender);
-      if (defTactic.id === 'urb_def_fortified') coverRating += 5;
-      else if (defTactic.id === 'def_defend') coverRating += 3;
+      if (defender.isZombie) {
+        defender.roundTemp.inCover = false;
+        H.addLog('rolls', `[CVR] [Exposed Horde] ${defender.name} advances in a dense, exposed mass (No Cover Save — full fire & explosive vulnerability).`);
+      } else {
+        const d20 = H.rollDie(20);
+        let coverRating = defender.roundTemp.coverDenied ? 0 : H.getTerrainCoverRating(defender);
+        if (defTactic.id === 'urb_def_fortified') coverRating += 5;
+        else if (defTactic.id === 'def_defend') coverRating += 3;
 
-      if (!defender.roundTemp.coverDenied) {
-        coverRating += (defender.entrenchmentLevel || 0);
+        if (!defender.roundTemp.coverDenied) {
+          coverRating += (defender.entrenchmentLevel || 0);
+        }
+
+        const targetDC = 12 + (vigResult.attackerWonVig ? 2 : 0) + (attacker.traits.includes('recon_support') ? 2 : 0);
+        const totalCoverSave = d20 + coverRating;
+        const inCover = totalCoverSave >= targetDC;
+        defender.roundTemp.inCover = inCover;
+
+        H.addLog(
+          'rolls',
+          `[CVR] [Cover & Dispersion] ${defender.name} makes Cover Save: d20(${d20}) + Cover(${coverRating}) = ${totalCoverSave} vs DC ${targetDC} -> ` +
+          (inCover ? `DUG-IN / IN DEFILADE (Half soft damage, explosive negated)` : `CAUGHT IN OPEN (Exposed to full fire & suppression shock!)`)
+        );
       }
-
-      const targetDC = 12 + (vigResult.attackerWonVig ? 2 : 0) + (attacker.traits.includes('recon_support') ? 2 : 0);
-      const totalCoverSave = d20 + coverRating;
-      const inCover = totalCoverSave >= targetDC;
-      defender.roundTemp.inCover = inCover;
-
-      H.addLog(
-        'rolls',
-        `[CVR] [Cover & Dispersion] ${defender.name} makes Cover Save: d20(${d20}) + Cover(${coverRating}) = ${totalCoverSave} vs DC ${targetDC} -> ` +
-        (inCover ? `DUG-IN / IN DEFILADE (Half soft damage, explosive negated)` : `CAUGHT IN OPEN (Exposed to full fire & suppression shock!)`)
-      );
     } else {
       const atkPierceDie = H.rollDie(6);
       const defHardDie = H.rollDie(6);
@@ -1649,11 +1708,16 @@ window.IronDivision = window.IronDivision || {};
       }
     }
 
+    // Sealed Armor Rule: unpierced zombies cannot break through Medium/Heavy/Super-Heavy operational armor
+    const sealedArmorBlocked = attacker.isZombie && !pierced && defender.maxArmor > 0 && defender.armor > 0 && ['medium', 'heavy', 'super'].includes(defender.armorTier);
+
     // STEP F: Resolve Damage or Grazing
     const prevDefPersonnel = defender.personnel;
-    if (atkTotals.finalValue > defTotals.finalValue) {
+    if (sealedArmorBlocked) {
+      H.addLog('rolls', `[DEF] [ARMOR SEALED] ${defender.name}'s ${defender.armorTier.toUpperCase()} armor plating is impervious to unpierced ${attacker.name} attacks (0 crew casualties)!`);
+    } else if (atkTotals.finalValue > defTotals.finalValue) {
       const margin = Math.max(1, Math.round(atkTotals.finalValue - defTotals.finalValue));
-      inflictCombatDamage(attacker, defender, margin, atkSide, defSide, atkTactic, defTactic, 'Main Attack');
+      inflictCombatDamage(attacker, defender, margin, atkSide, defSide, atkTactic, defTactic, isOverwatch ? 'Overwatch Volley' : 'Main Attack');
       if (defender.defeated || defender.isRallying || attacker.defeated || attacker.isRallying) return;
 
       const inflictedRatio = (prevDefPersonnel - defender.personnel) / Math.max(1, defender.maxPersonnel);
@@ -1715,7 +1779,7 @@ window.IronDivision = window.IronDivision || {};
       }
     }
 
-    if (!isUnitActive(defender) || !isUnitActive(attacker)) return;
+    if (isOverwatch || !isUnitActive(defender) || !isUnitActive(attacker)) return;
 
     // STEP G: Return Fire Phase
     const engagementTotalDist = H.getTotalDistance(attacker, defender);
@@ -1817,7 +1881,10 @@ window.IronDivision = window.IronDivision || {};
         `VS ${attacker.name} Breakthrough/Def: ${atkBreakTotals.finalValue}`
       );
 
-      if (defRetAtkTotals.finalValue > atkBreakTotals.finalValue) {
+      const retSealedArmorBlocked = defender.isZombie && !retPierced && attacker.maxArmor > 0 && attacker.armor > 0 && ['medium', 'heavy', 'super'].includes(attacker.armorTier);
+      if (retSealedArmorBlocked) {
+        H.addLog('rolls', `[RET] [ARMOR SEALED] ${attacker.name}'s ${attacker.armorTier.toUpperCase()} armor plating is impervious to unpierced ${defender.name} return fire (0 crew casualties)!`);
+      } else if (defRetAtkTotals.finalValue > atkBreakTotals.finalValue) {
         const retMargin = Math.max(1, Math.round(defRetAtkTotals.finalValue - atkBreakTotals.finalValue));
         H.addLog('rolls', `[RET] [Return Fire Hit!] ${defender.name} (RetAtk ${defRetAtkTotals.finalValue} > Breakthrough ${atkBreakTotals.finalValue}) strikes back at ${attacker.name}!`);
         inflictCombatDamage(defender, attacker, retMargin, defSide, atkSide, defTactic, atkTactic, 'Return Fire');
@@ -2058,9 +2125,9 @@ window.IronDivision = window.IronDivision || {};
     }
 
     if (defender.isZombie && (hasHighCal || hasExplosive)) {
-      const zombieExtra = Math.round(rawDowned * 0.50);
-      rawDowned += zombieExtra;
-      H.addLog('damage', `[BIO] [Zombie Dismemberment] High-Caliber / Explosive fire shreds the horde for +${zombieExtra} extra casualties!`);
+      const zombieExtra = rawDowned;
+      rawDowned *= 2;
+      H.addLog('damage', `[BIO] [Zombie Dismemberment x2.0] High-Caliber / Explosive fire shreds the dense horde for +${zombieExtra} extra casualties (${rawDowned} total)!`);
     }
 
     if ((defender.armorTier === 'unarmored' || defender.maxArmor <= 0) && defender.roundTemp && !defender.roundTemp.inCover && !defender.isMonster && !defender.isZombie) {
@@ -2117,7 +2184,10 @@ window.IronDivision = window.IronDivision || {};
     if (hasHighCal) recMod -= 10;
     if (hasExplosive) recMod -= 15;
 
-    const finalRecScore = H.clamp(baseRec + recMod, 5, 95);
+    let finalRecScore = H.clamp(baseRec + recMod, 5, 95);
+    if (defender.isZombie && (hasHighCal || hasExplosive)) {
+      finalRecScore = Math.min(15, finalRecScore);
+    }
     const deadPct = (100 - finalRecScore) / 100;
     const deadCount = Math.round(actualDowned * deadPct);
     const woundedCount = actualDowned - deadCount;
