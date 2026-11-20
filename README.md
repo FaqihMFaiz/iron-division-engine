@@ -8,39 +8,39 @@ Unlike traditional RPG combat engines that track single-entity hit points, the I
 
 ## 📑 Table of Contents
 
-1. [Core Features](https://www.google.com/search?q=%23-core-features)
+1. [Core Features](#-core-features)
 
-2. [Project Architecture & File Layout](https://www.google.com/search?q=%23-project-architecture--file-layout)
+2. [Project Architecture & File Layout](#-project-architecture--file-layout)
 
-3. [Combat Mechanics & Mathematical Models](https://www.google.com/search?q=%23-combat-mechanics--mathematical-models)
+3. [Combat Mechanics & Mathematical Models](#-combat-mechanics--mathematical-models)
 
-   * [Unit Anatomy & Dual-HP System](https://www.google.com/search?q=%23unit-anatomy--dual-hp-system)
+   * [Unit Anatomy & Dual-HP System](#unit-anatomy--dual-hp-system)
 
-   * [Armor Tiers & Penetration Mechanics](https://www.google.com/search?q=%23armor-tiers--penetration-mechanics)
+   * [Armor Tiers & Penetration Mechanics](#armor-tiers--penetration-mechanics)
 
-   * [Infantry Dispersion & Cover Saves](https://www.google.com/search?q=%23infantry-dispersion--cover-saves)
+   * [Infantry Dispersion & Cover Saves](#infantry-dispersion--cover-saves)
 
-   * [Grazing Damage & Armor/Bunker Immunity](https://www.google.com/search?q=%23grazing-damage--armorbunker-immunity)
+   * [Grazing Damage & Armor/Bunker Immunity](#grazing-damage--armorbunker-immunity)
 
-   * [Y-Axis Spatial Distance & Engagement Ranges](https://www.google.com/search?q=%23y-axis-spatial-distance--engagement-ranges)
+   * [Y-Axis Spatial Distance & Engagement Ranges](#y-axis-spatial-distance--engagement-ranges)
 
-   * [The Rallying Engine & Manpower Safety Net](https://www.google.com/search?q=%23the-rallying-engine--manpower-safety-net)
+   * [The Rallying Engine & Manpower Safety Net](#the-rallying-engine--manpower-safety-net)
 
-   * [Medical Triage & Died of Wounds (DOW)](https://www.google.com/search?q=%23medical-triage--died-of-wounds-dow)
+   * [Medical Triage & Died of Wounds (DOW)](#medical-triage--died-of-wounds-dow)
 
-   * [Logistical Friction & Combat Fatigue](https://www.google.com/search?q=%23logistical-friction--combat-fatigue)
+   * [Logistical Friction & Combat Fatigue](#logistical-friction--combat-fatigue)
 
-4. [The 7-Phase Combat Round Lifecycle](https://www.google.com/search?q=%23-the-7-phase-combat-round-lifecycle)
+4. [The 7-Phase Combat Round Lifecycle](#-the-7-phase-combat-round-lifecycle)
 
-5. [Commanders & Attribute Scaling](https://www.google.com/search?q=%23-commanders--attribute-scaling)
+5. [Commanders & Attribute Scaling](#-commanders--attribute-scaling)
 
-6. [Tactical Doctrines Compendium (25 Tactics)](https://www.google.com/search?q=%23-tactical-doctrines-compendium-25-tactics)
+6. [Tactical Doctrines Compendium (25 Tactics)](#-tactical-doctrines-compendium-25-tactics)
 
-7. [Post-Battle Resolution: Pursuit, Overruns & Field Salvage](https://www.google.com/search?q=%23-post-battle-resolution-pursuit-overruns--field-salvage)
+7. [Post-Battle Resolution: Pursuit, Overruns & Field Salvage](#-post-battle-resolution-pursuit-overruns--field-salvage)
 
-8. [Installation & Quick Start](https://www.google.com/search?q=%23-installation--quick-start)
+8. [Installation & Quick Start](#-installation--quick-start)
 
-9. [Diagnostics & Error Boundary](https://www.google.com/search?q=%23-diagnostics--error-boundary)
+9. [Diagnostics & Error Boundary](#-diagnostics--error-boundary)
 
 ## 🌟 Core Features
 
@@ -64,7 +64,9 @@ Unlike traditional RPG combat engines that track single-entity hit points, the I
 
 * **Creature "No Quarter" Doctrine**: Victorious Monsters and Zombies take zero prisoners—all captured and wounded human troops are converted directly to **KIA (Slaughtered / Devoured)**.
 
-* **Robust Customizers**: In-app editors for Units, Custom Traits, Commander Traits, Custom Generals, and Environmental Terrains.
+* **Robust Customizers**: In-app editors for Units, Custom Traits, Commander Traits (full edit/delete with all 21 numeric fields wired generically), Custom Generals, and Environmental Terrains.
+
+* **Official After-Action Report (Form DA-774) & PDF Export**: Emoji-free 5-section military AAR with **4-Tier Degrees of Victory** (Heroic, Decisive, Close, Pyrrhic), chronological sitrep highlights, G-3 assessment, and one-click A4 PDF export.
 
 * **Crash-Proof Diagnostics**: Integrated diagnostic boundary with global exception catching, ensuring simulation loops never freeze silently.
 
@@ -84,8 +86,10 @@ iron-division/
     ├── engine-helpers.js       # Dice utils, Cover, Distance, Grazing, and Overwatch formulas
     ├── engine-combat.js        # Main combat loop, Targeting, Piercing, Clashes, DOW, and Rallying
     ├── engine-pursuit.js       # Post-battle Retreat, Overruns, Towing, and Victor's Field Salvage
-    ├── ui-render.js            # DOM rendering (Unit cards, Telemetry, Log, Customizers, Modal)
+    ├── ui-render.js            # DOM rendering (Unit dossiers, Telemetry, Sitrep, AAR PDF export)
+    ├── guide.js                # In-app Simulation Field Manual renderer (Tab 7)
     └── app.js                  # State initialization, battle controls (Auto Run, Reset), Bootstrap
+
 
 ```
 
@@ -112,6 +116,7 @@ A formation is removed from battle under three conditions:
 | Tank              | d20           | d20           | Class 3 or 4 (+10)   |
 | Artillery         | d20           | d8            | Class 0 (Towed)      |
 +-------------------+---------------+---------------+----------------------+
+
 
 ```
 
@@ -291,17 +296,17 @@ $$
 \text{Max Org Bonus} = \text{Cmd Level} \times 2.5\% \quad \vert{} \quad \text{Supply Efficiency} = \text{Log Level} \times 2.5\%
 $$
 
-### Custom Commander Trait Editor
+### Custom Commander Trait Editor & Generic Scaling
 
-Supports custom officer traits with parameters for:
+All 21 Commander Trait numeric fields are wired generically into combat, logistics, triage, and pursuit (and every trait can be edited or deleted directly from the **Command HQ** tab):
 
-* **Formation Scope**: Army-wide, Infantry-only, Tanks-only, or Artillery-only.
+* **Formation Scope**: Army-wide, Infantry-only, Tanks-only, Armored Vehicles-only, or Artillery-only.
 
-* **Combat Modifiers**: Attack %, Defense %, Soft/Hard Attack, Piercing, Hardness.
+* **Combat & Recon Modifiers**: Attack %, Defense %, Flat Attack/Defense, Soft/Hard Attack, Piercing, Hardness, Vigilance, and **Tactic Boost %** (scales positive tactical doctrine bonuses).
 
-* **Rally Masteries**: Rally Check bonuses, Cooldown reductions (-1 to -3 rds), Extra starting Org.
+* **Rally & Pursuit Masteries**: Rally Check bonuses, Cooldown reductions (-1 to -3 rds), Extra starting Org, Pursuit bonuses, and Retreat bonuses.
 
-* **Triage & Logistics**: Supply drain reduction, recovery bonuses, and terrain synergies.
+* **Triage & Logistics**: Supply drain reduction, **+10% Max Supply** (*Logistics Wizard* + Logistics Level scaling), Personnel Recovery, Armor Recovery, and Terrain synergies.
 
 ## 📋 Tactical Doctrines Compendium (25 Tactics)
 
@@ -377,9 +382,12 @@ Supports custom officer traits with parameters for:
                                                   • 0 Prisoners taken.
                                                   • Vehicles crushed to scrap iron.
 
+
 ```
 
-### Proportional Field Salvage (Victor Roll `50 + d50`)
+### Proportional Field Salvage & Recovery Towing (Victor Roll `50 + d50`)
+
+Retreating forces that achieve a disciplined withdrawal (`Escape % >= 60%`) tow **25%–50%** of their recoverable disabled hulls back to depot first; those towed hulls are deducted from the field before the victor rolls salvage on the remaining abandoned vehicles:
 
 * **Score** $\ge 80$: 50% *Beutepanzers* impressed into service; 35% stripped (+5 Supply each); 15% scuttled.
 
@@ -389,6 +397,21 @@ Supports custom officer traits with parameters for:
 
 * **Score** $< 40$: 0% *Beutepanzers*; 25% stripped for parts; 75% scuttled.
 
+### Degrees of Victory & Official AAR (Form DA-774) PDF Export
+
+At battle conclusion, the After-Action Report computes the winner's **Initial Odds Ratio** and **Composite Cost %** to assign one of four victory classifications, and supports one-click **A4 PDF Export** (emoji-free military dossier format):
+
+$$\text{Force Power} = \text{Start Personnel} + (\text{Start Armor} \times 15), \qquad \text{Odds Ratio} = \frac{\text{Winner Force Power}}{\max(1,\, \text{Loser Force Power})}$$
+
+$$\text{Cost \%} = \text{round}\Big(\big(0.60 \times \text{Personnel Loss \%} + 0.25 \times \text{Armor Loss \%} + 0.15 \times \text{Supply Expended \%}\big) \times 100\Big)$$
+
+| Degree of Victory | Trigger Condition |
+| :--- | :--- |
+| **Heroic Victory** | `Odds Ratio <= 0.80` & `Cost % <= 35%`, or `Odds Ratio <= 0.65` & `Cost % <= 45%` |
+| **Pyrrhic Victory** | `Cost % >= 55%`, or `Personnel Loss >= 60%`, or `>= 50%` of winning formations defeated |
+| **Decisive Victory** | `Cost % <= 25%` & `Personnel Loss <= 25%` & `0` winning formations defeated |
+| **Close Victory** | All remaining contested wins |
+
 ## 🚀 Installation & Quick Start
 
 The Iron Division Engine requires **no build step, no npm, and no command-line tools**.
@@ -397,7 +420,7 @@ The Iron Division Engine requires **no build step, no npm, and no command-line t
 
 Keep the standard project folder structure intact:
 
-```text
+```
 iron-division/
 ├── index.html
 ├── README.md
@@ -412,6 +435,7 @@ iron-division/
     ├── ui-render.js
     ├── guide.js
     └── app.js
+
 ```
 
 Open `index.html` in any web browser.
@@ -422,6 +446,7 @@ If using VS Code, install **Live Server**, right-click `index.html`, and select 
 
 ```
 python -m http.server 8000
+
 
 ```
 
@@ -442,5 +467,6 @@ The engine contains an integrated error-catching boundary to prevent silent cras
 Distributed under the MIT License. Open-source for tabletop RPG gaming, game design research, and campaign simulations.
 
 ```
+
 
 ```

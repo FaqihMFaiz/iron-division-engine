@@ -14,41 +14,42 @@ window.IronDivision = window.IronDivision || {};
 
     container.innerHTML = `
       <!-- Guide Master Header Banner -->
-      <div class="bg-gradient-to-r from-slate-900 via-slate-900 to-amber-950/40 border border-amber-500/40 rounded-2xl p-5 sm:p-6 shadow-2xl space-y-3">
+      <div class="mil-panel mil-panel-brackets mil-panel-cmd p-5 sm:p-6 space-y-3">
         <div class="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <div class="flex items-center gap-2">
-              <span class="text-xs font-mono uppercase px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold">
-                Iron Division Field Manual
+            <div class="flex items-center gap-2 font-mono text-[11px]">
+              <span class="uppercase px-2 py-0.5 bg-[#232016] text-[#c8a24b] border border-[#594b27] font-bold">
+                FM 100-5 // FIELD MANUAL
               </span>
-              <span class="text-xs font-mono text-slate-400">DOC-ID-904-REV4</span>
+              <span class="text-[#7c877b]">DOC-ID-904-REV5</span>
             </div>
-            <h2 class="text-2xl sm:text-3xl font-black text-white mt-1 tracking-tight">
+            <h2 class="text-xl sm:text-2xl font-black font-mono uppercase tracking-wider text-[#e7ece4] mt-1.5">
               Combined-Arms Operational Doctrine
             </h2>
-            <p class="text-xs sm:text-sm text-slate-300 max-w-4xl leading-relaxed mt-1">
-              Complete mathematical specification of division-scale combat mechanics: polyhedral dice resolution, kinetic armor penetration, shared logistics networks, defensive overwatch volleys, and battlefield salvage.
+            <p class="text-xs sm:text-sm text-[#a5b0a3] max-w-4xl leading-relaxed mt-1">
+              Mathematical specification of division-scale combat mechanics: polyhedral dice resolution, kinetic armor penetration, Y-axis spatial engagement ranges, shared depot logistics, generic officer doctrine traits, and Form DA-774 After-Action Reports.
             </p>
           </div>
-          <div class="bg-slate-950/80 border border-slate-800 p-3 rounded-xl font-mono text-xs text-slate-300 space-y-1 text-right">
-            <div>Engine Core: <b class="text-amber-400">v3.0 Combined Arms</b></div>
-            <div>Dice Spectrum: <b class="text-sky-400">d3, d4, d6, d8, d10, d12, d16, d20, d50, d100</b></div>
-            <div>Decoupled Pools: <b class="text-emerald-400">Meat (HP) vs Morale (Org)</b></div>
+          <div class="bg-slate-950 border border-slate-800 p-3 font-mono text-xs text-[#c8d1c7] space-y-1 text-right">
+            <div>ENGINE CORE: <b class="text-[#c8a24b]">v3.1 COMBINED ARMS</b></div>
+            <div>DICE SPECTRUM: <b class="text-[#8ec0e8]">d3, d4, d6, d8, d10, d12, d16, d20, d50, d100</b></div>
+            <div>DECOUPLED POOLS: <b class="text-[#7cb377]">PERSONNEL (HP) / COHESION (ORG)</b></div>
           </div>
         </div>
 
         <!-- Quick Navigation Matrix -->
-        <div class="pt-3 border-t border-slate-800 flex flex-wrap gap-2 text-xs font-mono">
-          <a href="#guide-lifecycle" class="px-3 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 transition">🔄 7-Phase Lifecycle</a>
-          <a href="#guide-categories" class="px-3 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 text-sky-300 border border-slate-800 transition">🎲 Combat Dice</a>
-          <a href="#guide-armor" class="px-3 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 text-orange-300 border border-slate-800 transition">🛡 Armor &amp; Hardness</a>
-          <a href="#guide-dispersion" class="px-3 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 text-emerald-300 border border-slate-800 transition">🕳️ Cover &amp; Grazing</a>
-          <a href="#guide-melee" class="px-3 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 text-rose-300 border border-slate-800 transition">⚔ Melee &amp; Overwatch</a>
-          <a href="#guide-logistics" class="px-3 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 text-amber-300 border border-slate-800 transition">📦 Shared Supply Depot</a>
-          <a href="#guide-artillery" class="px-3 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 text-red-300 border border-slate-800 transition">🎆 Inherent Artillery</a>
-          <a href="#guide-medical" class="px-3 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 text-teal-300 border border-slate-800 transition">🏥 Medical Triage</a>
-          <a href="#guide-rally" class="px-3 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 text-cyan-300 border border-slate-800 transition">🚩 Rallying &amp; Stragglers</a>
-          <a href="#guide-pursuit" class="px-3 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 text-purple-300 border border-slate-800 transition">🚜 Pursuit &amp; Salvage</a>
+        <div class="pt-3 border-t border-slate-800 flex flex-wrap gap-1.5 text-[11px] font-mono uppercase">
+          <a href="#guide-lifecycle" class="px-2.5 py-1 bg-slate-950 hover:bg-[#1e241f] text-[#dde3da] border border-slate-800">[01] 7-Phase Loop</a>
+          <a href="#guide-categories" class="px-2.5 py-1 bg-slate-950 hover:bg-[#1e241f] text-[#8ec0e8] border border-slate-800">[02] Combat Dice</a>
+          <a href="#guide-armor" class="px-2.5 py-1 bg-slate-950 hover:bg-[#1e241f] text-[#d99b52] border border-slate-800">[03] Armor &amp; AP</a>
+          <a href="#guide-dispersion" class="px-2.5 py-1 bg-slate-950 hover:bg-[#1e241f] text-[#7cb377] border border-slate-800">[04] Cover &amp; Grazing</a>
+          <a href="#guide-melee" class="px-2.5 py-1 bg-slate-950 hover:bg-[#1e241f] text-[#e69894] border border-slate-800">[05] Y-Axis Range</a>
+          <a href="#guide-logistics" class="px-2.5 py-1 bg-slate-950 hover:bg-[#1e241f] text-[#c8a24b] border border-slate-800">[06] Supply Depot</a>
+          <a href="#guide-artillery" class="px-2.5 py-1 bg-slate-950 hover:bg-[#1e241f] text-[#e69894] border border-slate-800">[07] Artillery</a>
+          <a href="#guide-medical" class="px-2.5 py-1 bg-slate-950 hover:bg-[#1e241f] text-[#7cb377] border border-slate-800">[08] Medical / DOW</a>
+          <a href="#guide-rally" class="px-2.5 py-1 bg-slate-950 hover:bg-[#1e241f] text-[#8ec0e8] border border-slate-800">[09] Rallying</a>
+          <a href="#guide-commanders" class="px-2.5 py-1 bg-slate-950 hover:bg-[#1e241f] text-[#c8a24b] border border-slate-800">[10] Command HQ</a>
+          <a href="#guide-pursuit" class="px-2.5 py-1 bg-slate-950 hover:bg-[#1e241f] text-[#b8a2d9] border border-slate-800">[11] Pursuit &amp; AAR</a>
         </div>
       </div>
 
@@ -446,40 +447,97 @@ window.IronDivision = window.IronDivision || {};
           </div>
         </div>
 
-        <!-- PART 10: POST-BATTLE PURSUIT & SALVAGE -->
-        <div id="guide-pursuit" class="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5 shadow-lg space-y-3">
+        <!-- PART 10: COMMANDERS & GENERIC OFFICER DOCTRINE -->
+        <div id="guide-commanders" class="bg-slate-900 border border-slate-800 p-4 sm:p-5 space-y-3">
           <div class="flex items-center gap-2 border-b border-slate-800 pb-2.5">
-            <span class="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-400 font-bold flex items-center justify-center font-mono text-sm">10</span>
-            <h3 class="font-bold text-base text-white">Post-Battle Pursuit, Overruns, Towing &amp; Field Salvage</h3>
+            <span class="w-7 h-7 bg-[#232016] text-[#c8a24b] border border-[#594b27] font-bold flex items-center justify-center font-mono text-sm">10</span>
+            <h3 class="font-bold text-base text-white">Command HQ Attributes &amp; Generic Commander Traits</h3>
           </div>
           <p class="text-xs text-slate-300 leading-relaxed">
-            Once an army is defeated or routed, the victor initiates an operational pursuit phase governed by mobility differentials:
+            Assigned commanders scale core division stats at <b>+2.5% per level</b> (Attack, Defense, Max Org, and Max Supply) and apply all 21 numeric Commander Trait fields generically across eligible formations:
+          </p>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs font-mono">
+            <div class="bg-slate-950 p-3 border border-slate-800 space-y-1">
+              <span class="text-[#c8a24b] font-bold block">Firepower &amp; Protection</span>
+              <p class="text-[11px] text-slate-400 font-sans">
+                Attack %, Defense %, Flat Atk/Def, Soft/Hard Attack, Piercing, and Hardness apply automatically in both Main Assault and Return Fire (respecting formation scope).
+              </p>
+            </div>
+            <div class="bg-slate-950 p-3 border border-slate-800 space-y-1">
+              <span class="text-[#8ec0e8] font-bold block">Recon, Tactics &amp; Pursuit</span>
+              <p class="text-[11px] text-slate-400 font-sans">
+                Vigilance, Pursuit, and Retreat bonuses integrate directly into recon contests and post-battle chases. <b>Tactic Boost %</b> scales positive tactical doctrine bonuses.
+              </p>
+            </div>
+            <div class="bg-slate-950 p-3 border border-slate-800 space-y-1">
+              <span class="text-[#7cb377] font-bold block">Logistics, Triage &amp; Rally</span>
+              <p class="text-[11px] text-slate-400 font-sans">
+                <i>Logistics Wizard</i> grants +10% Max Supply &amp; -1 drain. Personnel Triage, Armor Recovery, Rally Roll, and Cooldown Reductions apply without double-counting.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- PART 11: POST-BATTLE PURSUIT, DEGREES OF VICTORY & FORM DA-774 AAR -->
+        <div id="guide-pursuit" class="bg-slate-900 border border-slate-800 p-4 sm:p-5 space-y-3">
+          <div class="flex items-center gap-2 border-b border-slate-800 pb-2.5">
+            <span class="w-7 h-7 bg-[#221c29] text-[#b8a2d9] border border-[#4c3f5e] font-bold flex items-center justify-center font-mono text-sm">11</span>
+            <h3 class="font-bold text-base text-white">Post-Battle Pursuit, Salvage, Degrees of Victory &amp; Form DA-774 PDF</h3>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Once an army is defeated or routed, the victor initiates an operational pursuit phase governed by mobility differentials and generates an official emoji-free After-Action Report (Form DA-774) with one-click A4 PDF export:
           </p>
 
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs font-mono">
-            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
-              <span class="text-purple-400 font-bold block">Automatic Overrun</span>
+            <div class="bg-slate-950 p-3 border border-slate-800 space-y-1">
+              <span class="text-[#b8a2d9] font-bold block">Automatic Overrun</span>
               <p class="text-[11px] text-slate-400 font-sans">
                 If &Delta;Mobility &ge; 3 on open terrain, retreating formations are caught by mechanized vanguards: <b>90% captured as POWs</b>.
               </p>
             </div>
-            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
-              <span class="text-sky-400 font-bold block">Recovery Towing</span>
+            <div class="bg-slate-950 p-3 border border-slate-800 space-y-1">
+              <span class="text-[#8ec0e8] font-bold block">Recovery Towing</span>
               <p class="text-[11px] text-slate-400 font-sans">
-                On disciplined retreats (Retreat score &ge; 60%), recovery tractors tow <b>25% to 50%</b> of recoverable disabled hulls back to depot.
+                On disciplined retreats (Escape &ge; 60%), recovery tractors tow <b>25%–50%</b> of recoverable hulls back to depot, deducting them from field salvage.
               </p>
             </div>
-            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
-              <span class="text-amber-400 font-bold block">Beutepanzer Salvage</span>
+            <div class="bg-slate-950 p-3 border border-slate-800 space-y-1">
+              <span class="text-[#c8a24b] font-bold block">Beutepanzer Salvage</span>
               <p class="text-[11px] text-slate-400 font-sans">
-                The victor sweeps the field (Roll 50 + d50). Up to <b>50%</b> of abandoned enemy vehicles are impressed as <i>Beutepanzers</i>; remainder scrapped for +5 Supply.
+                The victor sweeps remaining abandoned hulls (Roll 50 + d50). Up to <b>50%</b> are impressed as <i>Beutepanzers</i>; remainder scrapped for +5 Supply each.
               </p>
             </div>
-            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
-              <span class="text-rose-400 font-bold block">No Quarter Doctrine</span>
+            <div class="bg-slate-950 p-3 border border-slate-800 space-y-1">
+              <span class="text-[#e69894] font-bold block">No Quarter Doctrine</span>
               <p class="text-[11px] text-slate-400 font-sans">
-                Victorious Monsters or Zombie Swarms take zero prisoners. All captured troops and wounded left on the field are converted directly to <b>KIA (Devoured)</b>.
+                Victorious Monsters or Zombie Swarms take zero prisoners. All captured troops and wounded left on the field are converted directly to <b>KIA</b>.
               </p>
+            </div>
+          </div>
+
+          <!-- Degrees of Victory Classification -->
+          <div class="bg-slate-950 p-3 border border-slate-800 space-y-2 font-mono text-xs">
+            <span class="text-[#c8a24b] font-bold block uppercase">Degrees of Victory Classification (Form DA-774)</span>
+            <div class="p-2 bg-[#111512] border border-[#242c26] text-center text-[11px] text-slate-200">
+              Odds Ratio = (Win Pers + Win AFV &times; 15) / (Lose Pers + Lose AFV &times; 15) &nbsp;|&nbsp; Cost % = 60% Pers Loss + 25% AFV Loss + 15% Supply Used
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-[11px]">
+              <div class="p-2 bg-[#111512] border border-[#594b27]">
+                <span class="text-[#e6c46d] font-bold block">HEROIC VICTORY</span>
+                <span class="text-slate-400 font-sans">Odds &le; 0.80 &amp; Cost &le; 35% (or Odds &le; 0.65 &amp; Cost &le; 45%).</span>
+              </div>
+              <div class="p-2 bg-[#111512] border border-[#3d5e3a]">
+                <span class="text-[#89b884] font-bold block">DECISIVE VICTORY</span>
+                <span class="text-slate-400 font-sans">Cost &le; 25%, Pers Loss &le; 25%, and 0 formations lost.</span>
+              </div>
+              <div class="p-2 bg-[#111512] border border-[#7d6731]">
+                <span class="text-[#c8a24b] font-bold block">CLOSE VICTORY</span>
+                <span class="text-slate-400 font-sans">Contested win with moderate casualties or unit losses.</span>
+              </div>
+              <div class="p-2 bg-[#111512] border border-[#6e3532]">
+                <span class="text-[#e69894] font-bold block">PYRRHIC VICTORY</span>
+                <span class="text-slate-400 font-sans">Cost &ge; 55%, Pers Loss &ge; 60%, or &ge; 50% formations lost.</span>
+              </div>
             </div>
           </div>
         </div>
