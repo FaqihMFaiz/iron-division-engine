@@ -404,21 +404,22 @@ window.IronDivision = window.IronDivision || {};
       const entrenchCap = H.getUnitMaxEntrenchmentCap ? H.getUnitMaxEntrenchmentCap(u) : 3;
 
       return `
-        <div class="unit-dossier ${u.defeated ? 'unit-dossier-defeated' : (side === 'A' ? 'unit-dossier-a' : 'unit-dossier-b')} p-2.5 space-y-2">
-          <div class="unit-dossier-header relative flex items-start justify-between gap-2">
+        <div class="unit-dossier ${u.defeated ? 'unit-dossier-defeated' : (side === 'A' ? 'unit-dossier-a' : 'unit-dossier-b')} p-2.5 space-y-2" data-unit-id="${u.instanceId}">
+          <div class="flex items-start justify-between gap-2">
             <div class="flex items-center gap-1.5 flex-wrap min-w-0">
               <span class="${side === 'A' ? 'text-[#8ec0e8]' : 'text-[#e69894]'} shrink-0" title="${escapeHtml(u.category.toUpperCase())} NATO Symbol">${ID.Icons ? ID.Icons.get(u.category) : ''}</span>
               <span class="font-bold font-mono text-xs text-[#e7ece4] uppercase tracking-wide truncate">${escapeHtml(u.name)}</span>
               <span class="text-[9.5px] font-mono uppercase px-1.5 py-0.5 bg-[#232016] text-[#c8a24b] border border-[#594b27]">${escapeHtml(u.experience)}</span>
-              <span class="unit-tooltip-trigger" tabindex="0">INTEL</span>
             </div>
             <button type="button" onclick="removeUnitFromSide('${side}', '${u.instanceId}')" class="text-[#667065] hover:text-[#d46a64] font-mono text-xs px-1 shrink-0" title="Remove unit">[X]</button>
+          </div>
 
-            <!-- Hover Tooltip: Full Combat Stats & Doctrine Traits -->
-            <div class="unit-dossier-tooltip space-y-2">
+          <!-- Hidden Tooltip Source for Cursor-Following Floating Dossier -->
+          <div class="unit-tooltip-source hidden">
+            <div class="space-y-2">
               <div class="flex items-center justify-between border-b border-[#2b342c] pb-1 font-mono text-[9.5px] uppercase">
-                <span class="text-[#c8a24b] font-bold">UNIT DOSSIER // ${escapeHtml(u.category.replace('_', ' '))}</span>
-                <span class="text-[#939e91]">${escapeHtml(u.armorTier.toUpperCase())}</span>
+                <span class="text-[#c8a24b] font-bold truncate">${escapeHtml(u.name)}</span>
+                <span class="text-[#939e91] shrink-0 ml-2">${escapeHtml(u.category.replace('_', ' '))}</span>
               </div>
               <div class="unit-stat-grid">
                 <div class="unit-stat-cell"><span class="unit-stat-label">Soft</span><span class="unit-stat-val">${u.softAttack}</span></div>
@@ -1711,6 +1712,94 @@ window.IronDivision = window.IronDivision || {};
       renderActiveTabOnly(uiState.activeTab);
     }
   }
+
+
+  // --------------------------------------------------------------------------
+  // Cursor-Following Floating Unit Dossier Tooltip Controller
+  // --------------------------------------------------------------------------
+
+  let floatingTooltipEl = null;
+  let activeTooltipCard = null;
+  let floatingTooltipBound = false;
+
+  function ensureFloatingTooltip() {
+    if (typeof document === 'undefined' || !document.body) return null;
+    if (!floatingTooltipEl) {
+      floatingTooltipEl = document.getElementById('unit-floating-tooltip');
+      if (!floatingTooltipEl) {
+        floatingTooltipEl = document.createElement('div');
+        floatingTooltipEl.id = 'unit-floating-tooltip';
+        document.body.appendChild(floatingTooltipEl);
+      }
+    }
+    return floatingTooltipEl;
+  }
+
+  function positionFloatingTooltip(clientX, clientY) {
+    if (!floatingTooltipEl) return;
+    const offset = 16;
+    const rect = floatingTooltipEl.getBoundingClientRect();
+    const vw = window.innerWidth || 1280;
+    const vh = window.innerHeight || 800;
+
+    let left = clientX + offset;
+    let top = clientY + offset;
+
+    if (left + rect.width > vw - 12) {
+      left = Math.max(12, clientX - rect.width - offset);
+    }
+    if (top + rect.height > vh - 12) {
+      top = Math.max(12, clientY - rect.height - offset);
+    }
+
+    floatingTooltipEl.style.left = `${Math.round(left)}px`;
+    floatingTooltipEl.style.top = `${Math.round(top)}px`;
+  }
+
+  function hideFloatingTooltip() {
+    activeTooltipCard = null;
+    if (floatingTooltipEl) {
+      floatingTooltipEl.classList.remove('visible');
+    }
+  }
+
+  function initUnitCursorTooltip() {
+    if (floatingTooltipBound || typeof document === 'undefined' || !document.addEventListener) return;
+    floatingTooltipBound = true;
+
+    document.addEventListener('mousemove', (e) => {
+      const card = e.target && e.target.closest ? e.target.closest('.unit-dossier') : null;
+      if (!card) {
+        if (activeTooltipCard) hideFloatingTooltip();
+        return;
+      }
+
+      const tip = ensureFloatingTooltip();
+      if (!tip) return;
+
+      if (activeTooltipCard !== card) {
+        const src = card.querySelector('.unit-tooltip-source');
+        if (!src) {
+          hideFloatingTooltip();
+          return;
+        }
+        activeTooltipCard = card;
+        tip.innerHTML = src.innerHTML;
+        tip.classList.add('visible');
+      }
+
+      positionFloatingTooltip(e.clientX, e.clientY);
+    });
+
+    document.addEventListener('mouseleave', hideFloatingTooltip);
+    document.addEventListener('click', (e) => {
+      if (e.target && e.target.closest && e.target.closest('button')) {
+        hideFloatingTooltip();
+      }
+    });
+  }
+
+  initUnitCursorTooltip();
 
   // --------------------------------------------------------------------------
   // Public Module API

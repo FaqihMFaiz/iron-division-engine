@@ -85,8 +85,7 @@ body.mil-ui ::selection {
   box-shadow: 0 2px 0 rgba(0, 0, 0, 0.45) !important;
 }
 
-/* Form controls — crisp tactical instrument inputs */
-.mil-ui select,
+/* Form controls — crisp tactical instrument inputs & custom interactive dropdowns */
 .mil-ui input[type="text"],
 .mil-ui input[type="number"] {
   background-color: var(--bg-inset) !important;
@@ -96,12 +95,47 @@ body.mil-ui ::selection {
   font-size: 12px;
 }
 
+.mil-ui select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-color: #101411 !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none' stroke='%23c8a24b' stroke-width='1.8' stroke-linecap='square'%3E%3Cpath d='M2.5 4.25L6 7.75L9.5 4.25'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 8px center !important;
+  background-size: 11px 11px !important;
+  padding-right: 26px !important;
+  border: 1px solid #3c473e !important;
+  color: var(--ink-main) !important;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 1px 2px rgba(0, 0, 0, 0.45);
+  transition: background-color 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease, transform 0.08s ease;
+}
+
+.mil-ui select:hover {
+  background-color: #181e19 !important;
+  border-color: var(--brass) !important;
+  box-shadow: inset 0 1px 0 rgba(200, 162, 75, 0.12), 0 0 0 1px rgba(200, 162, 75, 0.25);
+}
+
+.mil-ui select:active {
+  transform: translateY(1px);
+}
+
+.mil-ui select option {
+  background-color: #121613;
+  color: #dde3da;
+  font-family: 'JetBrains Mono', monospace;
+}
+
 .mil-ui select:focus,
 .mil-ui input[type="text"]:focus,
 .mil-ui input[type="number"]:focus {
   outline: none;
   border-color: var(--brass) !important;
-  box-shadow: inset 0 0 0 1px rgba(200, 162, 75, 0.35);
+  box-shadow: 0 0 0 1px rgba(200, 162, 75, 0.45), inset 0 0 0 1px rgba(200, 162, 75, 0.25);
 }
 
 /* --------------------------------------------------------------------------
@@ -136,12 +170,30 @@ body.mil-ui ::selection {
   border-right: 2px solid var(--brass-dim);
 }
 
+.mil-panel-bluefor,
+.mil-panel-opfor {
+  border: 6px solid #232a24 !important;
+  border-radius: 3px !important;
+}
+
 .mil-panel-bluefor {
-  border-top: 2px solid var(--bluefor) !important;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.06),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.55),
+    inset 0 0 0 2px #0b0e0c,
+    inset 0 0 0 4px #274c6e,
+    0 0 0 2px #0a0c0b,
+    0 6px 18px rgba(0, 0, 0, 0.65) !important;
 }
 
 .mil-panel-opfor {
-  border-top: 2px solid var(--opfor) !important;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.06),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.55),
+    inset 0 0 0 2px #0b0e0c,
+    inset 0 0 0 4px #6b2926,
+    0 0 0 2px #0a0c0b,
+    0 6px 18px rgba(0, 0, 0, 0.65) !important;
 }
 
 .mil-panel-cmd {
@@ -254,28 +306,31 @@ body.mil-ui ::selection {
 
 .unit-dossier {
   position: relative;
-  border: 3px solid transparent;
-  background:
-    linear-gradient(var(--bg-inset), var(--bg-inset)) padding-box,
-    linear-gradient(135deg, #4b574d, #262e28) border-box;
+  background-color: var(--bg-inset);
+  border: 3px solid #2b342d;
+  transition: border-color 0.14s ease, background-color 0.14s ease;
 }
 
 .unit-dossier-a {
-  background:
-    linear-gradient(var(--bg-inset), var(--bg-inset)) padding-box,
-    linear-gradient(135deg, #7cc0f5 0%, #4283b8 48%, #1d4266 100%) border-box;
+  border-color: #244563;
+}
+
+.unit-dossier-a:hover {
+  border-color: #34628c;
+  background-color: #0e1317;
 }
 
 .unit-dossier-b {
-  background:
-    linear-gradient(var(--bg-inset), var(--bg-inset)) padding-box,
-    linear-gradient(135deg, #eb8680 0%, #c24b44 48%, #691f1b 100%) border-box;
+  border-color: #632421;
+}
+
+.unit-dossier-b:hover {
+  border-color: #8a342f;
+  background-color: #160e0e;
 }
 
 .unit-dossier-defeated {
-  background:
-    linear-gradient(var(--bg-inset), var(--bg-inset)) padding-box,
-    linear-gradient(135deg, #7d3633 0%, #3d1816 100%) border-box;
+  border-color: #3d1d1c;
   opacity: 0.62;
 }
 
@@ -288,48 +343,26 @@ body.mil-ui ::selection {
   font-family: 'JetBrains Mono', monospace;
 }
 
-.unit-tooltip-trigger {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 9.5px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 1px 6px;
-  background-color: #19201b;
-  border: 1px solid #3c473e;
-  color: #c8a24b;
-  cursor: help;
-}
-
-.unit-tooltip-trigger:hover,
-.unit-tooltip-trigger:focus {
-  background-color: #242d26;
-  border-color: #c8a24b;
-  outline: none;
-}
-
-.unit-dossier-tooltip {
-  position: absolute;
-  top: calc(100% + 6px);
+/* Cursor-Following Floating Unit Dossier Tooltip */
+#unit-floating-tooltip {
+  position: fixed;
+  top: 0;
   left: 0;
-  right: 0;
-  z-index: 45;
+  z-index: 9999;
+  width: 290px;
+  max-width: calc(100vw - 24px);
   background-color: #121613;
   border: 2px solid #c8a24b;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.85);
-  padding: 8px;
+  border-top: 3px solid #c8a24b;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.85);
+  padding: 8px 9px;
+  pointer-events: none;
   opacity: 0;
   visibility: hidden;
-  pointer-events: none;
-  transition: opacity 0.14s ease;
+  transition: opacity 0.1s ease;
 }
 
-.unit-dossier-header:hover .unit-dossier-tooltip,
-.unit-dossier-header:focus-within .unit-dossier-tooltip {
+#unit-floating-tooltip.visible {
   opacity: 1;
   visibility: visible;
 }
@@ -860,14 +893,26 @@ body.mil-ui ::selection {
 
 .paper-sitrep-panel select {
   background-color: #faf8f2 !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none' stroke='%232f3b2e' stroke-width='1.8' stroke-linecap='square'%3E%3Cpath d='M2.5 4.25L6 7.75L9.5 4.25'/%3E%3C/svg%3E") !important;
   border: 1px solid #8f8773 !important;
   color: #181c19 !important;
-  font-weight: 600;
+  font-weight: 700;
+  box-shadow: inset 0 1px 0 #ffffff, 0 1px 2px rgba(24, 28, 25, 0.15) !important;
+}
+
+.paper-sitrep-panel select:hover {
+  background-color: #ffffff !important;
+  border-color: #2f3b2e !important;
+}
+
+.paper-sitrep-panel select option {
+  background-color: #faf8f2;
+  color: #181c19;
 }
 
 .paper-sitrep-panel select:focus {
   border-color: #2f3b2e !important;
-  box-shadow: inset 0 0 0 1px rgba(47, 59, 46, 0.35) !important;
+  box-shadow: 0 0 0 1px rgba(47, 59, 46, 0.35) !important;
 }
 
 .paper-sitrep-btn {
