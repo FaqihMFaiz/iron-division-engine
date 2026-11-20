@@ -35,9 +35,10 @@ window.IronDivision = window.IronDivision || {};
 
     const cmdOrgMult = 1 + ((cmd ? cmd.commandLevel || 0 : 0) * 0.025);
     const cmdSupplyMult = 1 + ((cmd ? cmd.logisticsLevel || 0 : 0) * 0.025);
+    const hasLogWizard = !!(cmd && (cmd.traits || []).includes('logistics_wizard'));
 
     const maxOrg = Math.round(template.maxOrg * orgBonusMult * cmdOrgMult);
-    const maxSupply = Math.round((template.maxSupply || 40) * cmdSupplyMult);
+    const maxSupply = Math.round((template.maxSupply || 40) * cmdSupplyMult * (hasLogWizard ? 1.10 : 1.0));
 
     // Inherent rules: Armored units gain High-Caliber; Artillery gains Explosives
     const traitSet = new Set(template.traits || []);
@@ -70,8 +71,8 @@ window.IronDivision = window.IronDivision || {};
       unrecoverableArmor: 0,
       abandonedArmor: 0,
       isDismounted: false,
-      maxSupply: Number(template.maxSupply || 40),
-      supply: Number(template.maxSupply || 40),
+      maxSupply: maxSupply,
+      supply: maxSupply,
       softAttack: Number(template.softAttack),
       hardAttack: Number(template.hardAttack),
       defense: Number(template.defense),
@@ -154,7 +155,9 @@ window.IronDivision = window.IronDivision || {};
     });
 
     if (!u.isMonster && !u.isZombie && u.org <= 0) {
-      if (hasUnbreakable && u.unbreakableRoundsLeft !== 0) return true;
+      if (hasUnbreakable && (u.unbreakableRoundsLeft === null || u.unbreakableRoundsLeft === undefined || u.unbreakableRoundsLeft >= 0)) {
+        return true;
+      }
       return false;
     }
     return true;
@@ -559,6 +562,18 @@ window.IronDivision = window.IronDivision || {};
       const defSide = atkSide === 'A' ? 'B' : 'A';
       const atkState = atkSide === 'A' ? ID.state.battle.sideA : ID.state.battle.sideB;
       const defState = defSide === 'A' ? ID.state.battle.sideA : ID.state.battle.sideB;
+
+      // Promote queued next-round modifiers into this round's active slots so they apply
+      // consistently across the entire round without being consumed early or sticking permanently
+      atkState.activeRoundVigMod = atkState.nextRoundVigMod || 0;
+      atkState.nextRoundVigMod = 0;
+      defState.activeRoundVigMod = defState.nextRoundVigMod || 0;
+      defState.nextRoundVigMod = 0;
+
+      atkState.activeRoundAtkMod = atkState.nextRoundAtkMod || 0;
+      atkState.nextRoundAtkMod = 0;
+      defState.activeRoundAtkMod = defState.nextRoundAtkMod || 0;
+      defState.nextRoundAtkMod = 0;
 
       H.addLog('rolls', `================================================`);
       H.addLog('rolls', `⚔ ROUND ${rd} BEGINS — Side ${atkSide} Attacks | Side ${defSide} Defends`);
@@ -1018,9 +1033,10 @@ window.IronDivision = window.IronDivision || {};
             H.addLog('damage', `⏳ [Unbreakable Stand] ${u.name} is at 0 Org! (${u.unbreakableRoundsLeft} round${u.unbreakableRoundsLeft === 1 ? '' : 's'} remaining before collapse).`);
             u.unbreakableRoundsLeft--;
           } else {
-            u.unbreakableRoundsLeft = null;
+            u.unbreakableRoundsLeft = -1;
+            const minRallyPersonnel = Math.min(20, Math.max(5, Math.ceil(u.maxPersonnel * 0.15)));
             H.addLog('damage', `💀 [Unbreakable Shattered] ${u.name}'s 2-round last stand has expired! Cohesion collapses completely!`);
-            if (!u.ralliedOnce && u.personnel > 20) {
+            if (!u.ralliedOnce && u.personnel >= minRallyPersonnel) {
               triggerUnitRally(u, 'Unbreakable last stand expired');
             } else {
               u.defeated = true;
@@ -1131,8 +1147,7 @@ window.IronDivision = window.IronDivision || {};
     const feat = D.TERRAIN_FEATURES[ID.state.environment.feature] || D.TERRAIN_FEATURES.Normal;
     const weath = D.WEATHER_TYPES[ID.state.environment.weather] || D.WEATHER_TYPES.Sunny;
 
-    let mod = (terr.vigMod || 0) + (feat.vigAdd || 0) + (weath.vigMod || 0) + (tactic.vigMod || 0) + (sideState.nextRoundVigMod || 0);
-    sideState.nextRoundVigMod = 0;
+    let mod = (terr.vigMod || 0) + (feat.vigAdd || 0) + (weath.vigMod || 0) + (tactic.vigMod || 0) + (sideState.activeRoundVigMod || 0);
 
     if (cmd && cmd.traits.includes('skilled_staff')) mod += 15;
 
@@ -1187,7 +1202,7 @@ window.IronDivision = window.IronDivision || {};
 
   function processSideSupportFire(firingSide, enemySide) {
     const firingState = firingSide === 'A' ? ID.state.battle.sideA : ID.state.battle.sideB;
-    const enemyState = enemySide === 'A' ? ID.state.battle.sideB : ID.state.battle.sideA;
+    const enemyState = enemySide === 'A' ? ID.state.battle.sideA : ID.state.battle.sideB;
 
     if (firingState.chosenTacticId === 'urb_atk_barrage' && firingState.barrageCooldown === 0) {
       const leadUnit = firingState.units.find(u => isUnitActive(u) && (u.isMonster || u.isZombie || u.supply >= u.maxSupply * 0.5));
@@ -1894,8 +1909,8 @@ window.IronDivision = window.IronDivision || {};
 
     addPct(role === 'attack' ? exp.atkPct : exp.defPct);
 
-    if (role === 'attack' && myState.nextRoundAtkMod) {
-      addPct(myState.nextRoundAtkMod);
+    if (role === 'attack' && myState.activeRoundAtkMod) {
+      addPct(myState.activeRoundAtkMod);
     }
 
     if (isReturnFire && (unit.isZombie || unit.isMonster) && opponent.traits.includes('melee_attack')) {

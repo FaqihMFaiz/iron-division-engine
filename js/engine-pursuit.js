@@ -112,9 +112,6 @@ window.IronDivision = window.IronDivision || {};
       H.addLog('damage', `🩸 [NO QUARTER] The victorious Monster/Zombie horde takes NO prisoners! All captured troops and wounded left on the field are slaughtered or devoured!`);
     }
 
-    // The victor sweeps the field and claims all recoverable hulls left behind
-    let totalAbandonedHulls = loseState.units.reduce((sum, u) => sum + (u.recoverableArmor || 0) + (u.abandonedArmor || 0), 0);
-
     for (const u of loseState.units) {
       if (u.personnel <= 0) {
         u.captured = (u.captured || 0) + (u.wounded || 0);
@@ -200,10 +197,15 @@ window.IronDivision = window.IronDivision || {};
         const towedPct = escapePct >= 80 ? 0.50 : 0.25;
         const towedArmor = Math.floor(u.recoverableArmor * towedPct);
         if (towedArmor > 0) {
-          H.addLog('armor', `🚜 [Recovery Tractors] ${u.name} (${escapePct}% retreat) towed ${towedArmor} repairable hulls back to depot.`);
+          u.recoverableArmor = Math.max(0, u.recoverableArmor - towedArmor);
+          u.towedArmor = (u.towedArmor || 0) + towedArmor;
+          H.addLog('armor', `🚜 [Recovery Tractors] ${u.name} (${escapePct}% retreat) towed ${towedArmor} repairable hulls back to depot (${u.recoverableArmor} left on field).`);
         }
       }
     }
+
+    // The victor sweeps the field and claims only the hulls remaining after towing
+    const totalAbandonedHulls = loseState.units.reduce((sum, u) => sum + (u.recoverableArmor || 0) + (u.abandonedArmor || 0), 0);
 
     // RULE 5: Proportional Battlefield Salvage for the Victor
     let impressedTanks = 0;
