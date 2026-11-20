@@ -409,7 +409,7 @@ window.IronDivision = window.IronDivision || {};
             <div class="flex items-center gap-1.5 flex-wrap min-w-0">
               <span class="${side === 'A' ? 'text-[#8ec0e8]' : 'text-[#e69894]'} shrink-0" title="${escapeHtml(u.category.toUpperCase())} NATO Symbol">${ID.Icons ? ID.Icons.get(u.category) : ''}</span>
               <span class="font-bold font-mono text-xs text-[#e7ece4] uppercase tracking-wide truncate">${escapeHtml(u.name)}</span>
-              <span class="mil-rank-patch" title="${escapeHtml(u.experience)} Rank Insignia">${ID.Icons && ID.Icons.getRank ? ID.Icons.getRank(u.experience) : escapeHtml(u.experience)}</span>
+              <span class="mil-rank-patch inline-flex items-center justify-center w-[22px] h-[22px] bg-[#1c2017] border border-[#594b27] text-[#d4b054] shrink-0" title="${escapeHtml(u.experience)} Rank Insignia">${ID.Icons && ID.Icons.getRank ? ID.Icons.getRank(u.experience) : escapeHtml(u.experience)}</span>
             </div>
             <button type="button" onclick="removeUnitFromSide('${side}', '${u.instanceId}')" class="text-[#667065] hover:text-[#d46a64] font-mono text-xs px-1 shrink-0" title="Remove unit">[X]</button>
           </div>
