@@ -38,8 +38,10 @@ window.IronDivision = window.IronDivision || {};
       sideB_role: null,
       sideA_urban: null,
       sideB_urban: null,
-      cmdHash: '',
-      tplHash: ''
+      sideA_cmdHash: '',
+      sideB_cmdHash: '',
+      sideA_tplHash: '',
+      sideB_tplHash: ''
     }
   };
 
@@ -237,12 +239,13 @@ window.IronDivision = window.IronDivision || {};
     // 1. Commander Select
     const cmdSel = document.getElementById(`side${side}-commander`);
     const cmdHash = (state.commanders || []).map(c => c.id).join('|');
+    const cmdHashKey = `side${side}_cmdHash`;
     if (cmdSel) {
-      if (forceRebuild || uiState.selectCache.cmdHash !== cmdHash || cmdSel.children.length === 0) {
+      if (forceRebuild || uiState.selectCache[cmdHashKey] !== cmdHash || cmdSel.children.length === 0) {
         cmdSel.innerHTML = (state.commanders || []).map(c =>
           `<option value="${c.id}">${c.name} [${c.personality}]</option>`
         ).join('');
-        uiState.selectCache.cmdHash = cmdHash;
+        uiState.selectCache[cmdHashKey] = cmdHash;
       }
       cmdSel.value = sideObj.commanderId;
     }
@@ -269,14 +272,15 @@ window.IronDivision = window.IronDivision || {};
     // 3. Add-Unit Select
     const addSel = document.getElementById(`side${side}-add-select`);
     const tplHash = (state.unitTemplates || []).map(u => u.id).join('|');
+    const tplHashKey = `side${side}_tplHash`;
     if (addSel) {
-      if (forceRebuild || uiState.selectCache.tplHash !== tplHash || addSel.children.length === 0) {
+      if (forceRebuild || uiState.selectCache[tplHashKey] !== tplHash || addSel.children.length === 0) {
         const cur = addSel.value;
         addSel.innerHTML = (state.unitTemplates || []).map(u =>
           `<option value="${u.id}">${u.name} (${u.category.toUpperCase()} | ${u.personnel} HP)</option>`
         ).join('');
         if (cur) addSel.value = cur;
-        uiState.selectCache.tplHash = tplHash;
+        uiState.selectCache[tplHashKey] = tplHash;
       }
     }
   }
@@ -688,18 +692,21 @@ window.IronDivision = window.IronDivision || {};
     if (chkContainer) {
       const checked = Array.from(chkContainer.querySelectorAll('input:checked')).map(i => i.value);
       chkContainer.innerHTML = traitsList.map(ct => `
-        <label class="flex items-start gap-2 cursor-pointer p-1 rounded hover:bg-slate-900">
-          <input type="checkbox" value="${ct.id}" class="cmd-trait-chk mt-0.5 accent-amber-500" ${checked.includes(ct.id) ? 'checked' : ''}>
-          <div>
-            <div class="font-semibold text-white flex items-center gap-1.5 flex-wrap">
-              ${ct.name}
-              ${ct.rallyDurationRed ? `<span class="px-1.5 py-0.2 rounded bg-amber-950 text-amber-300 font-mono text-[9px] border border-amber-800">-${ct.rallyDurationRed} Rally Rd</span>` : ''}
-              ${ct.rallyCheckBonus ? `<span class="px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-300 font-mono text-[9px] border border-emerald-800">+${ct.rallyCheckBonus} Rally Roll</span>` : ''}
-              ${ct.targetUnitCategory ? `<span class="px-1.5 py-0.2 rounded bg-sky-950 text-sky-300 font-mono text-[9px] border border-sky-800">${ct.targetUnitCategory.toUpperCase()} ONLY</span>` : ''}
+        <div class="flex items-start justify-between gap-2 p-1 rounded hover:bg-slate-900">
+          <label class="flex items-start gap-2 cursor-pointer flex-1 min-w-0">
+            <input type="checkbox" value="${ct.id}" class="cmd-trait-chk mt-0.5 accent-amber-500" ${checked.includes(ct.id) ? 'checked' : ''}>
+            <div class="min-w-0">
+              <div class="font-semibold text-white flex items-center gap-1.5 flex-wrap">
+                ${ct.name}
+                ${ct.rallyDurationRed ? `<span class="px-1.5 py-0.2 rounded bg-amber-950 text-amber-300 font-mono text-[9px] border border-amber-800">-${ct.rallyDurationRed} Rally Rd</span>` : ''}
+                ${ct.rallyCheckBonus ? `<span class="px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-300 font-mono text-[9px] border border-emerald-800">+${ct.rallyCheckBonus} Rally Roll</span>` : ''}
+                ${ct.targetUnitCategory ? `<span class="px-1.5 py-0.2 rounded bg-sky-950 text-sky-300 font-mono text-[9px] border border-sky-800">${ct.targetUnitCategory.toUpperCase()} ONLY</span>` : ''}
+              </div>
+              <div class="text-[11px] text-slate-400">${ct.desc}</div>
             </div>
-            <div class="text-[11px] text-slate-400">${ct.desc}</div>
-          </div>
-        </label>
+          </label>
+          <button type="button" onclick="openCmdTraitModal('${ct.id}')" class="shrink-0 text-[11px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700" title="Edit or delete ${ct.name}">✎ Edit</button>
+        </div>
       `).join('');
     }
 

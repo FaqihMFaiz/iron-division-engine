@@ -143,6 +143,16 @@ window.IronDivision = window.IronDivision || {};
     return trait.targetUnitCategory === unit.category;
   }
 
+  function getCommanderUnitBonus(side, unit, field) {
+    if (!side || !unit) return 0;
+    const cmd = getSideCommander(side);
+    if (!cmd || !cmd.traits || cmd.traits.length === 0) return 0;
+    return cmd.traits
+      .map(getCommanderTraitById)
+      .filter(t => t && traitAppliesToUnit(t, unit))
+      .reduce((sum, t) => sum + (Number(t[field]) || 0), 0);
+  }
+
   function isUnitActive(u) {
     if (u.defeated) return false;
     if (u.isRallying) return false; // Safe in rear staging area
@@ -170,11 +180,7 @@ window.IronDivision = window.IronDivision || {};
     const cmd = getSideCommander(u.side);
     const baseCooldown = 2 + H.rollDie(2);
 
-    let durationRed = 0;
-    if (cmd) {
-      const cmdTraitObjs = (cmd.traits || []).map(getCommanderTraitById).filter(Boolean);
-      durationRed = cmdTraitObjs.reduce((s, t) => s + (t.rallyDurationRed || 0), 0);
-    }
+    const durationRed = getCommanderUnitBonus(u.side, u, 'rallyDurationRed');
 
     u.rallyRoundsLeft = Math.max(1, baseCooldown - durationRed);
     u.rallyRoundsResting = 0;
@@ -352,14 +358,16 @@ window.IronDivision = window.IronDivision || {};
     const baseCat = getCategoryPursuitRetreatBonus(u.category);
     const expBonus = D.EXPERIENCE_TIERS[u.experience]?.pursueBonus || 0;
     const traitBonus = (u.traits || []).map(getTraitById).filter(Boolean).reduce((s, t) => s + (t.pursueBonus || 0), 0);
-    return baseCat + expBonus + traitBonus;
+    const cmdBonus = getCommanderUnitBonus(u.side, u, 'pursueBonus');
+    return baseCat + expBonus + traitBonus + cmdBonus;
   }
 
   function getUnitRetreatBonus(u) {
     const baseCat = getCategoryPursuitRetreatBonus(u.category);
     const expBonus = D.EXPERIENCE_TIERS[u.experience]?.retreatBonus || 0;
     const traitBonus = (u.traits || []).map(getTraitById).filter(Boolean).reduce((s, t) => s + (t.retreatBonus || 0), 0);
-    return baseCat + expBonus + traitBonus;
+    const cmdBonus = getCommanderUnitBonus(u.side, u, 'retreatBonus');
+    return baseCat + expBonus + traitBonus + cmdBonus;
   }
 
   // --------------------------------------------------------------------------
@@ -462,7 +470,8 @@ window.IronDivision = window.IronDivision || {};
 
   function getEffectiveUnitHardness(u, attackerUnit, extraHardMalus = 0) {
     const traits = u.traits.map(getTraitById).filter(Boolean);
-    let baseHard = u.hardness + traits.reduce((s, t) => s + (t.hardnessFlat || 0), 0);
+    const cmdHardness = getCommanderUnitBonus(u.side, u, 'hardnessFlat');
+    let baseHard = u.hardness + traits.reduce((s, t) => s + (t.hardnessFlat || 0), 0) + cmdHardness;
     if (u.maxArmor > 0) {
       const vehicleRatio = H.clamp(u.armor / Math.max(1, u.maxArmor), 0.25, 1.0);
       baseHard = Math.round(baseHard * vehicleRatio);
@@ -782,12 +791,9 @@ window.IronDivision = window.IronDivision || {};
           const protectiveTerrains = ['Forest', 'Mountain', 'Hills', 'Urban', 'Jungle'];
           if (protectiveTerrains.includes(ID.state.environment.terrain)) terrainBonus += 1;
 
-          let cmdBonus = 0;
+          let cmdBonus = getCommanderUnitBonus(u.side, u, 'orgRegen');
           if (cmd) {
-            if (cmd.traits && cmd.traits.includes('organizer')) cmdBonus += 1;
             if (cmd.traits && cmd.traits.includes('iron_disciplinarian')) cmdBonus += 1;
-            const cmdTraits = (cmd.traits || []).map(getCommanderTraitById).filter(Boolean);
-            cmdBonus += cmdTraits.filter(t => traitAppliesToUnit(t, u)).reduce((s, t) => s + (t.orgRegen || 0), 0);
             if ((cmd.commandLevel || 0) >= 8) cmdBonus += 2;
             else if ((cmd.commandLevel || 0) >= 4) cmdBonus += 1;
           }
@@ -835,16 +841,8 @@ window.IronDivision = window.IronDivision || {};
           const expMods = { Green: -3, Trained: 0, Regular: 1, Seasoned: 2, Veteran: 4, Elite: 6 };
           const expBonus = expMods[u.experience] || 0;
 
-          let cmdBonus = 0;
-          let extraOrgBonus = 0;
-          if (cmd) {
-            const cmdTraits = (cmd.traits || []).map(getCommanderTraitById).filter(Boolean);
-            cmdBonus += cmdTraits.reduce((s, t) => s + (t.rallyCheckBonus || 0), 0);
-            extraOrgBonus += cmdTraits.reduce((s, t) => s + (t.extraRalliedOrg || 0), 0);
-
-            if (cmd.traits.includes('infantry_leader') && u.category === 'infantry') cmdBonus += 2;
-            if (cmd.traits.includes('tank_leader') && (u.category === 'tank' || u.category === 'armored_vehicle')) cmdBonus += 2;
-          }
+          const cmdBonus = getCommanderUnitBonus(u.side, u, 'rallyCheckBonus');
+          const extraOrgBonus = getCommanderUnitBonus(u.side, u, 'extraRalliedOrg');
 
           const hasFrontlineAllies = sideState.units.some(o => o.instanceId !== u.instanceId && isUnitActive(o));
           const frontlineMod = hasFrontlineAllies ? 2 : -3;
@@ -926,12 +924,9 @@ window.IronDivision = window.IronDivision || {};
         if (!isUncontestedFrontline) {
           let drain = sideRollD3 + (terr.supplyDrain || 0) + (feat.supplyAdd || 0) + (weath.supplyAdd || 0) + (chosenTactic.supplyAdd || 0);
           if (chosenTactic.id === 'urb_atk_armour_supported' && u.maxArmor > 0) drain += 1;
-          if (cmd && cmd.traits.includes('logistics_wizard')) drain = Math.max(1, drain - 1);
-
-          if (cmd) {
-            const cmdTraits = (cmd.traits || []).map(getCommanderTraitById).filter(Boolean);
-            const supplyCut = cmdTraits.reduce((s, t) => s + (t.supplyDrainReduction || 0), 0);
-            drain = Math.max(0, drain - supplyCut);
+          const supplyCut = getCommanderUnitBonus(side, u, 'supplyDrainReduction');
+          if (supplyCut > 0) {
+            drain = Math.max(1, drain - supplyCut);
           }
 
           const potentialRegen = unitTraits.reduce((acc, t) => acc + (t.supplyRegen || 0), 0);
@@ -991,11 +986,7 @@ window.IronDivision = window.IronDivision || {};
         let orgDelta = expObj.orgRegen || 0;
         orgDelta += unitTraits.reduce((acc, t) => acc + (t.orgRegen || 0), 0);
 
-        if (cmd) {
-          if (cmd.traits.includes('organizer')) orgDelta += 1;
-          const cmdTraits = (cmd.traits || []).map(getCommanderTraitById).filter(Boolean);
-          orgDelta += cmdTraits.filter(t => traitAppliesToUnit(t, u)).reduce((s, t) => s + (t.orgRegen || 0), 0);
-        }
+        orgDelta += getCommanderUnitBonus(side, u, 'orgRegen');
 
         const manpowerRatio = u.personnel / Math.max(1, u.maxPersonnel);
         if (manpowerRatio >= 0.75) orgDelta += 1;
@@ -1149,7 +1140,15 @@ window.IronDivision = window.IronDivision || {};
 
     let mod = (terr.vigMod || 0) + (feat.vigAdd || 0) + (weath.vigMod || 0) + (tactic.vigMod || 0) + (sideState.activeRoundVigMod || 0);
 
-    if (cmd && cmd.traits.includes('skilled_staff')) mod += 15;
+    if (cmd && cmd.traits) {
+      const cmdTraits = cmd.traits.map(getCommanderTraitById).filter(Boolean);
+      cmdTraits.forEach(t => {
+        if (!t.vigilance) return;
+        if (!t.targetUnitCategory || units.some(u => u.category === t.targetUnitCategory)) {
+          mod += Number(t.vigilance) || 0;
+        }
+      });
+    }
 
     if (units.length > 0) {
       const traitVigSum = units.reduce((sum, u) => {
@@ -1421,7 +1420,9 @@ window.IronDivision = window.IronDivision || {};
   }
 
   function getUnitArmorRecoveryBonus(u) {
-    return u.traits.map(getTraitById).filter(Boolean).reduce((s, t) => s + (t.armorRecBonus || 0), 0);
+    const traitBonus = u.traits.map(getTraitById).filter(Boolean).reduce((s, t) => s + (t.armorRecBonus || 0), 0);
+    const cmdBonus = getCommanderUnitBonus(u.side, u, 'armorRecBonus');
+    return traitBonus + cmdBonus;
   }
 
   // --------------------------------------------------------------------------
@@ -1556,11 +1557,7 @@ window.IronDivision = window.IronDivision || {};
       const atkPierceDie = H.rollDie(6);
       const defHardDie = H.rollDie(6);
 
-      let effPiercing = attacker.piercing + atkTraits.reduce((s, t) => s + (t.pierceFlat || 0), 0) + (atkTactic.flatPierce || 0);
-      const atkCmd = getSideCommander(atkSide);
-      if (atkCmd && atkCmd.traits.includes('tank_leader') && (attacker.category === 'tank' || attacker.category === 'armored_vehicle')) {
-        effPiercing += 2;
-      }
+      let effPiercing = attacker.piercing + atkTraits.reduce((s, t) => s + (t.pierceFlat || 0), 0) + (atkTactic.flatPierce || 0) + getCommanderUnitBonus(atkSide, attacker, 'pierceFlat');
       if (atkTactic.id === 'urb_atk_street_fighting' && attacker.traits.includes('anti_tank')) {
         effPiercing = Math.round(effPiercing * 1.10);
       }
@@ -1605,8 +1602,8 @@ window.IronDivision = window.IronDivision || {};
 
     // STEP C: Dynamic Armor Split
     const armorSplit = getEffectiveArmorSplit(defender);
-    const effSoftAtk = attacker.softAttack + atkTraits.reduce((s, t) => s + (t.softFlat || 0), 0);
-    const effHardAtk = attacker.hardAttack + atkTraits.reduce((s, t) => s + (t.hardFlat || 0), 0);
+    const effSoftAtk = attacker.softAttack + atkTraits.reduce((s, t) => s + (t.softFlat || 0), 0) + getCommanderUnitBonus(atkSide, attacker, 'softFlat');
+    const effHardAtk = attacker.hardAttack + atkTraits.reduce((s, t) => s + (t.hardFlat || 0), 0) + getCommanderUnitBonus(atkSide, attacker, 'hardFlat');
 
     let combinedBaseAtk = 0;
     if (defender.armorTier === 'unarmored') {
@@ -1747,11 +1744,7 @@ window.IronDivision = window.IronDivision || {};
       const retPierceDie = H.rollDie(6);
       const retHardDie = H.rollDie(6);
 
-      let retEffPiercing = defender.piercing + defTraits.reduce((s, t) => s + (t.pierceFlat || 0), 0) + (defTactic.flatPierce || 0);
-      const defCmd = getSideCommander(defSide);
-      if (defCmd && defCmd.traits.includes('tank_leader') && (defender.category === 'tank' || defender.category === 'armored_vehicle')) {
-        retEffPiercing += 2;
-      }
+      let retEffPiercing = defender.piercing + defTraits.reduce((s, t) => s + (t.pierceFlat || 0), 0) + (defTactic.flatPierce || 0) + getCommanderUnitBonus(defSide, defender, 'pierceFlat');
       if (defTactic.id === 'urb_atk_street_fighting' && defender.traits.includes('anti_tank')) {
         retEffPiercing = Math.round(retEffPiercing * 1.10);
       }
@@ -1795,8 +1788,8 @@ window.IronDivision = window.IronDivision || {};
       }
 
       const atkArmorSplit = getEffectiveArmorSplit(attacker);
-      const defSoft = defender.softAttack + defTraits.reduce((s, t) => s + (t.softFlat || 0), 0);
-      const defHard = defender.hardAttack + defTraits.reduce((s, t) => s + (t.hardFlat || 0), 0);
+      const defSoft = defender.softAttack + defTraits.reduce((s, t) => s + (t.softFlat || 0), 0) + getCommanderUnitBonus(defSide, defender, 'softFlat');
+      const defHard = defender.hardAttack + defTraits.reduce((s, t) => s + (t.hardFlat || 0), 0) + getCommanderUnitBonus(defSide, defender, 'hardFlat');
       const retBaseAtk = attacker.armorTier === 'unarmored'
         ? defSoft
         : (retPierced
@@ -1965,9 +1958,12 @@ window.IronDivision = window.IronDivision || {};
     addPct(getOrgRemainingMalusPct(unit));
     addPct(getPersonnelLossMalusPct(unit));
 
+    const cmdTacticBoost = getCommanderUnitBonus(mySide, unit, 'tacticBoost');
+    const applyTacticBoost = (val) => (val > 0 && cmdTacticBoost > 0) ? Math.round(val * (1 + cmdTacticBoost / 100)) : val;
+
     if (role === 'attack') {
       if (isReturnFire && myTactic.returnFireAtkPct) {
-        addPct(myTactic.returnFireAtkPct);
+        addPct(applyTacticBoost(myTactic.returnFireAtkPct));
       } else {
         let tacAtk = myTactic.atkPct || 0;
         if (enemyTactic.id === 'def_delay' && (myTactic.id === 'atk_blitz' || myTactic.id === 'atk_relentless')) {
@@ -2008,13 +2004,14 @@ window.IronDivision = window.IronDivision || {};
         if (myTactic.id === 'def_guerrilla' && (opponent.supply / Math.max(1, opponent.maxSupply)) < 0.50) {
           tacAtk += 10;
         }
-        addPct(tacAtk);
+        addPct(applyTacticBoost(tacAtk));
       }
     } else {
       let tacDef = isReturnFire ? (myTactic.returnFireDefPct || myTactic.breakthroughPct || myTactic.defPct || 0) : (myTactic.defPct || 0);
       if (myTactic.id === 'def_defend' && feat.fortified) tacDef += 10;
       if (myTactic.id === 'urb_def_city' && unit.category === 'infantry') tacDef += 10;
       if (myTactic.id === 'urb_def_fortified' && unit.traits.includes('fortification_engineer')) tacDef += 10;
+      tacDef = applyTacticBoost(tacDef);
       if (enemyTactic.id === 'atk_assault') tacDef -= 10;
       if (enemyTactic.id === 'atk_encirclement' && opponent.roundTemp.engagedByCount > 1) tacDef -= 10;
       addPct(tacDef);
@@ -2115,7 +2112,8 @@ window.IronDivision = window.IronDivision || {};
     const expObj = D.EXPERIENCE_TIERS[defender.experience] || D.EXPERIENCE_TIERS.Regular;
 
     const opMods = H.getTerrainOperationalMods(defender.category);
-    let recMod = (expObj.recBonus || 0) + defTraits.reduce((s, t) => s + (t.recBonus || 0), 0) + opMods.triageMod;
+    const cmdRecBonus = getCommanderUnitBonus(defender.side, defender, 'recBonus');
+    let recMod = (expObj.recBonus || 0) + defTraits.reduce((s, t) => s + (t.recBonus || 0), 0) + cmdRecBonus + opMods.triageMod;
     if (hasHighCal) recMod -= 10;
     if (hasExplosive) recMod -= 15;
 
@@ -2222,6 +2220,7 @@ window.IronDivision = window.IronDivision || {};
     getCommanderTraitById,
     getSideCommander,
     traitAppliesToUnit,
+    getCommanderUnitBonus,
     isUnitActive,
     triggerUnitRally,
     checkAndMarkUnitDefeat,

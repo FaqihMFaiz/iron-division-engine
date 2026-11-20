@@ -43,6 +43,13 @@ window.IronDivision = window.IronDivision || {};
     return 0;
   }
 
+  function getPursuitBonus(u) {
+    if (ID.Combat && typeof ID.Combat.getUnitPursuitBonus === 'function') {
+      return ID.Combat.getUnitPursuitBonus(u);
+    }
+    return 0;
+  }
+
   /**
    * Checks whether either side has been eliminated or if combat must continue.
    * Combat continues as long as a side has active units OR units in the rally queue.
@@ -103,6 +110,9 @@ window.IronDivision = window.IronDivision || {};
     const avgWinSpeed = winUnits.length > 0
       ? Math.round(winUnits.reduce((s, u) => s + (H.getUnitEffectiveSpeed ? H.getUnitEffectiveSpeed(u) : 1), 0) / winUnits.length)
       : 1;
+    const avgWinPursuitBonus = winUnits.length > 0
+      ? Math.round(winUnits.reduce((s, u) => s + getPursuitBonus(u), 0) / winUnits.length)
+      : 0;
 
     // Check if victor includes Monsters or Zombies (triggers No Quarter doctrine)
     const victorIsMonstersOrZombies = winUnits.some(u => u.isMonster || u.isZombie);
@@ -143,7 +153,7 @@ window.IronDivision = window.IronDivision || {};
       } else {
         // RULE 2: Contested Pursuit
         const opMods = H.getTerrainOperationalMods ? H.getTerrainOperationalMods(u.category) : { retreatMod: 0 };
-        const pursueMod = (winTactic.pursueBonus || 0) + (deltaMob > 0 ? deltaMob * 25 : 0);
+        const pursueMod = avgWinPursuitBonus + (winTactic.pursueBonus || 0) + (deltaMob > 0 ? deltaMob * 25 : 0);
         const retreatMod = getRetreatBonus(u) + (loseTactic.retreatBonus || 0) + (deltaMob < 0 ? Math.abs(deltaMob) * 25 : 0) + (opMods.retreatMod || 0);
 
         const rawRetRoll = H.rollDie(100);
