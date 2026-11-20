@@ -859,8 +859,17 @@ window.IronDivision = window.IronDivision || {};
     return `${dd}${hh}${mm}Z ${mon} ${yyyy}`;
   }
 
+  function stripEmojisForAAR(str) {
+    return String(str ?? '')
+      .replace(/\p{Extended_Pictographic}|\uFE0F|\u200D/gu, '')
+      .replace(/➔/g, '->')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+  }
+
   function summarizeSideMetrics(units = []) {
     return units.reduce((acc, u) => {
+      acc.unitCount += 1;
       acc.start += (u.maxPersonnel || 0);
       acc.rem += (u.personnel || 0);
       acc.dead += (u.dead || 0);
@@ -872,12 +881,108 @@ window.IronDivision = window.IronDivision || {};
       acc.armorRec += (u.recoverableArmor || 0);
       acc.armorTowed += (u.towedArmor || 0);
       acc.armorUnrec += (u.unrecoverableArmor || 0);
+      if (!u.isMonster && !u.isZombie) {
+        acc.supplyMax += (u.maxSupply || 0);
+        acc.supplyRem += Math.max(0, u.supply || 0);
+      }
       if (u.defeated) acc.defeatedCount += 1;
       return acc;
     }, {
-      start: 0, rem: 0, dead: 0, wounded: 0, captured: 0, escaped: 0,
-      armorStart: 0, armorRem: 0, armorRec: 0, armorTowed: 0, armorUnrec: 0, defeatedCount: 0
+      unitCount: 0, start: 0, rem: 0, dead: 0, wounded: 0, captured: 0, escaped: 0,
+      armorStart: 0, armorRem: 0, armorRec: 0, armorTowed: 0, armorUnrec: 0,
+      supplyMax: 0, supplyRem: 0, defeatedCount: 0
     });
+  }
+
+  function classifyVictoryDegree(rep, sumA, sumB, isOver) {
+    if (!isOver) {
+      return {
+        label: 'ENGAGEMENT IN PROGRESS',
+        shortLabel: 'IN PROGRESS',
+        badgeClass: 'text-[#8ec0e8] border-[#355a7a] bg-[#162533]',
+        oddsRatio: null,
+        costPct: null,
+        summary: 'Operation is currently active; victory classification will be assigned upon conclusion.'
+      };
+    }
+
+    if (!rep.winner || rep.winner === 'Draw') {
+      return {
+        label: 'MUTUAL EXHAUSTION (DRAW)',
+        shortLabel: 'DRAW',
+        badgeClass: 'text-[#c8a24b] border-[#7d6731] bg-[#262011]',
+        oddsRatio: 1.0,
+        costPct: 100,
+        summary: 'Neither side retained operational formations to secure the objective.'
+      };
+    }
+
+    const win = rep.winner === 'A' ? sumA : sumB;
+    const lose = rep.winner === 'A' ? sumB : sumA;
+
+    // Combined initial combat power (15 manpower-equivalents per armored vehicle)
+    const winPower = win.start + (win.armorStart * 15);
+    const losePower = lose.start + (lose.armorStart * 15);
+    const oddsRatio = winPower / Math.max(1, losePower);
+
+    const persLossRatio = (win.dead + win.wounded + win.captured) / Math.max(1, win.start);
+    const armorLossRatio = win.armorStart > 0
+      ? (win.armorUnrec + win.armorRec) / Math.max(1, win.armorStart)
+      : persLossRatio;
+    const supplyExpRatio = win.supplyMax > 0
+      ? (win.supplyMax - win.supplyRem) / Math.max(1, win.supplyMax)
+      : 0;
+    const unitLossRatio = win.unitCount > 0 ? (win.defeatedCount / win.unitCount) : 0;
+
+    // Composite Cost % = 60% Manpower Loss + 25% Armor Loss + 15% Supply Expenditure
+    const costPct = Math.round(((0.60 * persLossRatio) + (0.25 * armorLossRatio) + (0.15 * supplyExpRatio)) * 100);
+    const oddsText = `${oddsRatio.toFixed(2)}:1`;
+
+    // 1. Heroic Victory: Unfavorable odds with relatively light losses
+    if ((oddsRatio <= 0.80 && costPct <= 35) || (oddsRatio <= 0.65 && costPct <= 45)) {
+      return {
+        label: 'HEROIC VICTORY',
+        shortLabel: 'HEROIC VICTORY',
+        badgeClass: 'text-[#e6c46d] border-[#c8a24b] bg-[#2b2310]',
+        oddsRatio,
+        costPct,
+        summary: `Overcame unfavorable initial odds (${oddsText}) while containing composite force attrition to ${costPct}%.`
+      };
+    }
+
+    // 2. Pyrrhic Victory: Very high casualties, heavy resource drain, or >=50% formations lost
+    if (costPct >= 55 || persLossRatio >= 0.60 || unitLossRatio >= 0.50) {
+      return {
+        label: 'PYRRHIC VICTORY',
+        shortLabel: 'PYRRHIC VICTORY',
+        badgeClass: 'text-[#e69894] border-[#c2524c] bg-[#2e1615]',
+        oddsRatio,
+        costPct,
+        summary: `Objective secured at severe operational cost (${costPct}% composite attrition; ${win.defeatedCount}/${win.unitCount} formations knocked out).`
+      };
+    }
+
+    // 3. Decisive Victory: Clean win with low casualties and zero formations lost
+    if (costPct <= 25 && persLossRatio <= 0.25 && win.defeatedCount === 0) {
+      return {
+        label: 'DECISIVE VICTORY',
+        shortLabel: 'DECISIVE VICTORY',
+        badgeClass: 'text-[#89b884] border-[#5e8f59] bg-[#162615]',
+        oddsRatio,
+        costPct,
+        summary: `Clean tactical victory achieved at low cost (${costPct}% composite attrition, 0 formations lost; odds ${oddsText}).`
+      };
+    }
+
+    // 4. Close Victory: Contested engagement with noticeable losses or resource expenditure
+    return {
+      label: 'CLOSE VICTORY',
+      shortLabel: 'CLOSE VICTORY',
+      badgeClass: 'text-[#c8a24b] border-[#7d6731] bg-[#262011]',
+      oddsRatio,
+      costPct,
+      summary: `Hard-fought contested victory with noticeable force expenditure (${costPct}% composite attrition; odds ${oddsText}).`
+    };
   }
 
   function extractAARChronology(logs = []) {
@@ -892,7 +997,7 @@ window.IronDivision = window.IronDivision || {};
     return filtered.slice(-18);
   }
 
-  function buildAARAssessment(rep, sumA, sumB, isOver) {
+  function buildAARAssessment(rep, sumA, sumB, isOver, victoryInfo) {
     const notes = [];
     const lossA = sumA.dead + sumA.wounded + sumA.captured;
     const lossB = sumB.dead + sumB.wounded + sumB.captured;
@@ -906,7 +1011,11 @@ window.IronDivision = window.IronDivision || {};
     } else {
       const winLabel = rep.winner === 'A' ? 'BLUEFOR (Side A)' : 'OPFOR (Side B)';
       const loseLabel = rep.winner === 'A' ? 'OPFOR (Side B)' : 'BLUEFOR (Side A)';
-      notes.push(`${winLabel} secured the ${rep.terrain} (${rep.feature}) sector in Round ${rep.rounds} after neutralizing ${loseLabel}'s frontline cohesion.`);
+      const deg = victoryInfo ? victoryInfo.label : 'VICTORY';
+      notes.push(`Classification: ${deg} — ${winLabel} secured the ${rep.terrain} (${rep.feature}) sector in Round ${rep.rounds} after neutralizing ${loseLabel}'s frontline cohesion.`);
+      if (victoryInfo && victoryInfo.summary) {
+        notes.push(victoryInfo.summary);
+      }
     }
 
     notes.push(`Personnel attrition stands at ${pctA}% for BLUEFOR (${lossA.toLocaleString()} total losses) versus ${pctB}% for OPFOR (${lossB.toLocaleString()} total losses).`);
@@ -973,14 +1082,15 @@ window.IronDivision = window.IronDivision || {};
     const lossA = sumA.dead + sumA.wounded + sumA.captured;
     const lossB = sumB.dead + sumB.wounded + sumB.captured;
     const exchangeRatio = lossA > 0 ? `1 : ${(lossB / lossA).toFixed(2)}` : (lossB > 0 ? `0 : ${lossB}` : '0 : 0');
+    const victoryInfo = classifyVictoryDegree(rep, sumA, sumB, isOver);
     const chronology = extractAARChronology(state.battle.logs);
-    const assessments = buildAARAssessment(rep, sumA, sumB, isOver);
+    const assessments = buildAARAssessment(rep, sumA, sumB, isOver, victoryInfo);
     const salvage = isOver ? (rep.salvage || state.battle.salvageReport) : null;
 
     if (isOver) {
       titleEl.textContent = rep.winner === 'Draw'
         ? `MUTUAL EXHAUSTION — DRAW (RD-${String(rep.rounds).padStart(2, '0')})`
-        : `VICTORY: ${rep.winner === 'A' ? 'BLUEFOR (SIDE A)' : 'OPFOR (SIDE B)'} — RD-${String(rep.rounds).padStart(2, '0')}`;
+        : `${victoryInfo.label} — ${rep.winner === 'A' ? 'BLUEFOR (SIDE A)' : 'OPFOR (SIDE B)'} (RD-${String(rep.rounds).padStart(2, '0')})`;
     } else {
       titleEl.textContent = `LIVE OPERATIONAL SITREP — RD-${String(rep.rounds).padStart(2, '0')} (IN PROGRESS)`;
     }
@@ -991,7 +1101,7 @@ window.IronDivision = window.IronDivision || {};
           <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
             <div>
               <h4 class="font-bold font-mono text-xs uppercase tracking-wider ${colorClass}">${sideLabel}</h4>
-              <div class="text-[10px] font-mono text-[#7c877b]">COMMANDER: ${escapeHtml(commanderName)}</div>
+              <div class="text-[10px] font-mono text-[#7c877b]">COMMANDER: ${escapeHtml(stripEmojisForAAR(commanderName))}</div>
             </div>
             <div class="text-[10.5px] font-mono text-[#c8d1c7]">
               EFF: <b>${sum.rem.toLocaleString()}</b>/${sum.start.toLocaleString()} |
@@ -1017,7 +1127,7 @@ window.IronDivision = window.IronDivision || {};
               <tbody class="divide-y divide-[#1e241f]">
                 ${units.map(u => `
                   <tr>
-                    <td class="py-1.5 px-2 font-semibold text-[#e7ece4]">${escapeHtml(u.name)}</td>
+                    <td class="py-1.5 px-2 font-semibold text-[#e7ece4]">${escapeHtml(stripEmojisForAAR(u.name))}</td>
                     <td class="py-1.5 px-2 uppercase text-[10px] ${u.defeated ? 'text-[#d46a64]' : (u.isRallying ? 'text-[#c8a24b]' : 'text-[#7cb377]')}">${u.defeated ? 'OUT OF ACTION' : (u.isRallying ? 'REAR RALLY' : 'OPERATIONAL')}</td>
                     <td class="py-1.5 px-2 text-right">${u.personnel}/${u.maxPersonnel}</td>
                     <td class="py-1.5 px-2 text-right">${(u.isMonster || u.isZombie) ? 'N/A' : `${u.org}/${u.maxOrg}`}</td>
@@ -1052,8 +1162,8 @@ window.IronDivision = window.IronDivision || {};
         </div>
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
           <div class="p-2 bg-[#111512] border border-[#242c26]">
-            <span class="text-[#6e7a6d] block text-[9px] uppercase">1. OUTCOME</span>
-            <span class="font-bold text-[#c8a24b] text-xs uppercase">${isOver ? (rep.winner === 'Draw' ? 'DRAW' : `SIDE ${rep.winner} VICTORY`) : 'IN PROGRESS'}</span>
+            <span class="text-[#6e7a6d] block text-[9px] uppercase">1. OUTCOME / DEGREE</span>
+            <span class="font-bold text-xs uppercase ${isOver && rep.winner !== 'Draw' ? victoryInfo.badgeClass.split(' ')[0] : 'text-[#c8a24b]'}">${isOver ? (rep.winner === 'Draw' ? 'DRAW' : `SIDE ${rep.winner} — ${victoryInfo.shortLabel}`) : 'IN PROGRESS'}</span>
           </div>
           <div class="p-2 bg-[#111512] border border-[#242c26]">
             <span class="text-[#6e7a6d] block text-[9px] uppercase">2. DURATION / RATIO</span>
@@ -1092,7 +1202,7 @@ window.IronDivision = window.IronDivision || {};
         <div class="bg-slate-950 border border-slate-800 p-3 space-y-1.5 font-mono">
           <span class="font-bold text-[#c8a24b] uppercase tracking-wider text-xs block">SECTION 4 // SIGNIFICANT ENGAGEMENT CHRONOLOGY</span>
           <div class="max-h-36 overflow-y-auto custom-scroll space-y-1 text-[10.5px] text-[#c8d1c7]">
-            ${chronology.map(l => `<div class="border-l-2 border-[#3c473e] pl-2"><span class="text-[#6e7a6d]">[RD-${String(l.round).padStart(2, '0')}]</span> ${escapeHtml(l.text)}</div>`).join('')}
+            ${chronology.map(l => `<div class="border-l-2 border-[#3c473e] pl-2"><span class="text-[#6e7a6d]">[RD-${String(l.round).padStart(2, '0')}]</span> ${escapeHtml(stripEmojisForAAR(l.text))}</div>`).join('')}
           </div>
         </div>
       ` : ''}
@@ -1101,7 +1211,7 @@ window.IronDivision = window.IronDivision || {};
       <div class="bg-slate-950 border border-slate-800 p-3 space-y-1.5 font-mono">
         <span class="font-bold text-[#c8a24b] uppercase tracking-wider text-xs block">SECTION 5 // G-3 OPERATIONAL ASSESSMENT</span>
         <ul class="list-disc list-inside space-y-1 text-[11px] text-[#c8d1c7]">
-          ${assessments.map(n => `<li>${escapeHtml(n)}</li>`).join('')}
+          ${assessments.map(n => `<li>${escapeHtml(stripEmojisForAAR(n))}</li>`).join('')}
         </ul>
       </div>
     `;
@@ -1123,14 +1233,15 @@ window.IronDivision = window.IronDivision || {};
     const lossA = sumA.dead + sumA.wounded + sumA.captured;
     const lossB = sumB.dead + sumB.wounded + sumB.captured;
     const exchangeRatio = lossA > 0 ? `1 : ${(lossB / lossA).toFixed(2)}` : (lossB > 0 ? `0 : ${lossB}` : '0 : 0');
+    const victoryInfo = classifyVictoryDegree(rep, sumA, sumB, isOver);
     const chronology = extractAARChronology(state?.battle?.logs || []);
-    const assessments = buildAARAssessment(rep, sumA, sumB, isOver);
+    const assessments = buildAARAssessment(rep, sumA, sumB, isOver, victoryInfo);
     const salvage = isOver ? (rep.salvage || state?.battle?.salvageReport) : null;
     const docTitle = `Iron_Division_AAR_${rep.docId || 'REPORT'}_${rep.terrain}`;
 
     const renderForceTable = (heading, cmdName, units, sum) => `
       <h3>${escapeHtml(heading)}</h3>
-      <div class="meta-sub">COMMANDING OFFICER: <strong>${escapeHtml(cmdName)}</strong> &nbsp;|&nbsp; FORMATIONS ACTIVE: <strong>${units.length - sum.defeatedCount}/${units.length}</strong></div>
+      <div class="meta-sub">COMMANDING OFFICER: <strong>${escapeHtml(stripEmojisForAAR(cmdName))}</strong> &nbsp;|&nbsp; FORMATIONS ACTIVE: <strong>${units.length - sum.defeatedCount}/${units.length}</strong></div>
       <table>
         <thead>
           <tr>
@@ -1149,7 +1260,7 @@ window.IronDivision = window.IronDivision || {};
         <tbody>
           ${units.map(u => `
             <tr>
-              <td><strong>${escapeHtml(u.name)}</strong></td>
+              <td><strong>${escapeHtml(stripEmojisForAAR(u.name))}</strong></td>
               <td>${escapeHtml((u.category || '').toUpperCase())} / ${escapeHtml(u.experience || '')}</td>
               <td>${u.defeated ? 'OUT OF ACTION' : (u.isRallying ? 'REAR RALLY' : 'OPERATIONAL')}</td>
               <td class="num">${u.maxPersonnel}</td>
@@ -1341,15 +1452,15 @@ window.IronDivision = window.IronDivision || {};
   <div class="kpi-grid">
     <div class="kpi-cell">
       <span class="kpi-label">Operation Outcome</span>
-      <span class="kpi-val">${isOver ? (rep.winner === 'Draw' ? 'MUTUAL EXHAUSTION' : `SIDE ${rep.winner} VICTORY`) : 'IN PROGRESS'}</span>
+      <span class="kpi-val">${isOver ? (rep.winner === 'Draw' ? 'MUTUAL EXHAUSTION' : `SIDE ${rep.winner} — ${victoryInfo.shortLabel}`) : 'IN PROGRESS'}</span>
     </div>
     <div class="kpi-cell">
-      <span class="kpi-label">Rounds Elapsed</span>
-      <span class="kpi-val">RD-${String(rep.rounds).padStart(2, '0')}</span>
+      <span class="kpi-label">Rounds / Odds</span>
+      <span class="kpi-val">RD-${String(rep.rounds).padStart(2, '0')}${victoryInfo.oddsRatio !== null ? ` (${victoryInfo.oddsRatio.toFixed(2)}:1)` : ''}</span>
     </div>
     <div class="kpi-cell">
-      <span class="kpi-label">Theatre Posture</span>
-      <span class="kpi-val">SIDE ${rep.theatreAttackerSide || 'A'} ASSAULT</span>
+      <span class="kpi-label">Winner Cost / Posture</span>
+      <span class="kpi-val">${victoryInfo.costPct !== null ? `${victoryInfo.costPct}% COST` : 'ACTIVE'} | SIDE ${rep.theatreAttackerSide || 'A'} ATK</span>
     </div>
     <div class="kpi-cell">
       <span class="kpi-label">Loss Ratio (A : B)</span>
@@ -1376,14 +1487,14 @@ window.IronDivision = window.IronDivision || {};
   <h2>4. Significant Engagement Chronology</h2>
   <div class="box">
     ${chronology.length > 0
-      ? chronology.map(l => `<div class="chron-item"><strong>[RD-${String(l.round).padStart(2, '0')}]</strong> ${escapeHtml(l.text)}</div>`).join('')
+      ? chronology.map(l => `<div class="chron-item"><strong>[RD-${String(l.round).padStart(2, '0')}]</strong> ${escapeHtml(stripEmojisForAAR(l.text))}</div>`).join('')
       : '<div>No major milestone events recorded in sitrep log.</div>'}
   </div>
 
   <h2>5. G-3 Operational Assessment &amp; Authentication</h2>
   <div class="box">
     <ul>
-      ${assessments.map(n => `<li>${escapeHtml(n)}</li>`).join('')}
+      ${assessments.map(n => `<li>${escapeHtml(stripEmojisForAAR(n))}</li>`).join('')}
     </ul>
     <div class="sig-grid">
       <div class="sig-block">
@@ -1392,7 +1503,7 @@ window.IronDivision = window.IronDivision || {};
       </div>
       <div class="sig-block">
         <strong>REVIEWING COMMANDER</strong><br>
-        ${escapeHtml(rep.winner === 'B' ? (rep.commanderB || 'OPFOR HQ') : (rep.commanderA || 'BLUEFOR HQ'))}
+        ${escapeHtml(stripEmojisForAAR(rep.winner === 'B' ? (rep.commanderB || 'OPFOR HQ') : (rep.commanderA || 'BLUEFOR HQ')))}
       </div>
     </div>
   </div>
@@ -1481,6 +1592,8 @@ window.IronDivision = window.IronDivision || {};
     renderCommandersTab,
     renderTerrainTab,
     renderTacticsGuide,
+    stripEmojisForAAR,
+    classifyVictoryDegree,
     openBattleSummaryModal,
     closeBattleSummaryModal,
     buildPrintableAARHtml,
