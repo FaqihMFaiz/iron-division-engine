@@ -466,3 +466,291 @@ body.mil-ui ::selection {
     border-bottom: 1px solid #cbd5e1 !important;
   }
 }
+
+
+/* --------------------------------------------------------------------------
+   8. TRADOC Field Manual Document Theme (Tab 7: Simulation Guide)
+   -------------------------------------------------------------------------- */
+.tradoc-doc {
+  background-color: #f4f1e6;
+  color: #181c19;
+  border: 1px solid #bfb7a2;
+  border-left: 6px solid #2f3b2e;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
+  max-width: 1180px;
+  margin: 0 auto;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.6;
+}
+
+.tradoc-doc .tradoc-mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.tradoc-doc .tradoc-class-strip {
+  background-color: #252e24;
+  color: #f4f1e6;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 6px 20px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tradoc-doc .tradoc-header {
+  padding: 24px 28px 18px 28px;
+  border-bottom: 3px double #181c19;
+  background-color: #efeadd;
+}
+
+.tradoc-doc .tradoc-pub-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 8px 16px;
+  border-top: 1px solid #b5ad98;
+  border-bottom: 1px solid #b5ad98;
+  padding: 10px 0;
+  margin-top: 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: #343c33;
+}
+
+.tradoc-doc .tradoc-toc {
+  padding: 16px 28px;
+  background-color: #eae4d4;
+  border-bottom: 1px solid #bfb7a2;
+}
+
+.tradoc-doc .tradoc-toc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 6px 12px;
+  margin-top: 8px;
+}
+
+.tradoc-doc .tradoc-toc-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  background-color: #f4f1e6;
+  border: 1px solid #c4bca8;
+  color: #1c241b;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.tradoc-doc .tradoc-toc-link:hover {
+  background-color: #2f3b2e;
+  border-color: #2f3b2e;
+  color: #f4f1e6;
+}
+
+.tradoc-doc .tradoc-body {
+  padding: 24px 28px 32px 28px;
+}
+
+.tradoc-doc .tradoc-chapter {
+  scroll-margin-top: 108px;
+  padding-bottom: 24px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #cbc3ae;
+}
+
+.tradoc-doc .tradoc-chapter:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.tradoc-doc .tradoc-chapter-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+  border-bottom: 2px solid #2f3b2e;
+  padding-bottom: 6px;
+  margin-bottom: 12px;
+}
+
+.tradoc-doc .tradoc-chapter-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background-color: #2f3b2e;
+  color: #f4f1e6;
+  padding: 2px 8px;
+}
+
+.tradoc-doc .tradoc-chapter-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: #141815;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+.tradoc-doc p {
+  font-size: 13.5px;
+  color: #232924;
+  margin-bottom: 10px;
+}
+
+.tradoc-doc .tradoc-para-id {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  color: #2f3b2e;
+  margin-right: 6px;
+}
+
+.tradoc-doc .tradoc-formula {
+  background-color: #ebe5d5;
+  border: 1px solid #b5ad98;
+  border-left: 4px solid #2f3b2e;
+  padding: 10px 14px;
+  margin: 10px 0 12px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px;
+  color: #141815;
+  overflow-x: auto;
+}
+
+.tradoc-doc .tradoc-formula-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #4a5448;
+  margin-bottom: 4px;
+}
+
+.tradoc-doc .tradoc-note {
+  background-color: #efe9d8;
+  border: 1px solid #c2b89f;
+  border-left: 4px solid #7c5b1e;
+  padding: 10px 14px;
+  margin: 12px 0;
+  font-size: 12.5px;
+  color: #252b25;
+}
+
+.tradoc-doc .tradoc-caution {
+  background-color: #f2e6e4;
+  border: 1px solid #cca8a3;
+  border-left: 4px solid #8b2e2a;
+  padding: 10px 14px;
+  margin: 12px 0;
+  font-size: 12.5px;
+  color: #2b1817;
+}
+
+.tradoc-doc .tradoc-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+  margin: 10px 0;
+}
+
+.tradoc-doc .tradoc-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+  margin: 10px 0;
+}
+
+.tradoc-doc .tradoc-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+  margin: 10px 0;
+}
+
+.tradoc-doc .tradoc-card {
+  background-color: #faf8f2;
+  border: 1px solid #c4bca8;
+  padding: 10px 12px;
+}
+
+.tradoc-doc .tradoc-card-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #1f2b1e;
+  border-bottom: 1px solid #d8d1be;
+  padding-bottom: 4px;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.tradoc-doc .tradoc-card p,
+.tradoc-doc .tradoc-card li {
+  font-size: 12.5px;
+  color: #2a302b;
+  margin-bottom: 4px;
+}
+
+.tradoc-doc table.tradoc-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0 12px 0;
+  font-size: 12px;
+  background-color: #faf8f2;
+}
+
+.tradoc-doc table.tradoc-table th {
+  background-color: #262f25;
+  color: #f4f1e6;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: left;
+  padding: 8px 10px;
+  border: 1px solid #262f25;
+}
+
+.tradoc-doc table.tradoc-table td {
+  padding: 7px 10px;
+  border: 1px solid #c4bca8;
+  color: #1c211d;
+  vertical-align: top;
+}
+
+.tradoc-doc table.tradoc-table tbody tr:nth-child(even) {
+  background-color: #efeadd;
+}
+
+.tradoc-doc .tradoc-footer {
+  background-color: #eae4d4;
+  border-top: 3px double #181c19;
+  padding: 16px 28px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: #343c33;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+@media (max-width: 640px) {
+  .tradoc-doc .tradoc-header,
+  .tradoc-doc .tradoc-toc,
+  .tradoc-doc .tradoc-body,
+  .tradoc-doc .tradoc-footer {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}

@@ -1,5 +1,5 @@
 /* ==========================================================================
-   IRON DIVISION ENGINE — COMPREHENSIVE SIMULATION FIELD GUIDE
+   IRON DIVISION ENGINE — TRADOC-STYLE SIMULATION FIELD MANUAL
    File: js/guide.js
    ========================================================================== */
 
@@ -13,536 +13,485 @@ window.IronDivision = window.IronDivision || {};
     if (!container) return;
 
     container.innerHTML = `
-      <!-- Guide Master Header Banner -->
-      <div class="mil-panel mil-panel-brackets mil-panel-cmd p-5 sm:p-6 space-y-3">
-        <div class="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <div class="flex items-center gap-2 font-mono text-[11px]">
-              <span class="uppercase px-2 py-0.5 bg-[#232016] text-[#c8a24b] border border-[#594b27] font-bold">
-                FM 100-5 // FIELD MANUAL
-              </span>
-              <span class="text-[#7c877b]">DOC-ID-904-REV5</span>
+      <article class="tradoc-doc" aria-label="Iron Division TRADOC Field Manual FM 100-5-ID">
+        <!-- Top Classification & Distribution Banner -->
+        <div class="tradoc-class-strip">
+          <span>UNCLASSIFIED // APPROVED FOR SIMULATION DISTRIBUTION</span>
+          <span>TRADOC PUB // FM 100-5-ID (REV 5)</span>
+        </div>
+
+        <!-- Official TRADOC Publication Header -->
+        <header class="tradoc-header">
+          <div class="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <div class="tradoc-mono text-[11px] font-bold uppercase tracking-widest text-[#3a4738]">
+                HEADQUARTERS, COMBINED-ARMS SIMULATION COMMAND
+              </div>
+              <h2 class="text-2xl sm:text-3xl font-black uppercase tracking-tight text-[#141815] mt-1">
+                FM 100-5-ID: Combined-Arms Operations
+              </h2>
+              <p class="text-sm text-[#323a33] max-w-3xl mt-1">
+                Technical Field Manual governing division-level polyhedral combat resolution, kinetic armor penetration, Y-axis engagement ranges, shared depot logistics, officer doctrine scaling, and Form DA-774 After-Action Reporting.
+              </p>
             </div>
-            <h2 class="text-xl sm:text-2xl font-black font-mono uppercase tracking-wider text-[#e7ece4] mt-1.5">
-              Combined-Arms Operational Doctrine
-            </h2>
-            <p class="text-xs sm:text-sm text-[#a5b0a3] max-w-4xl leading-relaxed mt-1">
-              Mathematical specification of division-scale combat mechanics: polyhedral dice resolution, kinetic armor penetration, Y-axis spatial engagement ranges, shared depot logistics, generic officer doctrine traits, and Form DA-774 After-Action Reports.
+            <div class="tradoc-mono text-[11px] bg-[#faf8f2] border border-[#b5ad98] p-3 text-right shrink-0 space-y-0.5 text-[#1c211d]">
+              <div><strong>PUB NO:</strong> FM 100-5-ID</div>
+              <div><strong>DOC REF:</strong> DOC-ID-904-REV5</div>
+              <div><strong>ENGINE:</strong> v3.1 COMBINED ARMS</div>
+              <div><strong>DICE:</strong> d3–d20, d50, d100</div>
+            </div>
+          </div>
+
+          <div class="tradoc-pub-meta">
+            <div><strong>SCOPE:</strong> Battalion to Division TTRPG Resolution</div>
+            <div><strong>POOLS:</strong> Decoupled Personnel (HP) vs. Organization (Org)</div>
+            <div><strong>STATUS:</strong> Supersedes Rev 4 Overwatch Doctrine</div>
+          </div>
+        </header>
+
+        <!-- Chapter Index / Table of Contents -->
+        <nav class="tradoc-toc" aria-label="Field Manual Chapters">
+          <div class="tradoc-mono text-[11px] font-bold uppercase tracking-widest text-[#2f3b2e]">
+            TABLE OF CONTENTS // DOCTRINE CHAPTERS
+          </div>
+          <div class="tradoc-toc-grid">
+            <a href="#guide-lifecycle" class="tradoc-toc-link"><span>CH 01</span><span>7-Phase Combat Cycle</span></a>
+            <a href="#guide-categories" class="tradoc-toc-link"><span>CH 02</span><span>Categories &amp; Dice</span></a>
+            <a href="#guide-armor" class="tradoc-toc-link"><span>CH 03</span><span>Armor &amp; Penetration</span></a>
+            <a href="#guide-dispersion" class="tradoc-toc-link"><span>CH 04</span><span>Cover &amp; Grazing</span></a>
+            <a href="#guide-melee" class="tradoc-toc-link"><span>CH 05</span><span>Y-Axis Range &amp; Melee</span></a>
+            <a href="#guide-logistics" class="tradoc-toc-link"><span>CH 06</span><span>Shared Supply Depot</span></a>
+            <a href="#guide-artillery" class="tradoc-toc-link"><span>CH 07</span><span>Inherent Artillery</span></a>
+            <a href="#guide-medical" class="tradoc-toc-link"><span>CH 08</span><span>Medical Triage &amp; DOW</span></a>
+            <a href="#guide-rally" class="tradoc-toc-link"><span>CH 09</span><span>Rally &amp; Unbreakable</span></a>
+            <a href="#guide-commanders" class="tradoc-toc-link"><span>CH 10</span><span>Command HQ &amp; Traits</span></a>
+            <a href="#guide-pursuit" class="tradoc-toc-link"><span>CH 11</span><span>Pursuit, Victory &amp; AAR</span></a>
+          </div>
+        </nav>
+
+        <!-- Manual Body -->
+        <div class="tradoc-body">
+
+          <!-- CHAPTER 1 -->
+          <section id="guide-lifecycle" class="tradoc-chapter">
+            <div class="tradoc-chapter-head">
+              <span class="tradoc-chapter-num">CHAPTER 1</span>
+              <h3 class="tradoc-chapter-title">The 7-Phase Combat Round Lifecycle</h3>
+            </div>
+            <p>
+              <span class="tradoc-para-id">1-1.</span>
+              Every combat round resolves in seven strict sequential phases. Queued next-round modifiers (such as <em>Delay</em> attack penalties or <em>AA Defense</em> / <em>Shock</em> vigilance penalties) are promoted at round start so they apply consistently across the entire round before resetting cleanly.
             </p>
-          </div>
-          <div class="bg-slate-950 border border-slate-800 p-3 font-mono text-xs text-[#c8d1c7] space-y-1 text-right">
-            <div>ENGINE CORE: <b class="text-[#c8a24b]">v3.1 COMBINED ARMS</b></div>
-            <div>DICE SPECTRUM: <b class="text-[#8ec0e8]">d3, d4, d6, d8, d10, d12, d16, d20, d50, d100</b></div>
-            <div>DECOUPLED POOLS: <b class="text-[#7cb377]">PERSONNEL (HP) / COHESION (ORG)</b></div>
-          </div>
+
+            <div class="tradoc-grid-4">
+              <div class="tradoc-card">
+                <span class="tradoc-card-title">Phase 1 // Tactics</span>
+                <p>Each side selects 1 of 25 tactical doctrines matching its role. Commander personality (Aggressive, Balanced, Cautious) automates AI selection.</p>
+              </div>
+              <div class="tradoc-card">
+                <span class="tradoc-card-title">Phase 2 // Upkeep &amp; Rally</span>
+                <p>Supply drains, DOW triage resolves, entrenchment builds (+1 lvl/rd), Unbreakable timers tick, and rear units attempt d20 Rally Checks (DC 10).</p>
+              </div>
+              <div class="tradoc-card">
+                <span class="tradoc-card-title">Phase 3 // Recon Contest</span>
+                <p>Contested <strong>d100 + Vigilance</strong> roll. Victory margin divided by 10 awards a flat stat boost and targeting priority.</p>
+              </div>
+              <div class="tradoc-card">
+                <span class="tradoc-card-title">Phase 4 // Fire Support</span>
+                <p>Mortars, inherent Artillery batteries, and Air Support strike enemy formations. Enemy AA Defense and AA Guns intercept flights.</p>
+              </div>
+              <div class="tradoc-card">
+                <span class="tradoc-card-title">Phase 5 // Main Assault</span>
+                <p>Units outside range advance along the Y-axis. Units in range acquire targets by Target Value, check AP vs. Hardness or Cover, and resolve clash casualties.</p>
+              </div>
+              <div class="tradoc-card">
+                <span class="tradoc-card-title">Phase 6 // Return Fire</span>
+                <p>In-range defenders contest Return Fire Vigilance and counter-engage the attacker's Breakthrough/Defense, or inflict grazing fire.</p>
+              </div>
+              <div class="tradoc-card">
+                <span class="tradoc-card-title">Phase 7 // Initiative Swap</span>
+                <p>Tactical initiative flips unless locked by out-of-range advancing units. Theatre Role (Invader vs. Entrenched Garrison) remains static.</p>
+              </div>
+              <div class="tradoc-card">
+                <span class="tradoc-card-title">Post-Op // Pursuit &amp; AAR</span>
+                <p>Mobility pursuit resolves overruns, towing, and Beutepanzer salvage, then compiles the Form DA-774 After-Action Report.</p>
+              </div>
+            </div>
+
+            <div class="tradoc-formula">
+              <span class="tradoc-formula-label">Equation 1-1 // Dynamic Target Value (TV)</span>
+              TV = [ (Size &amp; Armor + Threat Score + Org &amp; Kill Priority) &times; Category Mult + Entrenchment Mod + Frontliner (+200) ] &times; Distance Mult
+            </div>
+            <p>
+              <span class="tradoc-para-id">1-2.</span>
+              <strong>Kill Priority &amp; Screening:</strong> Formations below 35% Org gain +150 TV (+250 below 15%). Artillery (&times;1.35) and Tanks (&times;1.25) draw heavier fire than Infantry (&times;1.00), while active <em>Frontliner / Defender</em> units act as a +200 TV screening magnet.
+            </p>
+          </section>
+
+          <!-- CHAPTER 2 -->
+          <section id="guide-categories" class="tradoc-chapter">
+            <div class="tradoc-chapter-head">
+              <span class="tradoc-chapter-num">CHAPTER 2</span>
+              <h3 class="tradoc-chapter-title">Unit Categories, Polyhedral Dice &amp; Mobility Classes</h3>
+            </div>
+            <p>
+              <span class="tradoc-para-id">2-1.</span>
+              Formations are classified into four tactical branches. Each branch determines assault/defense polyhedral dice, baseline speed class (0–5), and inherent weapon properties.
+            </p>
+
+            <div class="overflow-x-auto">
+              <table class="tradoc-table">
+                <thead>
+                  <tr>
+                    <th>Category</th>
+                    <th>Attack Die</th>
+                    <th>Defense Die</th>
+                    <th>Speed Class</th>
+                    <th>Pur / Ret</th>
+                    <th>Inherent Doctrinal Rule</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="tradoc-mono font-bold">INFANTRY</td>
+                    <td class="tradoc-mono font-bold">d12</td>
+                    <td class="tradoc-mono font-bold">d12</td>
+                    <td class="tradoc-mono">Class 1 (Spec: 2)</td>
+                    <td class="tradoc-mono">+0 / +0</td>
+                    <td>Rolls Dispersion/Cover Saves instead of AP checks; ignores 35% tank Hardness in close terrain.</td>
+                  </tr>
+                  <tr>
+                    <td class="tradoc-mono font-bold">ARMORED VEHICLE</td>
+                    <td class="tradoc-mono font-bold">d16</td>
+                    <td class="tradoc-mono font-bold">d16</td>
+                    <td class="tradoc-mono">Class 4–5</td>
+                    <td class="tradoc-mono">+20 / +20</td>
+                    <td>Inherently equipped with High-Caliber armament; excels at mobile pursuit and withdrawal.</td>
+                  </tr>
+                  <tr>
+                    <td class="tradoc-mono font-bold">TANK</td>
+                    <td class="tradoc-mono font-bold">d20</td>
+                    <td class="tradoc-mono font-bold">d20</td>
+                    <td class="tradoc-mono">Class 3–4</td>
+                    <td class="tradoc-mono">+10 / +10</td>
+                    <td>Inherently equipped with High-Caliber armament; Heavy/Super-Heavy hulls resist non-AT small arms.</td>
+                  </tr>
+                  <tr>
+                    <td class="tradoc-mono font-bold">ARTILLERY</td>
+                    <td class="tradoc-mono font-bold">d20</td>
+                    <td class="tradoc-mono font-bold">d8</td>
+                    <td class="tradoc-mono">Class 0 (Towed)</td>
+                    <td class="tradoc-mono">+0 / +0</td>
+                    <td>Inherent Battery Barrage &amp; Explosive Ordnance; fragile in direct fire and vulnerable to overruns.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- CHAPTER 3 -->
+          <section id="guide-armor" class="tradoc-chapter">
+            <div class="tradoc-chapter-head">
+              <span class="tradoc-chapter-num">CHAPTER 3</span>
+              <h3 class="tradoc-chapter-title">Armor Classes, Dynamic Hardness &amp; Penetration</h3>
+            </div>
+            <p>
+              <span class="tradoc-para-id">3-1.</span>
+              Armored formations partition incoming firepower into Hard and Soft shares: <strong>Unarmored</strong> (0/100), <strong>Light</strong> (25/75), <strong>Medium</strong> (50/50), <strong>Heavy</strong> (75/25), and <strong>Super Heavy</strong> (100/0). As vehicles are knocked out, effective hardness and hard-target ratio degrade proportionally.
+            </p>
+
+            <div class="tradoc-formula">
+              <span class="tradoc-formula-label">Equation 3-1 // Dynamic Hardness &amp; Penetration Overmatch</span>
+              Effective Hardness = max(0, (Base Hardness + Unit Traits + Cmd Traits) &times; clamp(Cur Armor / Max Armor, 0.25, 1.0) - Maluses)<br>
+              Overmatch Margin = (d6 + Effective Piercing - (d6 + Effective Hardness)) / max(1, Effective Hardness)
+            </div>
+
+            <div class="tradoc-grid-4">
+              <div class="tradoc-card">
+                <span class="tradoc-card-title">Margin &le; 0.25</span>
+                <p>Minor breach: <strong>d3</strong> vehicles disabled.</p>
+              </div>
+              <div class="tradoc-card">
+                <span class="tradoc-card-title">0.25 &lt; Margin &le; 0.50</span>
+                <p>Moderate breach: <strong>1 + d6</strong> vehicles disabled.</p>
+              </div>
+              <div class="tradoc-card">
+                <span class="tradoc-card-title">0.50 &lt; Margin &le; 0.75</span>
+                <p>Severe overmatch: <strong>3 + d8</strong> vehicles disabled.</p>
+              </div>
+              <div class="tradoc-card">
+                <span class="tradoc-card-title">Margin &gt; 0.75</span>
+                <p>Catastrophic hit: <strong>6 + d12</strong> vehicles disabled.</p>
+              </div>
+            </div>
+
+            <div class="tradoc-note">
+              <strong>NOTE // CLOSE-ASSAULT BYPASS:</strong> Attacking infantry in Urban, Forest, Jungle, or Mountain sectors bypass <strong>35%</strong> of enemy vehicle Hardness. Unpierced hits still apply Soft share + 20% Hard concussive bleed-through + 2 chip damage. Destroyed hulls inflict <strong>1 + d4</strong> crew losses; recoverable hulls inflict <strong>d2</strong>.
+            </div>
+          </section>
+
+          <!-- CHAPTER 4 -->
+          <section id="guide-dispersion" class="tradoc-chapter">
+            <div class="tradoc-chapter-head">
+              <span class="tradoc-chapter-num">CHAPTER 4</span>
+              <h3 class="tradoc-chapter-title">Infantry Dispersion, Cover Saves &amp; Grazing Immunity</h3>
+            </div>
+            <p>
+              <span class="tradoc-para-id">4-1.</span>
+              Unarmored infantry bypasses kinetic armor checks and instead rolls an <strong>Entrenchment &amp; Dispersion Save</strong> to seek defilade against incoming fire.
+            </p>
+
+            <div class="tradoc-grid-2">
+              <div class="tradoc-formula">
+                <span class="tradoc-formula-label">Equation 4-1 // Cover &amp; Dispersion Save</span>
+                d20 + Terrain Cover + Entrenchment Lvl &ge; DC (12 + Attacker Spotting)<br>
+                <span class="text-[11px] text-[#3a4439]">Pass: Half soft dmg, High-Caliber negated, Explosives halved. Fail: Full dmg + -(1+d4) Org shock.</span>
+              </div>
+              <div class="tradoc-formula">
+                <span class="tradoc-formula-label">Equation 4-2 // Non-Breakthrough Pressure Ratio</span>
+                Pressure = Attack Value / max(1, Defense Value)<br>
+                <span class="text-[11px] text-[#3a4439]">&lt;40% (60% Fort): 0 dmg | 40–50%: 1 | 50–75%: 1+d2 | &ge;75%: 1+d3 (minus Fort/Entrench mitigation).</span>
+              </div>
+            </div>
+
+            <div class="tradoc-note">
+              <strong>NOTE // COMPLETE IMMUNITY:</strong> Level 5 Deep Bunkers grant 100% immunity to grazing casualties. Medium, Heavy, and Super-Heavy tanks are completely immune to non-penetrating small arms lacking High-Caliber or Explosive ordnance.
+            </div>
+          </section>
+
+          <!-- CHAPTER 5 -->
+          <section id="guide-melee" class="tradoc-chapter">
+            <div class="tradoc-chapter-head">
+              <span class="tradoc-chapter-num">CHAPTER 5</span>
+              <h3 class="tradoc-chapter-title">Y-Axis Spatial Distance, Engagement Ranges &amp; Melee Rush</h3>
+            </div>
+            <p>
+              <span class="tradoc-para-id">5-1.</span>
+              Opposing forces deploy along a shared spatial Y-axis (+Y for BLUEFOR, -Y for OPFOR). Engagement eligibility is determined by summing both units' distances from the line of contact.
+            </p>
+
+            <div class="tradoc-formula">
+              <span class="tradoc-formula-label">Equation 5-1 // Total Engagement Distance</span>
+              Total Engagement Distance = Attacker Position (Dist) + Defender Position (Dist)
+            </div>
+
+            <div class="tradoc-grid-3">
+              <div class="tradoc-card">
+                <span class="tradoc-card-title">5-2. Starting Positions</span>
+                <p><strong>Plains / Desert / Urban:</strong> 2 per side<br>
+                <strong>Forest / Hills / Marsh / Jungle:</strong> 3 per side<br>
+                <strong>Mountain:</strong> 4 per side (Road -1; River/Amphib +1)<br>
+                <strong>Artillery:</strong> Terrain Base + 2</p>
+              </div>
+              <div class="tradoc-card">
+                <span class="tradoc-card-title">5-3. Max Firing Ranges</span>
+                <p><strong>Zombies / Pure Melee:</strong> Total Dist &le; 1<br>
+                <strong>Infantry &amp; Armored Veh:</strong> Total Dist &le; 2<br>
+                <strong>Tanks:</strong> Total Dist &le; 3<br>
+                <strong>Artillery:</strong> Total Dist &le; 6<br>
+                <strong>Spec Ops / Infiltration:</strong> Unlimited</p>
+              </div>
+              <div class="tradoc-card">
+                <span class="tradoc-card-title">5-4. Advance &amp; Melee Rush</span>
+                <p>Out-of-range attackers advance 1 distance/rd (2/rd for <em>Melee</em> when dist &gt; 2) and reset entrenchment. Initiative stays locked until frontline units enter range. At Dist &le; 1, <em>Melee</em> gains +30% Atk, +4 Flat Atk, 50% Entrenchment bypass, and disrupts Return Fire (-20 Vig / -30% Atk).</p>
+              </div>
+            </div>
+          </section>
+
+          <!-- CHAPTER 6 -->
+          <section id="guide-logistics" class="tradoc-chapter">
+            <div class="tradoc-chapter-head">
+              <span class="tradoc-chapter-num">CHAPTER 6</span>
+              <h3 class="tradoc-chapter-title">Shared Army Supply Depot &amp; Combat Fatigue</h3>
+            </div>
+            <p>
+              <span class="tradoc-para-id">6-1.</span>
+              Each side maintains a centralized Army Supply Depot feeding both active logistics traits and rear-area rally refits. When an opposing frontline is completely empty (all enemies routed or rallying), supply burn and fatigue pause automatically.
+            </p>
+
+            <div class="tradoc-formula">
+              <span class="tradoc-formula-label">Equation 6-1 // Army Depot Capacity &amp; Unit Max Supply</span>
+              Max Depot = (100 + &Sigma; Unit Max Supply &times; 0.5) &times; (1 + Cmd Logistics Lvl &times; 10%) &times; (Logistics Wizard ? 1.25 : 1.0)<br>
+              Unit Max Supply = round(Template Supply &times; (1 + Cmd Logistics Lvl &times; 2.5%) &times; (Logistics Wizard ? 1.10 : 1.0))
+            </div>
+
+            <div class="tradoc-grid-3">
+              <div class="tradoc-card">
+                <span class="tradoc-card-title">Low Supply (&lt; 50%)</span>
+                <p>-10% combat stats, one-time -(2+d6) Org shock, locks support weapons.</p>
+              </div>
+              <div class="tradoc-card">
+                <span class="tradoc-card-title">Critical (&lt; 20% / 0%)</span>
+                <p>&lt;20%: -20% stats, -(3+d10) shock, -(1+d3) Org/rd. At 0%: -50% stats, -(2+d4) Org/rd.</p>
+              </div>
+              <div class="tradoc-card">
+                <span class="tradoc-card-title">Combat Fatigue</span>
+                <p>Rounds 1–5: 0 Org/rd. Rounds 6–12: -1 Org/rd. Rounds 13+: -2 Org/rd (rallying units exempt).</p>
+              </div>
+            </div>
+          </section>
+
+          <!-- CHAPTER 7 -->
+          <section id="guide-artillery" class="tradoc-chapter">
+            <div class="tradoc-chapter-head">
+              <span class="tradoc-chapter-num">CHAPTER 7</span>
+              <h3 class="tradoc-chapter-title">Inherent Artillery Barrages &amp; Off-Map Fire Support</h3>
+            </div>
+            <p>
+              <span class="tradoc-para-id">7-1.</span>
+              Units in the <strong>Artillery</strong> category execute inherent battery barrages without requiring external support traits (Cooldown: 1+d2 rounds, Cost: 3+d3 Supply, requires &ge; 50% Supply):
+            </p>
+            <div class="tradoc-grid-2">
+              <div class="tradoc-card">
+                <span class="tradoc-card-title">Artillery &amp; Mortar Fire</span>
+                <p><strong>Artillery:</strong> Enemy Def -(4+d12), Hardness -(2+d6), d2 armor disabled; d12 roll 8–10 adds +d6 cas, 11–12 adds +(2+d12) cas &amp; +(1+d3) armor.<br>
+                <strong>Mortars:</strong> Infantry Def -(3+d6), cover denied, 1+d4 cas, -d3 Org. Armor takes 0 Hardness loss, Def -(1+d3), d6=5 optics (-15 Vig), d6=6 track blown (-2 Mobility).</p>
+              </div>
+              <div class="tradoc-card">
+                <span class="tradoc-card-title">Air Support &amp; AA Interception</span>
+                <p><strong>Airstrike (5+d4 Sup, CD 2+d2):</strong> Enemy Def -(6+d20), Hardness -(4+d10), scaled casualties/armor on d20 &ge; 10.<br>
+                <strong>AA Defense / AA Gun:</strong> Reduces strike damage by 4+d6 / 4+d8. AA Gun roll 8 disables enemy air support for the remainder of the battle.</p>
+              </div>
+            </div>
+          </section>
+
+          <!-- CHAPTER 8 -->
+          <section id="guide-medical" class="tradoc-chapter">
+            <div class="tradoc-chapter-head">
+              <span class="tradoc-chapter-num">CHAPTER 8</span>
+              <h3 class="tradoc-chapter-title">Medical Triage &amp; Died of Wounds (DOW)</h3>
+            </div>
+            <p>
+              <span class="tradoc-para-id">8-1.</span>
+              Personnel casualties roll <strong>50 + d50 + Modifiers</strong> (clamped 5%–95%) to separate KIA from WIA. Starting in <strong>Round 4</strong>, untreated WIA risk succumbing to Died of Wounds (DOW) via fractional probability (preventing forced casualties on small squads).
+            </p>
+            <div class="tradoc-formula">
+              <span class="tradoc-formula-label">Equation 8-1 // Round 4+ DOW Mortality Rate</span>
+              DOW Rate = clamp(Supply Deficit (0–10%) + Weather Exposure (0–3%) - First Aid Kit (4%) - Field Medic (3%), 0%, 15%)
+            </div>
+          </section>
+
+          <!-- CHAPTER 9 -->
+          <section id="guide-rally" class="tradoc-chapter">
+            <div class="tradoc-chapter-head">
+              <span class="tradoc-chapter-num">CHAPTER 9</span>
+              <h3 class="tradoc-chapter-title">Rallying Engine, Manpower Safety Net &amp; Unbreakable</h3>
+            </div>
+            <p>
+              <span class="tradoc-para-id">9-1.</span>
+              When Organization reaches 0, eligible formations withdraw to the rear staging queue for <strong>2 + d2 Rounds</strong> (minus Commander cooldown reductions). 25% of remaining troops scatter cleanly into the <strong>Escaped</strong> pool (zero ghost casualties); 75% regroup and draw depot supplies each turn.
+            </p>
+            <div class="tradoc-grid-3">
+              <div class="tradoc-card">
+                <span class="tradoc-card-title">d20 Rally Check (DC 10)</span>
+                <p>Rolls d20 + Exp + Cmd + Frontline (+2/-3) + Manpower/Supply/Armor thresholds + Determination. Crit 1 always shatters.</p>
+              </div>
+              <div class="tradoc-card">
+                <span class="tradoc-card-title">60% Safety Net &amp; Shield</span>
+                <p>Formations with &ge;60% manpower never dissolve on a normal failed rally (+1 rd delay). Units &ge;75% manpower gain +1 passive Org regen and -2 chip Org dmg.</p>
+              </div>
+              <div class="tradoc-card">
+                <span class="tradoc-card-title">Unbreakable Last Stand</span>
+                <p>Units with <em>Unbreakable</em> fight on for <strong>2 full rounds</strong> at 0 Org (-25% stats) before triggering rally or collapsing cleanly.</p>
+              </div>
+            </div>
+          </section>
+
+          <!-- CHAPTER 10 -->
+          <section id="guide-commanders" class="tradoc-chapter">
+            <div class="tradoc-chapter-head">
+              <span class="tradoc-chapter-num">CHAPTER 10</span>
+              <h3 class="tradoc-chapter-title">Command HQ Attributes &amp; Generic Commander Traits</h3>
+            </div>
+            <p>
+              <span class="tradoc-para-id">10-1.</span>
+              Commanders scale four core division attributes at <strong>+2.5% per level</strong> (Levels 0–10: Attack, Defense, Max Org, and Max Supply). All 21 numeric fields on built-in and custom Commander Traits are wired generically across eligible formations (respecting Formation Scope) and can be edited or deleted directly from the <strong>Command HQ</strong> tab.
+            </p>
+            <div class="tradoc-grid-3">
+              <div class="tradoc-card">
+                <span class="tradoc-card-title">Firepower &amp; Armor</span>
+                <p>Attack %, Defense %, Flat Atk/Def, Soft/Hard Attack, Piercing, and Hardness apply automatically in both Main Assault and Return Fire.</p>
+              </div>
+              <div class="tradoc-card">
+                <span class="tradoc-card-title">Recon, Tactics &amp; Chase</span>
+                <p>Vigilance, Pursuit, and Retreat bonuses integrate directly into recon and pursuit math. <strong>Tactic Boost %</strong> scales positive tactical doctrine bonuses.</p>
+              </div>
+              <div class="tradoc-card">
+                <span class="tradoc-card-title">Logistics, Triage &amp; Rally</span>
+                <p>Supply Drain Cut, +10% Max Supply (<em>Logistics Wizard</em>), Personnel/Armor Recovery, Rally Roll, Cooldown Cut, and Extra Rallied Org apply cleanly with zero double-counting.</p>
+              </div>
+            </div>
+          </section>
+
+          <!-- CHAPTER 11 -->
+          <section id="guide-pursuit" class="tradoc-chapter">
+            <div class="tradoc-chapter-head">
+              <span class="tradoc-chapter-num">CHAPTER 11</span>
+              <h3 class="tradoc-chapter-title">Post-Battle Pursuit, Degrees of Victory &amp; Form DA-774 AAR</h3>
+            </div>
+            <p>
+              <span class="tradoc-para-id">11-1.</span>
+              Once one side loses all active and rallying capacity, the victor executes a mobility pursuit phase. Disciplined withdrawals (Escape &ge; 60%) tow <strong>25%–50%</strong> of recoverable disabled hulls back to depot, deducting them from the battlefield before the victor rolls proportional salvage (<strong>50 + d50</strong>, +15 with Engineers/Repair Crew) on the remaining abandoned hulls.
+            </p>
+
+            <div class="tradoc-caution">
+              <strong>CAUTION // NO QUARTER DOCTRINE:</strong> Victorious Monsters or Zombie Swarms take zero prisoners—all captured and wounded human personnel are converted directly to KIA, and abandoned vehicles are crushed into scrap.
+            </div>
+
+            <div class="tradoc-formula">
+              <span class="tradoc-formula-label">Equation 11-1 // Victory Degree Odds Ratio &amp; Composite Cost %</span>
+              Force Power = Start Personnel + (Start Armor &times; 15) &nbsp;|&nbsp; Odds Ratio = Winner Power / max(1, Loser Power)<br>
+              Composite Cost % = round((0.60 &times; Personnel Loss % + 0.25 &times; Armor Loss % + 0.15 &times; Supply Expended %) &times; 100)
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="tradoc-table">
+                <thead>
+                  <tr>
+                    <th>Degree of Victory</th>
+                    <th>Classification Criteria</th>
+                    <th>Operational Interpretation</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="tradoc-mono font-bold">HEROIC VICTORY</td>
+                    <td class="tradoc-mono">Odds &le; 0.80 &amp; Cost &le; 35% (or Odds &le; 0.65 &amp; Cost &le; 45%)</td>
+                    <td>Won against unfavorable odds while keeping overall force attrition relatively light.</td>
+                  </tr>
+                  <tr>
+                    <td class="tradoc-mono font-bold">DECISIVE VICTORY</td>
+                    <td class="tradoc-mono">Cost &le; 25%, Pers Loss &le; 25%, and 0 formations lost</td>
+                    <td>Clean victory with low casualties and every friendly formation intact.</td>
+                  </tr>
+                  <tr>
+                    <td class="tradoc-mono font-bold">CLOSE VICTORY</td>
+                    <td class="tradoc-mono">All remaining contested wins</td>
+                    <td>Hard-fought engagement with noticeable casualties, supply burn, or formation losses.</td>
+                  </tr>
+                  <tr>
+                    <td class="tradoc-mono font-bold">PYRRHIC VICTORY</td>
+                    <td class="tradoc-mono">Cost &ge; 55%, Pers Loss &ge; 60%, or &ge; 50% formations lost</td>
+                    <td>Objective secured at severe cost, leaving the winning army heavily damaged.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <p>
+              <span class="tradoc-para-id">11-2.</span>
+              <strong>Official AAR Export (Form DA-774):</strong> Open <strong>AAR // REPORT</strong> at any time to review the emoji-free 5-section After-Action Report (Executive Summary, ORBAT Casualty Ledgers, Salvage, Significant Chronology, and G-3 Assessment) and click <strong>DOWNLOAD OFFICIAL AAR (PDF)</strong> to print or save a formatted A4 military dossier.
+            </p>
+          </section>
+
         </div>
 
-        <!-- Quick Navigation Matrix -->
-        <div class="pt-3 border-t border-slate-800 flex flex-wrap gap-1.5 text-[11px] font-mono uppercase">
-          <a href="#guide-lifecycle" class="px-2.5 py-1 bg-slate-950 hover:bg-[#1e241f] text-[#dde3da] border border-slate-800">[01] 7-Phase Loop</a>
-          <a href="#guide-categories" class="px-2.5 py-1 bg-slate-950 hover:bg-[#1e241f] text-[#8ec0e8] border border-slate-800">[02] Combat Dice</a>
-          <a href="#guide-armor" class="px-2.5 py-1 bg-slate-950 hover:bg-[#1e241f] text-[#d99b52] border border-slate-800">[03] Armor &amp; AP</a>
-          <a href="#guide-dispersion" class="px-2.5 py-1 bg-slate-950 hover:bg-[#1e241f] text-[#7cb377] border border-slate-800">[04] Cover &amp; Grazing</a>
-          <a href="#guide-melee" class="px-2.5 py-1 bg-slate-950 hover:bg-[#1e241f] text-[#e69894] border border-slate-800">[05] Y-Axis Range</a>
-          <a href="#guide-logistics" class="px-2.5 py-1 bg-slate-950 hover:bg-[#1e241f] text-[#c8a24b] border border-slate-800">[06] Supply Depot</a>
-          <a href="#guide-artillery" class="px-2.5 py-1 bg-slate-950 hover:bg-[#1e241f] text-[#e69894] border border-slate-800">[07] Artillery</a>
-          <a href="#guide-medical" class="px-2.5 py-1 bg-slate-950 hover:bg-[#1e241f] text-[#7cb377] border border-slate-800">[08] Medical / DOW</a>
-          <a href="#guide-rally" class="px-2.5 py-1 bg-slate-950 hover:bg-[#1e241f] text-[#8ec0e8] border border-slate-800">[09] Rallying</a>
-          <a href="#guide-commanders" class="px-2.5 py-1 bg-slate-950 hover:bg-[#1e241f] text-[#c8a24b] border border-slate-800">[10] Command HQ</a>
-          <a href="#guide-pursuit" class="px-2.5 py-1 bg-slate-950 hover:bg-[#1e241f] text-[#b8a2d9] border border-slate-800">[11] Pursuit &amp; AAR</a>
-        </div>
-      </div>
-
-      <!-- MAIN GUIDE GRID -->
-      <div class="space-y-4">
-
-        <!-- PART 1: 7-PHASE ROUND LIFECYCLE -->
-        <div id="guide-lifecycle" class="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5 shadow-lg space-y-3">
-          <div class="flex items-center gap-2 border-b border-slate-800 pb-2.5">
-            <span class="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 font-bold flex items-center justify-center font-mono text-sm">1</span>
-            <h3 class="font-bold text-base text-white">The 7-Phase Combat Round Lifecycle</h3>
-          </div>
-          <p class="text-xs text-slate-300 leading-relaxed">
-            Each battle round executes an asynchronous, strict 7-phase sequence. Both sides act simultaneously or counter-attack within a single round before initiative flips:
-          </p>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs font-mono">
-            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
-              <span class="text-amber-400 font-bold block">PHASE 1: Tactic Selection</span>
-              <p class="text-[11px] text-slate-400 font-sans">
-                Both sides choose 1 of 25 tactical doctrines matching their role. Commander personality automates AI selection.
-              </p>
-            </div>
-            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
-              <span class="text-sky-400 font-bold block">PHASE 2: Logistics &amp; Rally</span>
-              <p class="text-[11px] text-slate-400 font-sans">
-                Base operational supply drains. Routed units in the rear recover Organization, draw depot supplies, and roll d20 Rally Checks vs DC 10.
-              </p>
-            </div>
-            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
-              <span class="text-emerald-400 font-bold block">PHASE 3: Recon / Vigilance</span>
-              <p class="text-[11px] text-slate-400 font-sans">
-                Contested <b>d100 + Vigilance Modifiers</b> roll. Margin of victory divided by 10 awards a flat stat boost (+1 to +10) and targeting authority.
-              </p>
-            </div>
-            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
-              <span class="text-rose-400 font-bold block">PHASE 4: Fire Support</span>
-              <p class="text-[11px] text-slate-400 font-sans">
-                Pre-assault strikes: Mortars, Air Support wings, and Inherent Artillery Battery barrages pound defenders before the clash.
-              </p>
-            </div>
-            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
-              <span class="text-orange-400 font-bold block">PHASE 5: Main Assault Clash</span>
-              <p class="text-[11px] text-slate-400 font-sans">
-                Attackers pick targets. Armor rolls Penetration vs Hardness; Foot troops roll Cover Saves. Attack clashes vs Defense with <b>50 + d50</b> recovery.
-              </p>
-            </div>
-            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
-              <span class="text-teal-400 font-bold block">PHASE 6: Return Fire</span>
-              <p class="text-[11px] text-slate-400 font-sans">
-                Defenders contest Return Fire Vigilance. If successful, they fire back at the attacker's Breakthrough value. Grazing fire resolved if no breakthrough occurs.
-              </p>
-            </div>
-            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
-              <span class="text-purple-400 font-bold block">PHASE 7: Tactical Flip</span>
-              <p class="text-[11px] text-slate-400 font-sans">
-                Initiative alternates while Theatre Role (Invader vs. Entrenched Garrison) remains static.
-              </p>
-            </div>
-            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
-              <span class="text-yellow-400 font-bold block">POST-BATTLE: Pursuit</span>
-              <p class="text-[11px] text-slate-400 font-sans">
-                Mobility differentials determine overruns (90% captured). Escaping armor tows damaged hulls; the victor salvages battlefield wrecks.
-              </p>
-            </div>
-          </div>
-
-          <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-2 font-mono text-xs">
-            <span class="text-amber-400 font-bold block">Dynamic Target Value (TV) System</span>
-            <div class="p-2.5 rounded bg-slate-900 border border-slate-800 text-center text-slate-200 text-xs sm:text-sm">
-              TV = (<span class="text-emerald-400">Size &amp; Armor</span> + <span class="text-rose-400">Damage Threat</span> + <span class="text-sky-400">Org &amp; Kill Priority</span>) &times; <span class="text-purple-300">Category Multiplier</span> + <span class="text-amber-300">Entrenchment Mod</span> + <span class="text-yellow-300">Screening</span>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-slate-300 font-sans pt-1">
-              <div>• <b>Threat to Opponent:</b> Hard Attack weighted vs armor; Soft Attack weighted vs foot troops.</div>
-              <div>• <b>Blood in the Water:</b> Units with &le; 30% Org gain <b>+150 to +250 TV</b> (prime targets to collapse line).</div>
-              <div>• <b>Unit Category:</b> Artillery (&times;1.35) &gt; Tanks (&times;1.25) &gt; Armored Vehicles (&times;1.15) &gt; Infantry (&times;1.00).</div>
-              <div>• <b>Entrenchment:</b> Open ground grants <b>+60 TV</b>; Level 3–5 bunkers grant <b>-30 to -70 TV</b> (unless Breakthrough).</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- PART 2: CATEGORIES & MOBILITY MATRIX -->
-        <div id="guide-categories" class="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5 shadow-lg space-y-3">
-          <div class="flex items-center gap-2 border-b border-slate-800 pb-2.5">
-            <span class="w-7 h-7 rounded-lg bg-sky-500/20 text-sky-400 font-bold flex items-center justify-center font-mono text-sm">2</span>
-            <h3 class="font-bold text-base text-white">Combat Categories, Polyhedral Dice &amp; Mobility Classes</h3>
-          </div>
-          <p class="text-xs text-slate-300 leading-relaxed">
-            Every formation belongs to one of four military categories. Each category rolls distinct polyhedral dice for assault and defensive clashes:
-          </p>
-
-          <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs font-mono border-collapse">
-              <thead>
-                <tr class="border-b border-slate-800 text-slate-400 bg-slate-950/60">
-                  <th class="py-2 px-3">Category</th>
-                  <th class="py-2 px-3">Assault Die</th>
-                  <th class="py-2 px-3">Defense Die</th>
-                  <th class="py-2 px-3">Speed Class</th>
-                  <th class="py-2 px-3">Pursuit / Retreat Mod</th>
-                  <th class="py-2 px-3">Inherent Rule</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-800/60 text-slate-200">
-                <tr>
-                  <td class="py-2 px-3 font-bold text-emerald-400">Infantry</td>
-                  <td class="py-2 px-3 text-amber-300 font-bold">d12</td>
-                  <td class="py-2 px-3 text-sky-300 font-bold">d12</td>
-                  <td class="py-2 px-3">Class 1 (Foot)</td>
-                  <td class="py-2 px-3">+0 / +0</td>
-                  <td class="py-2 px-3 font-sans text-slate-400">Rolls Cover Saves; ignores 35% tank hardness in close terrain (Urban, Forest, Mountain).</td>
-                </tr>
-                <tr>
-                  <td class="py-2 px-3 font-bold text-sky-400">Armored Vehicle</td>
-                  <td class="py-2 px-3 text-amber-300 font-bold">d16</td>
-                  <td class="py-2 px-3 text-sky-300 font-bold">d16</td>
-                  <td class="py-2 px-3">Class 4–5 (Mechanized / Recon)</td>
-                  <td class="py-2 px-3 text-purple-300 font-bold">+20 / +20</td>
-                  <td class="py-2 px-3 font-sans text-slate-400">Inherently gains High-Caliber guns; high pursuit catch rating.</td>
-                </tr>
-                <tr>
-                  <td class="py-2 px-3 font-bold text-amber-400">Tank</td>
-                  <td class="py-2 px-3 text-amber-300 font-bold">d20</td>
-                  <td class="py-2 px-3 text-sky-300 font-bold">d20</td>
-                  <td class="py-2 px-3">Class 3–4 (Medium / Heavy)</td>
-                  <td class="py-2 px-3 text-purple-300 font-bold">+10 / +10</td>
-                  <td class="py-2 px-3 font-sans text-slate-400">Inherently gains High-Caliber weapons; Super-Heavies immune to non-explosive small arms.</td>
-                </tr>
-                <tr>
-                  <td class="py-2 px-3 font-bold text-rose-400">Artillery</td>
-                  <td class="py-2 px-3 text-amber-300 font-bold">d20</td>
-                  <td class="py-2 px-3 text-rose-400 font-bold">d8 (Fragile)</td>
-                  <td class="py-2 px-3">Class 0 (Towed Battery)</td>
-                  <td class="py-2 px-3 text-rose-400 font-bold">+0 / -10</td>
-                  <td class="py-2 px-3 font-sans text-slate-400">Inherent Battery Barrage; inherently gains Explosive Ordnance. Defenseless vs overruns.</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- PART 3: ARMOR & HARDNESS DEGRADATION -->
-        <div id="guide-armor" class="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5 shadow-lg space-y-3">
-          <div class="flex items-center gap-2 border-b border-slate-800 pb-2.5">
-            <span class="w-7 h-7 rounded-lg bg-orange-500/20 text-orange-400 font-bold flex items-center justify-center font-mono text-sm">3</span>
-            <h3 class="font-bold text-base text-white">Armor Classes, Dynamic Hardness &amp; Overmatch Brackets</h3>
-          </div>
-          <p class="text-xs text-slate-300 leading-relaxed">
-            Armor partitions incoming firepower based on the formation's armor class. When vehicles are disabled, surviving infantry and crews are exposed, lowering overall hardness:
-          </p>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs font-mono">
-            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1.5">
-              <span class="text-orange-400 font-bold block">Armor Tier Partitions</span>
-              <div class="text-[11px] text-slate-300 space-y-0.5 font-sans">
-                <div>• <b>Unarmored:</b> 0% Hard / 100% Soft (Foot Infantry, Towed Artillery)</div>
-                <div>• <b>Light Armor:</b> 25% Hard / 75% Soft (Armored Cars, Light APCs)</div>
-                <div>• <b>Medium Armor:</b> 50% Hard / 50% Soft (Medium Tanks, Heavy Mech)</div>
-                <div>• <b>Heavy Armor:</b> 75% Hard / 25% Soft (Heavy Tanks, Tank Destroyers)</div>
-                <div>• <b>Super Heavy:</b> 100% Hard / 0% Soft (Behemoths, Super Tanks)</div>
-              </div>
-            </div>
-
-            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-2">
-              <span class="text-amber-400 font-bold block">Dynamic Hardness Formula</span>
-              <div class="p-2.5 rounded bg-slate-900 border border-slate-800 text-center font-mono text-xs sm:text-sm text-slate-200">
-                Effective Hardness = <span class="text-sky-300">max</span>(0, (<span class="text-amber-300">Base Hardness</span> + <span class="text-emerald-300">Traits</span>) &times; <span class="text-purple-300">Vehicle Ratio</span> - <span class="text-rose-400">Maluses</span>)
-              </div>
-              <div class="text-[11px] text-slate-400 font-sans">
-                Where <code class="text-purple-300 font-mono">Vehicle Ratio = clamp(Current Armor / Max Armor, 0.25, 1.0)</code>
-              </div>
-              <div class="text-[11px] text-amber-300/90 font-sans italic border-t border-slate-800/80 pt-1">
-                Close-Assault Rule: Attacking infantry in Urban, Forest, Jungle, or Mountain terrain bypass 35% of target hardness automatically.
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-2">
-            <div class="flex flex-wrap items-center justify-between gap-1 border-b border-slate-800 pb-1.5">
-              <span class="text-orange-300 font-mono font-bold text-xs">Penetration Loss Brackets</span>
-              <span class="font-mono text-[11px] text-slate-400">Overmatch Margin = (Penetration Roll - Hardness Roll) / Effective Hardness</span>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-xs font-mono">
-              <div class="p-2 rounded bg-slate-900 border border-slate-800">
-                <span class="text-yellow-400 font-bold block">Margin &le; 0.25 (Minor)</span>
-                <span class="text-slate-300 text-[11px]">Knocks out <b>d3</b> vehicles.</span>
-              </div>
-              <div class="p-2 rounded bg-slate-900 border border-slate-800">
-                <span class="text-amber-400 font-bold block">0.25 &lt; Margin &le; 0.50</span>
-                <span class="text-slate-300 text-[11px]">Knocks out <b>1 + d6</b> vehicles.</span>
-              </div>
-              <div class="p-2 rounded bg-slate-900 border border-slate-800">
-                <span class="text-orange-400 font-bold block">0.50 &lt; Margin &le; 0.75</span>
-                <span class="text-slate-300 text-[11px]">Knocks out <b>3 + d8</b> vehicles.</span>
-              </div>
-              <div class="p-2 rounded bg-slate-900 border border-slate-800">
-                <span class="text-rose-400 font-bold block">Margin &gt; 0.75 (Catastrophic)</span>
-                <span class="text-slate-300 text-[11px]">Knocks out <b>6 + d12</b> vehicles.</span>
-              </div>
-            </div>
-            <div class="text-[11px] text-slate-400 font-sans pt-1">
-              <b>Crew Casualties:</b> Destroyed vehicles inflict <b>1 + d4</b> crew casualties; recoverable hulls inflict <b>d2</b> crew casualties. If &ge; 20% of vehicles are disabled in 1 round, unit suffers <b>-(2 + d8) Org shock</b>.
-            </div>
-          </div>
-        </div>
-
-        <!-- PART 4: DISPERSION, COVER & GRAZING -->
-        <div id="guide-dispersion" class="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5 shadow-lg space-y-3">
-          <div class="flex items-center gap-2 border-b border-slate-800 pb-2.5">
-            <span class="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center font-mono text-sm">4</span>
-            <h3 class="font-bold text-base text-white">Infantry Dispersion, Cover Saves &amp; Grazing Immunity</h3>
-          </div>
-          <p class="text-xs text-slate-300 leading-relaxed">
-            Unarmored infantry does not roll against kinetic penetration. Instead, foot soldiers use trench defilade and natural cover to disperse under incoming fire:
-          </p>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs font-mono">
-            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-2">
-              <span class="text-emerald-400 font-bold block">Entrenchment &amp; Dispersion Save</span>
-              <div class="p-2.5 rounded bg-slate-900 border border-slate-800 text-center font-mono text-xs sm:text-sm text-slate-200">
-                Save = <span class="text-amber-300">d20</span> + <span class="text-emerald-300">Terrain Cover</span> + <span class="text-sky-300">Entrenchment Lvl</span> &ge; <span class="text-rose-400">DC (12 + Spotting)</span>
-              </div>
-              <ul class="list-disc list-inside text-slate-300 text-[11px] space-y-0.5 font-sans pt-1">
-                <li><b>Dug-In (Success):</b> Soft damage halved; High-Caliber bonus negated; Explosives halved.</li>
-                <li><b>Caught in Open (Failure):</b> Full damage taken + <b>-(1 + d4) Org suppression shock</b>.</li>
-              </ul>
-            </div>
-
-            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-2">
-              <span class="text-sky-400 font-bold block">Pressure Ratio &amp; Grazing Casualties</span>
-              <div class="p-2.5 rounded bg-slate-900 border border-slate-800 text-center font-mono text-xs sm:text-sm text-slate-200">
-                Pressure Ratio = <span class="text-amber-300">Attack Value</span> / <span class="text-sky-300">Defense Value</span>
-              </div>
-              <ul class="list-disc list-inside text-slate-300 text-[11px] space-y-0.5 font-sans pt-1">
-                <li><b>Pressure &lt; 40% (60% in Forts):</b> Completely absorbed (0 damage).</li>
-                <li><b>Pressure 40%–50%:</b> 1 chip casualty.</li>
-                <li><b>Pressure 50%–75%:</b> 1 + d2 casualties.</li>
-                <li><b>Pressure &ge; 75%:</b> 1 + d3 casualties.</li>
-              </ul>
-            </div>
-          </div>
-
-          <div class="p-2.5 rounded bg-slate-950/70 border border-slate-800 text-[11px] text-slate-300">
-            <b class="text-amber-300">Bunker &amp; Armor Immunity:</b> Level 5 Deep Bunkers provide <b>100% immunity</b> to all grazing damage. Heavy and Super-Heavy tanks are completely immune to non-explosive small arms fire that fails to pierce.
-          </div>
-        </div>
-
-        <!-- PART 5: Y-AXIS DISTANCE & ENGAGEMENT RANGES -->
-        <div id="guide-melee" class="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5 shadow-lg space-y-3">
-          <div class="flex items-center gap-2 border-b border-slate-800 pb-2.5">
-            <span class="w-7 h-7 rounded-lg bg-rose-500/20 text-rose-400 font-bold flex items-center justify-center font-mono text-sm">5</span>
-            <h3 class="font-bold text-base text-white">Y-Axis Distance, Engagement Ranges &amp; Proximity Targeting</h3>
-          </div>
-          <p class="text-xs text-slate-300 leading-relaxed">
-            Opposing armies deploy on a spatial Y-axis (+Y for Side A, -Y for Side B). Total distance between two opposing units is the sum of their positions:
-          </p>
-
-          <div class="p-2.5 rounded bg-slate-950 border border-slate-800 text-center font-mono text-xs sm:text-sm text-slate-200">
-            Total Engagement Distance = <span class="text-sky-300">Attacker Dist</span> + <span class="text-rose-400">Defender Dist</span>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs font-mono">
-            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
-              <span class="text-amber-400 font-bold block">1. Terrain Starting Distance</span>
-              <p class="text-[11px] text-slate-400 font-sans">
-                • <b>Plains / Desert / Urban:</b> 2 per side (Total 4)<br>
-                • <b>Forest / Hills / Marsh / Jungle:</b> 3 per side (Total 6)<br>
-                • <b>Mountain:</b> 4 per side (Total 8)<br>
-                • <b>Artillery:</b> Starts at <b>Terrain Dist + 2</b>
-              </p>
-            </div>
-            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
-              <span class="text-sky-400 font-bold block">2. Max Engagement Ranges</span>
-              <p class="text-[11px] text-slate-400 font-sans">
-                • <b>Zombies / Pure Melee:</b> Total Dist &le; 1<br>
-                • <b>Infantry &amp; Armored Veh:</b> Total Dist &le; 2<br>
-                • <b>Tanks:</b> Total Dist &le; 3<br>
-                • <b>Artillery:</b> Total Dist &le; 6<br>
-                • <b>Special Forces / Infiltration:</b> Unlimited
-              </p>
-            </div>
-            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
-              <span class="text-emerald-400 font-bold block">3. Movement &amp; Phase Lock</span>
-              <p class="text-[11px] text-slate-400 font-sans">
-                Out-of-range attackers advance 1 distance closer. Defenders do not move. If no frontline units are in range, the <b>Attacking Phase stays locked</b> until into range.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <!-- PART 6: LOGISTICS & SUPPLY DEPOT -->
-        <div id="guide-logistics" class="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5 shadow-lg space-y-3">
-          <div class="flex items-center gap-2 border-b border-slate-800 pb-2.5">
-            <span class="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 font-bold flex items-center justify-center font-mono text-sm">6</span>
-            <h3 class="font-bold text-base text-white">Shared Supply Depot, Starvation &amp; Uncontested Lines</h3>
-          </div>
-          <p class="text-xs text-slate-300 leading-relaxed">
-            Logistics are centralized into an operational army stockpile. Units draw replacements directly from this shared depot:
-          </p>
-
-          <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 font-mono text-xs space-y-2">
-            <div class="text-amber-300 font-bold">Depot Capacity Formula:</div>
-            <div class="p-2 rounded bg-slate-900 border border-slate-800 text-center text-slate-200 text-xs sm:text-sm">
-              Max Depot = <span class="text-white">(100 + Σ Unit Max Supply &times; 0.5)</span> &times; <span class="text-sky-300">(1 + Logistics Lvl &times; 10%)</span> &times; <span class="text-emerald-300">(Logistics Wizard ? 1.25 : 1.0)</span>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 text-xs font-mono">
-            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
-              <span class="text-sky-400 font-bold block">Active Unit Supply Draw</span>
-              <p class="text-[11px] text-slate-400 font-sans">
-                Units with supply traits (<i>Logistic Support</i>) draw replenishments from the depot. If depot is 0, supply cannot regenerate.
-              </p>
-            </div>
-            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
-              <span class="text-amber-400 font-bold block">Rally Staging Refit</span>
-              <p class="text-[11px] text-slate-400 font-sans">
-                Rallying units draw <b>d3 + Traits + Commander Logistics</b> supply points every turn from the depot to restock before returning.
-              </p>
-            </div>
-            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
-              <span class="text-emerald-400 font-bold block">Uncontested Frontline Rule</span>
-              <p class="text-[11px] text-slate-400 font-sans">
-                If all enemies are routed or in the rear, holding units stop burning supply, and all combat fatigue / attrition pauses.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <!-- PART 7: INHERENT ARTILLERY -->
-        <div id="guide-artillery" class="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5 shadow-lg space-y-3">
-          <div class="flex items-center gap-2 border-b border-slate-800 pb-2.5">
-            <span class="w-7 h-7 rounded-lg bg-red-500/20 text-red-400 font-bold flex items-center justify-center font-mono text-sm">7</span>
-            <h3 class="font-bold text-base text-white">Inherent Artillery Battery Barrages</h3>
-          </div>
-          <p class="text-xs text-slate-300 leading-relaxed">
-            Formations categorized as <b>Artillery</b> do not need external traits to conduct fire support—the battery barrage is inherent to the unit category:
-          </p>
-          <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 font-mono text-xs space-y-1">
-            <div class="text-rose-400 font-bold">Barrage Execution (Every 1+d2 Rounds, Requires &ge; 50% Supply):</div>
-            <div class="text-slate-300">• Expends: <b>3 + d3 Supply</b></div>
-            <div class="text-slate-300">• Defense Reduction: <b>-(4 + d12)</b></div>
-            <div class="text-slate-300">• Hardness Reduction: <b>-(2 + d6)</b></div>
-            <div class="text-slate-300">• Direct Impact: Roll 8–10: <b>+d6 cas</b> | Roll 11–12: <b>+(2+d12) cas &amp; +(1+d3) disabled armor</b></div>
-          </div>
-        </div>
-
-        <!-- PART 8: MEDICAL TRIAGE & DOW -->
-        <div id="guide-medical" class="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5 shadow-lg space-y-3">
-          <div class="flex items-center gap-2 border-b border-slate-800 pb-2.5">
-            <span class="w-7 h-7 rounded-lg bg-teal-500/20 text-teal-400 font-bold flex items-center justify-center font-mono text-sm">8</span>
-            <h3 class="font-bold text-base text-white">Medical Triage, Evacuation &amp; Died of Wounds (DOW)</h3>
-          </div>
-          <p class="text-xs text-slate-300 leading-relaxed">
-            Starting in <b>Round 4+</b>, untreated wounded personnel (WIA) risk succumbing to trauma, blood loss, and environmental exposure:
-          </p>
-
-          <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 font-mono text-xs space-y-2">
-            <span class="text-teal-300 font-bold block">DOW Mortality Formula</span>
-            <div class="p-2 rounded bg-slate-900 border border-slate-800 text-center text-slate-200 text-xs sm:text-sm">
-              DOW Rate = <span class="text-sky-300">clamp</span>(<span class="text-amber-300">Supply Deficit</span> + <span class="text-rose-400">Weather Exposure</span> - <span class="text-emerald-300">Medical Traits</span>, 0, 15)%
-            </div>
-          </div>
-        </div>
-
-        <!-- PART 9: RALLYING & STRAGGLERS -->
-        <div id="guide-rally" class="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5 shadow-lg space-y-3">
-          <div class="flex items-center gap-2 border-b border-slate-800 pb-2.5">
-            <span class="w-7 h-7 rounded-lg bg-cyan-500/20 text-cyan-400 font-bold flex items-center justify-center font-mono text-sm">9</span>
-            <h3 class="font-bold text-base text-white">The Rallying Engine, Rear Staging &amp; Escaped Stragglers</h3>
-          </div>
-          <p class="text-xs text-slate-300 leading-relaxed">
-            When Organization reaches 0, the unit conducts a fighting withdrawal to the rear staging area. Manpower is strictly conserved:
-          </p>
-
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs font-mono">
-            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
-              <span class="text-cyan-400 font-bold block">1. 25% Scatter &rarr; Escaped</span>
-              <p class="text-[11px] text-slate-400 font-sans">
-                75% fall back in good order; 25% scatter and flee the combat zone entirely, counted under <b>Escaped</b> with zero ghost casualties.
-              </p>
-            </div>
-            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
-              <span class="text-emerald-400 font-bold block">2. Turn Reorganization</span>
-              <p class="text-[11px] text-slate-400 font-sans">
-                Each round in the rear, units regain <b>d3 + Traits + Terrain + Commander Org</b> and draw refit supplies from the depot.
-              </p>
-            </div>
-            <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1">
-              <span class="text-amber-400 font-bold block">3. 60% Manpower Safety Net</span>
-              <p class="text-[11px] text-slate-400 font-sans">
-                On the d20 Rally Check vs DC 10: any formation with &ge; 60% personnel remaining <b>never dissolves</b>; officers delay rally by 1 round.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <!-- PART 10: COMMANDERS & GENERIC OFFICER DOCTRINE -->
-        <div id="guide-commanders" class="bg-slate-900 border border-slate-800 p-4 sm:p-5 space-y-3">
-          <div class="flex items-center gap-2 border-b border-slate-800 pb-2.5">
-            <span class="w-7 h-7 bg-[#232016] text-[#c8a24b] border border-[#594b27] font-bold flex items-center justify-center font-mono text-sm">10</span>
-            <h3 class="font-bold text-base text-white">Command HQ Attributes &amp; Generic Commander Traits</h3>
-          </div>
-          <p class="text-xs text-slate-300 leading-relaxed">
-            Assigned commanders scale core division stats at <b>+2.5% per level</b> (Attack, Defense, Max Org, and Max Supply) and apply all 21 numeric Commander Trait fields generically across eligible formations:
-          </p>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs font-mono">
-            <div class="bg-slate-950 p-3 border border-slate-800 space-y-1">
-              <span class="text-[#c8a24b] font-bold block">Firepower &amp; Protection</span>
-              <p class="text-[11px] text-slate-400 font-sans">
-                Attack %, Defense %, Flat Atk/Def, Soft/Hard Attack, Piercing, and Hardness apply automatically in both Main Assault and Return Fire (respecting formation scope).
-              </p>
-            </div>
-            <div class="bg-slate-950 p-3 border border-slate-800 space-y-1">
-              <span class="text-[#8ec0e8] font-bold block">Recon, Tactics &amp; Pursuit</span>
-              <p class="text-[11px] text-slate-400 font-sans">
-                Vigilance, Pursuit, and Retreat bonuses integrate directly into recon contests and post-battle chases. <b>Tactic Boost %</b> scales positive tactical doctrine bonuses.
-              </p>
-            </div>
-            <div class="bg-slate-950 p-3 border border-slate-800 space-y-1">
-              <span class="text-[#7cb377] font-bold block">Logistics, Triage &amp; Rally</span>
-              <p class="text-[11px] text-slate-400 font-sans">
-                <i>Logistics Wizard</i> grants +10% Max Supply &amp; -1 drain. Personnel Triage, Armor Recovery, Rally Roll, and Cooldown Reductions apply without double-counting.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <!-- PART 11: POST-BATTLE PURSUIT, DEGREES OF VICTORY & FORM DA-774 AAR -->
-        <div id="guide-pursuit" class="bg-slate-900 border border-slate-800 p-4 sm:p-5 space-y-3">
-          <div class="flex items-center gap-2 border-b border-slate-800 pb-2.5">
-            <span class="w-7 h-7 bg-[#221c29] text-[#b8a2d9] border border-[#4c3f5e] font-bold flex items-center justify-center font-mono text-sm">11</span>
-            <h3 class="font-bold text-base text-white">Post-Battle Pursuit, Salvage, Degrees of Victory &amp; Form DA-774 PDF</h3>
-          </div>
-          <p class="text-xs text-slate-300 leading-relaxed">
-            Once an army is defeated or routed, the victor initiates an operational pursuit phase governed by mobility differentials and generates an official emoji-free After-Action Report (Form DA-774) with one-click A4 PDF export:
-          </p>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs font-mono">
-            <div class="bg-slate-950 p-3 border border-slate-800 space-y-1">
-              <span class="text-[#b8a2d9] font-bold block">Automatic Overrun</span>
-              <p class="text-[11px] text-slate-400 font-sans">
-                If &Delta;Mobility &ge; 3 on open terrain, retreating formations are caught by mechanized vanguards: <b>90% captured as POWs</b>.
-              </p>
-            </div>
-            <div class="bg-slate-950 p-3 border border-slate-800 space-y-1">
-              <span class="text-[#8ec0e8] font-bold block">Recovery Towing</span>
-              <p class="text-[11px] text-slate-400 font-sans">
-                On disciplined retreats (Escape &ge; 60%), recovery tractors tow <b>25%–50%</b> of recoverable hulls back to depot, deducting them from field salvage.
-              </p>
-            </div>
-            <div class="bg-slate-950 p-3 border border-slate-800 space-y-1">
-              <span class="text-[#c8a24b] font-bold block">Beutepanzer Salvage</span>
-              <p class="text-[11px] text-slate-400 font-sans">
-                The victor sweeps remaining abandoned hulls (Roll 50 + d50). Up to <b>50%</b> are impressed as <i>Beutepanzers</i>; remainder scrapped for +5 Supply each.
-              </p>
-            </div>
-            <div class="bg-slate-950 p-3 border border-slate-800 space-y-1">
-              <span class="text-[#e69894] font-bold block">No Quarter Doctrine</span>
-              <p class="text-[11px] text-slate-400 font-sans">
-                Victorious Monsters or Zombie Swarms take zero prisoners. All captured troops and wounded left on the field are converted directly to <b>KIA</b>.
-              </p>
-            </div>
-          </div>
-
-          <!-- Degrees of Victory Classification -->
-          <div class="bg-slate-950 p-3 border border-slate-800 space-y-2 font-mono text-xs">
-            <span class="text-[#c8a24b] font-bold block uppercase">Degrees of Victory Classification (Form DA-774)</span>
-            <div class="p-2 bg-[#111512] border border-[#242c26] text-center text-[11px] text-slate-200">
-              Odds Ratio = (Win Pers + Win AFV &times; 15) / (Lose Pers + Lose AFV &times; 15) &nbsp;|&nbsp; Cost % = 60% Pers Loss + 25% AFV Loss + 15% Supply Used
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-[11px]">
-              <div class="p-2 bg-[#111512] border border-[#594b27]">
-                <span class="text-[#e6c46d] font-bold block">HEROIC VICTORY</span>
-                <span class="text-slate-400 font-sans">Odds &le; 0.80 &amp; Cost &le; 35% (or Odds &le; 0.65 &amp; Cost &le; 45%).</span>
-              </div>
-              <div class="p-2 bg-[#111512] border border-[#3d5e3a]">
-                <span class="text-[#89b884] font-bold block">DECISIVE VICTORY</span>
-                <span class="text-slate-400 font-sans">Cost &le; 25%, Pers Loss &le; 25%, and 0 formations lost.</span>
-              </div>
-              <div class="p-2 bg-[#111512] border border-[#7d6731]">
-                <span class="text-[#c8a24b] font-bold block">CLOSE VICTORY</span>
-                <span class="text-slate-400 font-sans">Contested win with moderate casualties or unit losses.</span>
-              </div>
-              <div class="p-2 bg-[#111512] border border-[#6e3532]">
-                <span class="text-[#e69894] font-bold block">PYRRHIC VICTORY</span>
-                <span class="text-slate-400 font-sans">Cost &ge; 55%, Pers Loss &ge; 60%, or &ge; 50% formations lost.</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </div>
+        <!-- Official Publication Footer -->
+        <footer class="tradoc-footer">
+          <span>BY ORDER OF COMBINED-ARMS SIMULATION COMMAND</span>
+          <span>FM 100-5-ID // END OF FIELD MANUAL</span>
+        </footer>
+      </article>
     `;
   }
 
