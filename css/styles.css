@@ -1,26 +1,216 @@
 /* ==========================================================================
-   IRON DIVISION ENGINE — CUSTOM STYLESHEET
+   IRON DIVISION ENGINE — TACTICAL COMMAND POST STYLESHEET
    File: css/styles.css
    ========================================================================== */
 
+:root {
+  --bg-map: #0e110f;
+  --bg-panel: #151916;
+  --bg-panel-alt: #1a1f1b;
+  --bg-inset: #0c0f0d;
+  --border-grid: #29312b;
+  --border-hi: #3c473e;
+  --brass: #c8a24b;
+  --brass-dim: #7d6731;
+  --bluefor: #4e8ec4;
+  --bluefor-bg: rgba(78, 142, 196, 0.12);
+  --opfor: #c2524c;
+  --opfor-bg: rgba(194, 82, 76, 0.12);
+  --olive-ok: #5e8f59;
+  --ink-main: #dde3da;
+  --ink-muted: #939e91;
+  --ink-dim: #667065;
+}
+
 /* --------------------------------------------------------------------------
-   1. Base & Global Styles
+   1. Base, Map-Table Grid & Global Tactical Overrides
    -------------------------------------------------------------------------- */
 html {
   color-scheme: dark;
 }
 
-body {
+body.mil-ui {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--bg-map);
+  background-image:
+    linear-gradient(to right, rgba(163, 177, 138, 0.032) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(163, 177, 138, 0.032) 1px, transparent 1px);
+  background-size: 24px 24px;
+  color: var(--ink-main);
   overflow-x: hidden;
+  font-variant-numeric: tabular-nums;
+}
+
+body.mil-ui ::selection {
+  background-color: var(--brass);
+  color: #0b0d0b;
+}
+
+/* Flatten generic rounded SaaS surfaces into sharp military-grade panels */
+.mil-ui .rounded-2xl,
+.mil-ui .rounded-xl,
+.mil-ui .rounded-lg,
+.mil-ui .rounded-md {
+  border-radius: 2px !important;
+}
+
+.mil-ui .rounded-full {
+  border-radius: 1px !important;
+}
+
+.mil-ui .bg-slate-900,
+.mil-ui .bg-slate-900\/95 {
+  background-color: var(--bg-panel) !important;
+}
+
+.mil-ui .bg-slate-950,
+.mil-ui .bg-slate-950\/80,
+.mil-ui .bg-slate-950\/70,
+.mil-ui .bg-slate-950\/60 {
+  background-color: var(--bg-inset) !important;
+}
+
+.mil-ui .border-slate-800,
+.mil-ui .border-slate-800\/80 {
+  border-color: var(--border-grid) !important;
+}
+
+.mil-ui .border-slate-700 {
+  border-color: var(--border-hi) !important;
+}
+
+.mil-ui .shadow-lg,
+.mil-ui .shadow-2xl,
+.mil-ui .shadow-xl {
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.45) !important;
+}
+
+/* Form controls — crisp tactical instrument inputs */
+.mil-ui select,
+.mil-ui input[type="text"],
+.mil-ui input[type="number"] {
+  background-color: var(--bg-inset) !important;
+  border: 1px solid var(--border-hi) !important;
+  color: var(--ink-main) !important;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+}
+
+.mil-ui select:focus,
+.mil-ui input[type="text"]:focus,
+.mil-ui input[type="number"]:focus {
+  outline: none;
+  border-color: var(--brass) !important;
+  box-shadow: inset 0 0 0 1px rgba(200, 162, 75, 0.35);
 }
 
 /* --------------------------------------------------------------------------
-   2. Cross-Browser Custom Scrollbars
+   2. Tactical Structural Chrome & Corner Reticles
+   -------------------------------------------------------------------------- */
+.mil-panel {
+  position: relative;
+  background-color: var(--bg-panel);
+  border: 1px solid var(--border-grid);
+}
+
+.mil-panel-brackets::before,
+.mil-panel-brackets::after {
+  content: "";
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  pointer-events: none;
+}
+
+.mil-panel-brackets::before {
+  top: -1px;
+  left: -1px;
+  border-top: 2px solid var(--brass-dim);
+  border-left: 2px solid var(--brass-dim);
+}
+
+.mil-panel-brackets::after {
+  bottom: -1px;
+  right: -1px;
+  border-bottom: 2px solid var(--brass-dim);
+  border-right: 2px solid var(--brass-dim);
+}
+
+.mil-panel-bluefor {
+  border-top: 2px solid var(--bluefor) !important;
+}
+
+.mil-panel-opfor {
+  border-top: 2px solid var(--opfor) !important;
+}
+
+.mil-panel-cmd {
+  border-top: 2px solid var(--brass) !important;
+}
+
+.mil-classification-bar {
+  background-color: #0b0e0c;
+  border-bottom: 1px solid var(--border-grid);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--ink-dim);
+}
+
+/* NATO-style tactical division emblem */
+.nato-emblem {
+  width: 40px;
+  height: 28px;
+  border: 1.5px solid var(--brass);
+  background-color: #0c0f0d;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.nato-emblem::before,
+.nato-emblem::after {
+  content: "";
+  position: absolute;
+  width: 118%;
+  height: 1px;
+  background-color: rgba(200, 162, 75, 0.55);
+}
+
+.nato-emblem::before {
+  transform: rotate(33deg);
+}
+
+.nato-emblem::after {
+  transform: rotate(-33deg);
+}
+
+.nato-emblem-oval {
+  width: 22px;
+  height: 12px;
+  border: 1.5px solid var(--brass);
+  border-radius: 999px !important;
+  background-color: #0c0f0d;
+  position: relative;
+  z-index: 1;
+}
+
+.mil-btn {
+  font-family: 'JetBrains Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: 2px !important;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+/* --------------------------------------------------------------------------
+   3. Cross-Browser Custom Scrollbars
    -------------------------------------------------------------------------- */
 .custom-scroll {
   scrollbar-width: thin;
-  scrollbar-color: #334155 #111827;
+  scrollbar-color: #364038 #0c0f0d;
 }
 
 .custom-scroll::-webkit-scrollbar {
@@ -29,41 +219,71 @@ body {
 }
 
 .custom-scroll::-webkit-scrollbar-track {
-  background: #111827;
-  border-radius: 3px;
+  background: #0c0f0d;
 }
 
 .custom-scroll::-webkit-scrollbar-thumb {
-  background: #334155;
-  border-radius: 3px;
+  background: #364038;
 }
 
 .custom-scroll::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #4e5c51;
 }
 
 /* --------------------------------------------------------------------------
-   3. Telemetry, Progress Bars & Unit Stat Ledger
+   4. Telemetry, Segmented Progress Bars & Unit Stat Ledger
    -------------------------------------------------------------------------- */
+.bar-track {
+  position: relative;
+  background-color: #0a0d0b;
+  border: 1px solid #242c26;
+  overflow: hidden;
+}
+
 .bar-fill {
-  transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   will-change: width;
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 11px,
+    rgba(0, 0, 0, 0.28) 11px,
+    rgba(0, 0, 0, 0.28) 12px
+  );
+}
+
+.unit-dossier {
+  background-color: var(--bg-inset);
+  border: 1px solid var(--border-grid);
+  border-left-width: 3px;
+}
+
+.unit-dossier-a {
+  border-left-color: var(--bluefor);
+}
+
+.unit-dossier-b {
+  border-left-color: var(--opfor);
+}
+
+.unit-dossier-defeated {
+  border-color: #4f2624;
+  border-left-color: #7c2d2a;
+  opacity: 0.62;
 }
 
 .unit-stat-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 1px;
-  background-color: #1e293b;
-  border: 1px solid #1e293b;
-  border-radius: 0.375rem;
-  overflow: hidden;
+  background-color: var(--border-grid);
+  border: 1px solid var(--border-grid);
   font-family: 'JetBrains Mono', monospace;
 }
 
 .unit-stat-cell {
-  background-color: #0b1120;
-  padding: 0.25rem 0.35rem;
+  background-color: #111512;
+  padding: 0.22rem 0.3rem;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -73,11 +293,11 @@ body {
 }
 
 .unit-stat-label {
-  font-size: 9px;
+  font-size: 8.5px;
   line-height: 1.1;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #64748b;
+  color: var(--ink-dim);
   white-space: nowrap;
 }
 
@@ -85,35 +305,56 @@ body {
   font-size: 11px;
   line-height: 1.3;
   font-weight: 700;
-  color: #e2e8f0;
+  color: var(--ink-main);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
 }
 
+.mil-tag {
+  display: inline-block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  line-height: 1.25;
+  letter-spacing: 0.03em;
+  padding: 1px 5px;
+  background-color: #191f1a;
+  border: 1px solid #2e3730;
+  color: #aeb8ac;
+  text-transform: uppercase;
+}
+
 /* --------------------------------------------------------------------------
-   4. Header Navigation Tabs
+   5. Header Navigation Tabs (Command Console Strip)
    -------------------------------------------------------------------------- */
 .tab-btn {
-  transition: all 0.2s ease-in-out;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
   border-bottom: 2px solid transparent;
+  color: var(--ink-muted);
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
 .tab-btn:hover {
-  background-color: #1e293b;
-  color: #ffffff;
+  background-color: #1e241f;
+  color: var(--ink-main);
+  border-color: var(--border-grid);
 }
 
 .tab-btn.active {
-  background-color: #1e293b;
-  border-bottom: 2px solid #f59e0b;
-  color: #fbbf24;
-  font-weight: 600;
+  background-color: #1e231c;
+  border-color: var(--border-hi);
+  border-bottom: 2px solid var(--brass);
+  color: var(--brass);
+  font-weight: 700;
 }
 
 /* --------------------------------------------------------------------------
-   5. Combat Log (Animate Only Newly Added Entries)
+   6. Combat Log / Sitrep Ticker (Animate Only Newly Added Entries)
    -------------------------------------------------------------------------- */
 @keyframes flash-in {
   0% {
@@ -130,15 +371,24 @@ body {
   animation: flash-in 0.2s ease-out;
 }
 
+.sitrep-row {
+  border-left-width: 2px;
+  border-top: 1px solid #1e241f;
+  border-right: 1px solid #1e241f;
+  border-bottom: 1px solid #1e241f;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
 /* --------------------------------------------------------------------------
-   6. After-Action Report (AAR) Modal & Print Export
+   7. After-Action Report (AAR) Modal & Print Export
    -------------------------------------------------------------------------- */
 #battle-modal {
   transition: opacity 0.2s ease-in-out;
 }
 
 #battle-modal table tr:hover {
-  background-color: rgba(30, 41, 59, 0.4);
+  background-color: rgba(41, 49, 43, 0.45);
 }
 
 @media print {
@@ -147,8 +397,10 @@ body {
   }
 
   html,
-  body {
-    background-color: #ffffff !important;
+  body,
+  body.mil-ui {
+    background: #ffffff !important;
+    background-image: none !important;
     color: #0f172a !important;
     color-scheme: light !important;
     overflow: visible !important;

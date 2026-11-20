@@ -222,12 +222,12 @@ window.IronDivision = window.IronDivision || {};
     const summaryBar = document.getElementById('env-summary-bar');
     if (summaryBar) {
       summaryBar.innerHTML = `
-        <div class="flex flex-wrap items-center gap-2">
-          <span class="px-2 py-0.5 rounded bg-slate-800 text-amber-300 font-mono">⛰ ${terr.name || 'Plains'}: Inf ${terr.infAtk >= 0 ? '+' : ''}${terr.infAtk || 0}%/${terr.infDef >= 0 ? '+' : ''}${terr.infDef || 0}%, Tank ${terr.tankAtk >= 0 ? '+' : ''}${terr.tankAtk || 0}%/${terr.tankDef >= 0 ? '+' : ''}${terr.tankDef || 0}%, Sup +${terr.supplyDrain || 0}/rd</span>
-          <span class="px-2 py-0.5 rounded bg-slate-800 text-sky-300 font-mono">🗺 ${feat.name || 'Normal'}: Atk ×${feat.atkMult || 1}, Def ×${feat.defMult || 1}</span>
-          <span class="px-2 py-0.5 rounded bg-slate-800 text-emerald-300 font-mono">☁ ${weath.name || 'Sunny'}: ${weath.desc || ''}</span>
+        <div class="flex flex-wrap items-center gap-2 font-mono text-[11px]">
+          <span class="px-2 py-0.5 bg-[#121613] border border-[#2e3730] text-[#c8a24b]">TERR // ${(terr.name || 'Plains').toUpperCase()}: INF ${terr.infAtk >= 0 ? '+' : ''}${terr.infAtk || 0}/${terr.infDef >= 0 ? '+' : ''}${terr.infDef || 0}% | TNK ${terr.tankAtk >= 0 ? '+' : ''}${terr.tankAtk || 0}/${terr.tankDef >= 0 ? '+' : ''}${terr.tankDef || 0}% | SUP +${terr.supplyDrain || 0}</span>
+          <span class="px-2 py-0.5 bg-[#121613] border border-[#2e3730] text-[#8ec0e8]">FEAT // ${(feat.name || 'Normal').toUpperCase()}: ATK ×${feat.atkMult || 1} DEF ×${feat.defMult || 1}</span>
+          <span class="px-2 py-0.5 bg-[#121613] border border-[#2e3730] text-[#89b884]">METEO // ${(weath.name || 'Sunny').toUpperCase()}</span>
         </div>
-        <div class="font-mono text-[11px] text-amber-300">🏰 Theatre Lock: Side ${state.environment.theatreAttackerSide || 'A'} Invades / Side ${(state.environment.theatreAttackerSide || 'A') === 'A' ? 'B' : 'A'} Entrenched</div>
+        <div class="font-mono text-[10px] uppercase tracking-wider text-[#c8a24b]">THEATRE LOCK: SIDE ${state.environment.theatreAttackerSide || 'A'} ASSAULT / SIDE ${(state.environment.theatreAttackerSide || 'A') === 'A' ? 'B' : 'A'} ENTRENCHED</div>
       `;
     }
   }
@@ -309,10 +309,10 @@ window.IronDivision = window.IronDivision || {};
 
     const badge = document.getElementById(`side${side}-role-badge`);
     if (badge) {
-      badge.textContent = isAttacker ? `⚔ INITIATIVE [${theatreTag}]` : `🛡 REACTING [${theatreTag}]`;
+      badge.textContent = isAttacker ? `ATK // ${theatreTag}` : `DEF // ${theatreTag}`;
       badge.className = isAttacker
-        ? 'text-[11px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-semibold'
-        : 'text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 font-semibold';
+        ? 'text-[10px] font-mono px-2 py-0.5 bg-[#292313] text-[#c8a24b] border border-[#7d6731] font-bold uppercase tracking-wider'
+        : 'text-[10px] font-mono px-2 py-0.5 bg-[#1a201b] text-[#9ca69a] border border-[#364038] font-bold uppercase tracking-wider';
     }
 
     const C = getCombat();
@@ -330,26 +330,26 @@ window.IronDivision = window.IronDivision || {};
 
       summaryEl.innerHTML = `
         <div>
-          <span class="block text-[10px] font-mono uppercase text-slate-400">Active Units</span>
-          <span class="font-bold text-sm text-white font-mono">${activeUnits.length} / ${sideObj.units.length}</span>
+          <span class="block text-[9px] font-mono uppercase tracking-wider text-[#6e7a6d]">FORMATIONS</span>
+          <span class="font-bold text-sm text-[#e7ece4] font-mono">${activeUnits.length}/${sideObj.units.length}</span>
         </div>
         <div>
-          <span class="block text-[10px] font-mono uppercase text-slate-400">Active Personnel / Armor</span>
-          <span class="font-bold text-sm text-emerald-400 font-mono">${totalPers.toLocaleString()} <span class="text-amber-400">(${totalArmor} 🚜)</span></span>
+          <span class="block text-[9px] font-mono uppercase tracking-wider text-[#6e7a6d]">EFF. STRENGTH / AFV</span>
+          <span class="font-bold text-sm text-[#7cb377] font-mono">${totalPers.toLocaleString()} <span class="text-[#c8a24b]">[${totalArmor}]</span></span>
         </div>
         <div>
-          <span class="block text-[10px] font-mono uppercase text-slate-400">Casualties (KIA+WIA)</span>
-          <span class="font-bold text-sm text-rose-400 font-mono">${totalDeadWounded.toLocaleString()}</span>
+          <span class="block text-[9px] font-mono uppercase tracking-wider text-[#6e7a6d]">LOSSES (KIA+WIA)</span>
+          <span class="font-bold text-sm text-[#d46a64] font-mono">${totalDeadWounded.toLocaleString()}</span>
         </div>
         <div class="col-span-3 pt-2 mt-1 border-t border-slate-800 text-left">
-          <div class="flex justify-between text-[11px] font-mono mb-1">
-            <span class="text-slate-300 font-bold">📦 Army Supply Depot (${cmd?.name?.split(' ')[0] || 'HQ'})</span>
-            <span class="${curDepot <= 0 ? 'text-rose-400 font-extrabold animate-pulse' : (depotPct < 30 ? 'text-amber-400' : 'text-amber-300')}">
-              ${curDepot} / ${maxDepot} pts (${depotPct}%)
+          <div class="flex justify-between text-[10px] font-mono uppercase mb-1">
+            <span class="text-[#a5b0a3] font-bold">SUPPLY DEPOT // ${escapeHtml((cmd?.name?.split(' ')[0] || 'HQ').toUpperCase())}</span>
+            <span class="${curDepot <= 0 ? 'text-[#e06c65] font-extrabold' : (depotPct < 30 ? 'text-[#c8a24b]' : 'text-[#89b884]')}">
+              ${curDepot}/${maxDepot} PTS (${depotPct}%)
             </span>
           </div>
-          <div class="w-full h-2 bg-slate-900 rounded-full overflow-hidden border border-slate-800">
-            <div class="h-full bar-fill ${curDepot <= 0 ? 'bg-rose-600' : (depotPct < 30 ? 'bg-amber-500' : 'bg-emerald-500')}" style="width: ${depotPct}%"></div>
+          <div class="w-full h-2 bar-track">
+            <div class="h-full bar-fill ${curDepot <= 0 ? 'bg-[#b84a45]' : (depotPct < 30 ? 'bg-[#c8a24b]' : 'bg-[#5e8f59]')}" style="width: ${depotPct}%"></div>
           </div>
         </div>
       `;
@@ -396,7 +396,7 @@ window.IronDivision = window.IronDivision || {};
 
       const traitBadges = (u.traits || []).map(tid => {
         const t = C.getTraitById ? C.getTraitById(tid) : null;
-        return t ? `<span class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 text-[10px]" title="${t.desc}">${t.name}</span>` : '';
+        return t ? `<span class="mil-tag" title="${escapeHtml(t.desc)}">${escapeHtml(t.name)}</span>` : '';
       }).join('');
 
       const purBonus = C.getUnitPursuitBonus ? C.getUnitPursuitBonus(u) : 0;
@@ -404,83 +404,83 @@ window.IronDivision = window.IronDivision || {};
       const entrenchCap = H.getUnitMaxEntrenchmentCap ? H.getUnitMaxEntrenchmentCap(u) : 3;
 
       return `
-        <div class="bg-slate-950 border ${u.defeated ? 'border-rose-900/70 opacity-60' : 'border-slate-800'} rounded-lg p-3 space-y-2 transition">
+        <div class="unit-dossier ${u.defeated ? 'unit-dossier-defeated' : (side === 'A' ? 'unit-dossier-a' : 'unit-dossier-b')} p-2.5 space-y-2">
           <div class="flex items-start justify-between gap-2">
             <div class="flex items-center gap-1.5 flex-wrap min-w-0">
-              <span class="font-bold text-xs sm:text-sm text-white truncate">${escapeHtml(u.name)}</span>
-              <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-amber-300">${escapeHtml(u.experience)}</span>
-              <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800">${escapeHtml(u.category.toUpperCase())}</span>
+              <span class="font-bold font-mono text-xs text-[#e7ece4] uppercase tracking-wide truncate">${escapeHtml(u.name)}</span>
+              <span class="text-[9.5px] font-mono uppercase px-1.5 py-0.5 bg-[#232016] text-[#c8a24b] border border-[#594b27]">${escapeHtml(u.experience)}</span>
+              <span class="text-[9.5px] font-mono uppercase px-1.5 py-0.5 bg-[#151a16] text-[#939e91] border border-[#2d362f]">${escapeHtml(u.category.replace('_', ' '))}</span>
             </div>
-            <button type="button" onclick="removeUnitFromSide('${side}', '${u.instanceId}')" class="text-slate-500 hover:text-rose-400 text-xs px-1.5 py-0.5 rounded shrink-0" title="Remove unit">✕</button>
+            <button type="button" onclick="removeUnitFromSide('${side}', '${u.instanceId}')" class="text-[#667065] hover:text-[#d46a64] font-mono text-xs px-1 shrink-0" title="Remove unit">[X]</button>
           </div>
 
           <div class="unit-stat-grid">
             <div class="unit-stat-cell" title="Soft Attack"><span class="unit-stat-label">Soft</span><span class="unit-stat-val">${u.softAttack}</span></div>
             <div class="unit-stat-cell" title="Hard Attack"><span class="unit-stat-label">Hard</span><span class="unit-stat-val">${u.hardAttack}</span></div>
             <div class="unit-stat-cell" title="Defense"><span class="unit-stat-label">Def</span><span class="unit-stat-val">${u.defense}</span></div>
-            <div class="unit-stat-cell" title="Armor Piercing"><span class="unit-stat-label">Pierce</span><span class="unit-stat-val text-sky-300">${u.piercing}</span></div>
-            <div class="unit-stat-cell" title="Armor Hardness"><span class="unit-stat-label">Hrdn</span><span class="unit-stat-val text-amber-300">${u.hardness}</span></div>
-            <div class="unit-stat-cell" title="Pursuit / Retreat Modifier"><span class="unit-stat-label">Pur/Ret</span><span class="unit-stat-val text-purple-300">${purBonus >= 0 ? '+' : ''}${purBonus}/${retBonus >= 0 ? '+' : ''}${retBonus}</span></div>
-            <div class="unit-stat-cell" title="Target Value"><span class="unit-stat-label">TV</span><span class="unit-stat-val text-emerald-300">${tv}</span></div>
-            <div class="unit-stat-cell" title="Entrenchment Level / Max Cap"><span class="unit-stat-label">Dig-In</span><span class="unit-stat-val text-amber-300">${u.entrenchmentLevel || 0}/${entrenchCap}</span></div>
-            <div class="unit-stat-cell" title="Y-Axis Coordinate: ${side === 'A' ? '+' : '-'}${unitPos}"><span class="unit-stat-label">Dist</span><span class="unit-stat-val text-cyan-300">${unitPos}</span></div>
-            <div class="unit-stat-cell" title="Max Engagement Range: ≤${unitRange} Total Distance${closestEnemyDist !== null ? ` (Closest Enemy: ${closestEnemyDist})` : ''}"><span class="unit-stat-label">Range</span><span class="unit-stat-val ${inRangeNow ? 'text-emerald-400' : 'text-amber-400'}">≤${unitRange}${closestEnemyDist !== null ? `/${closestEnemyDist}` : ''}</span></div>
+            <div class="unit-stat-cell" title="Armor Piercing"><span class="unit-stat-label">Pierce</span><span class="unit-stat-val text-[#8ec0e8]">${u.piercing}</span></div>
+            <div class="unit-stat-cell" title="Armor Hardness"><span class="unit-stat-label">Hrdn</span><span class="unit-stat-val text-[#c8a24b]">${u.hardness}</span></div>
+            <div class="unit-stat-cell" title="Pursuit / Retreat Modifier"><span class="unit-stat-label">Pur/Ret</span><span class="unit-stat-val text-[#b8a2d9]">${purBonus >= 0 ? '+' : ''}${purBonus}/${retBonus >= 0 ? '+' : ''}${retBonus}</span></div>
+            <div class="unit-stat-cell" title="Target Value"><span class="unit-stat-label">TV</span><span class="unit-stat-val text-[#7cb377]">${tv}</span></div>
+            <div class="unit-stat-cell" title="Entrenchment Level / Max Cap"><span class="unit-stat-label">Dig-In</span><span class="unit-stat-val text-[#c8a24b]">${u.entrenchmentLevel || 0}/${entrenchCap}</span></div>
+            <div class="unit-stat-cell" title="Y-Axis Coordinate: ${side === 'A' ? '+' : '-'}${unitPos}"><span class="unit-stat-label">Dist</span><span class="unit-stat-val text-[#8ec0e8]">${unitPos}</span></div>
+            <div class="unit-stat-cell" title="Max Engagement Range: ≤${unitRange} Total Distance${closestEnemyDist !== null ? ` (Closest Enemy: ${closestEnemyDist})` : ''}"><span class="unit-stat-label">Range</span><span class="unit-stat-val ${inRangeNow ? 'text-[#7cb377]' : 'text-[#c8a24b]'}">≤${unitRange}${closestEnemyDist !== null ? `/${closestEnemyDist}` : ''}</span></div>
           </div>
 
-          ${u.defeated ? `<div class="text-[11px] font-mono text-rose-400 bg-rose-950/50 border border-rose-800/50 px-2 py-1 rounded">🏳 DEFEATED: ${u.defeatReason}</div>` : ''}
-          ${u.isRallying ? `<div class="text-[11px] font-mono text-amber-300 bg-amber-950/60 border border-amber-800/60 px-2 py-1 rounded">🚩 REGROUPING IN REAR (${u.rallyRoundsLeft} rounds until ready)</div>` : ''}
+          ${u.defeated ? `<div class="text-[10px] font-mono uppercase text-[#e69894] bg-[#2b1514] border border-[#6e3532] px-2 py-1">STATUS: OUT OF ACTION // ${escapeHtml(u.defeatReason)}</div>` : ''}
+          ${u.isRallying ? `<div class="text-[10px] font-mono uppercase text-[#d8b45c] bg-[#262011] border border-[#6e5a28] px-2 py-1">STATUS: REGROUPING IN REAR // ${u.rallyRoundsLeft} RD(S) TO RALLY</div>` : ''}
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] font-mono">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10.5px] font-mono">
             <div>
               <div class="flex justify-between">
-                <span class="text-slate-400">Personnel HP</span>
-                <span class="text-emerald-300">${u.personnel} / ${u.maxPersonnel} (${persPct}%)</span>
+                <span class="text-[#7c877b]">PERS</span>
+                <span class="text-[#89b884]">${u.personnel}/${u.maxPersonnel} (${persPct}%)</span>
               </div>
-              <div class="w-full h-2 bg-slate-900 rounded-full overflow-hidden mt-0.5">
-                <div class="bg-emerald-500 h-full bar-fill" style="width: ${persPct}%"></div>
+              <div class="w-full h-2 bar-track mt-0.5">
+                <div class="bg-[#5e8f59] h-full bar-fill" style="width: ${persPct}%"></div>
               </div>
-              <div class="text-[10px] text-slate-400 mt-0.5">KIA: <span class="text-rose-400">${u.dead}</span> | WIA: <span class="text-amber-300">${u.wounded}</span> ${lossMalus < 0 ? `<span class="text-rose-400">(${lossMalus}% stat)</span>` : ''}</div>
+              <div class="text-[9.5px] text-[#7c877b] mt-0.5">KIA <span class="text-[#d46a64]">${u.dead}</span> | WIA <span class="text-[#c8a24b]">${u.wounded}</span>${lossMalus < 0 ? ` <span class="text-[#d46a64]">[${lossMalus}%]</span>` : ''}</div>
             </div>
 
             <div>
               <div class="flex justify-between">
-                <span class="text-slate-400">Organization HP</span>
-                <span class="text-sky-300">${(u.isMonster || u.isZombie) ? 'N/A (Immune)' : `${u.org} / ${u.maxOrg} (${orgPct}%)`}</span>
+                <span class="text-[#7c877b]">ORG</span>
+                <span class="text-[#8ec0e8]">${(u.isMonster || u.isZombie) ? 'N/A' : `${u.org}/${u.maxOrg} (${orgPct}%)`}</span>
               </div>
-              <div class="w-full h-2 bg-slate-900 rounded-full overflow-hidden mt-0.5">
-                <div class="bg-sky-500 h-full bar-fill" style="width: ${orgPct}%"></div>
+              <div class="w-full h-2 bar-track mt-0.5">
+                <div class="bg-[#4e8ec4] h-full bar-fill" style="width: ${orgPct}%"></div>
               </div>
-              <div class="text-[10px] text-slate-400 mt-0.5">Armor Tier: <span class="text-slate-300">${u.armorTier.toUpperCase()}</span> ${orgMalus < 0 ? `<span class="text-rose-400">(${orgMalus}% org malus)</span>` : ''}</div>
+              <div class="text-[9.5px] text-[#7c877b] mt-0.5">CLASS <span class="text-[#b8c2b6]">${escapeHtml(u.armorTier.toUpperCase())}</span>${orgMalus < 0 ? ` <span class="text-[#d46a64]">[${orgMalus}%]</span>` : ''}</div>
             </div>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] font-mono">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10.5px] font-mono">
             <div>
               <div class="flex justify-between">
-                <span class="text-slate-400">Supply</span>
-                <span class="text-amber-300">${(u.isMonster || u.isZombie) ? 'N/A' : `${u.supply} / ${u.maxSupply} (${supPct}%)`}</span>
+                <span class="text-[#7c877b]">SUP</span>
+                <span class="text-[#c8a24b]">${(u.isMonster || u.isZombie) ? 'N/A' : `${u.supply}/${u.maxSupply} (${supPct}%)`}</span>
               </div>
-              <div class="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden mt-0.5">
-                <div class="bg-amber-400 h-full bar-fill" style="width: ${supPct}%"></div>
+              <div class="w-full h-1.5 bar-track mt-0.5">
+                <div class="bg-[#c8a24b] h-full bar-fill" style="width: ${supPct}%"></div>
               </div>
-              ${supMalus < 0 ? `<div class="text-[10px] text-rose-400 mt-0.5">Supply Malus: ${supMalus}%</div>` : ''}
+              ${supMalus < 0 ? `<div class="text-[9.5px] text-[#d46a64] mt-0.5">SUPPLY DEFICIT [${supMalus}%]</div>` : ''}
             </div>
 
             ${u.maxArmor > 0 ? `
             <div>
               <div class="flex justify-between">
-                <span class="text-slate-400">Combat Armor</span>
-                <span class="text-orange-300">${u.armor} / ${u.maxArmor}</span>
+                <span class="text-[#7c877b]">AFV</span>
+                <span class="text-[#d99b52]">${u.armor}/${u.maxArmor}</span>
               </div>
-              <div class="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden mt-0.5">
-                <div class="bg-orange-500 h-full bar-fill" style="width: ${armorPct}%"></div>
+              <div class="w-full h-1.5 bar-track mt-0.5">
+                <div class="bg-[#c27a34] h-full bar-fill" style="width: ${armorPct}%"></div>
               </div>
-              <div class="text-[10px] text-slate-400 mt-0.5">Recov: <span class="text-emerald-400">${u.recoverableArmor}</span> | Lost: <span class="text-rose-400">${u.unrecoverableArmor}</span></div>
+              <div class="text-[9.5px] text-[#7c877b] mt-0.5">RECOV <span class="text-[#89b884]">${u.recoverableArmor}</span> | KO <span class="text-[#d46a64]">${u.unrecoverableArmor}</span></div>
             </div>
-            ` : `<div class="text-[10px] text-slate-500 flex items-center">Unarmored / Foot Formation</div>`}
+            ` : `<div class="text-[9.5px] font-mono uppercase text-[#667065] flex items-center">UNARMORED // FOOT ELEMENT</div>`}
           </div>
 
-          <div class="flex flex-wrap gap-1 pt-1 border-t border-slate-900">
+          <div class="flex flex-wrap gap-1 pt-1.5 border-t border-[#1e241f]">
             ${traitBadges}
           </div>
         </div>
@@ -540,13 +540,13 @@ window.IronDivision = window.IronDivision || {};
     }
   }
 
-  // Combat Log Color Registry
+  // Combat Log Sitrep Channel Registry
   const colorMap = {
-    rolls: 'text-slate-200 border-slate-800 bg-slate-950/60',
-    damage: 'text-rose-200 border-rose-900/40 bg-rose-950/20',
-    armor: 'text-amber-200 border-amber-900/40 bg-amber-950/20',
-    support: 'text-sky-200 border-sky-900/40 bg-sky-950/20',
-    error: 'text-rose-100 border-rose-500 bg-rose-950/90 font-bold shadow-lg'
+    rolls: 'sitrep-row text-[#d2d9d0] border-l-[#5c6b5d] bg-[#101411]',
+    damage: 'sitrep-row text-[#ecc5c3] border-l-[#c2524c] bg-[#1c1212]',
+    armor: 'sitrep-row text-[#e8d5a8] border-l-[#c8a24b] bg-[#1a1710]',
+    support: 'sitrep-row text-[#bfd8ec] border-l-[#4e8ec4] bg-[#11171c]',
+    error: 'sitrep-row text-white border-l-[#ef4444] bg-[#3b1515] font-bold'
   };
 
   function renderCombatLog() {
@@ -575,8 +575,8 @@ window.IronDivision = window.IronDivision || {};
       const isNew = !uiState.renderedLogIds.has(item.id);
       if (isNew) uiState.renderedLogIds.add(item.id);
       return `
-      <div class="${isNew ? 'log-entry-new ' : ''}px-2.5 py-1.5 rounded border text-[11px] leading-relaxed ${colorMap[item.category] || colorMap.rolls}">
-        <span class="text-slate-500 mr-1">[R${item.round}]</span> ${escapeHtml(item.text)}
+      <div class="${isNew ? 'log-entry-new ' : ''}px-2.5 py-1.5 ${colorMap[item.category] || colorMap.rolls}">
+        <span class="text-[#6e7a6d] mr-1.5 font-bold">[RD-${String(item.round).padStart(2, '0')}]</span>${escapeHtml(item.text)}
       </div>`;
     }).join('');
 
