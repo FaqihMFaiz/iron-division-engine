@@ -42,6 +42,7 @@ window.IronDivision = window.IronDivision || {};
       winner: null,
       autoInterval: null,
       sideA: {
+        name: H.safeLoadStorage('ttrpg_sideA_name_v1', 'BLUEFOR // SIDE A') || 'BLUEFOR // SIDE A',
         commanderId: 'cmd_patton',
         tacticId: 'auto',
         chosenTacticId: 'atk_attack',
@@ -57,6 +58,7 @@ window.IronDivision = window.IronDivision || {};
         units: []
       },
       sideB: {
+        name: H.safeLoadStorage('ttrpg_sideB_name_v1', 'OPFOR // SIDE B') || 'OPFOR // SIDE B',
         commanderId: 'cmd_chuikov',
         tacticId: 'auto',
         chosenTacticId: 'def_defend',
@@ -972,6 +974,41 @@ window.IronDivision = window.IronDivision || {};
   // 7B. GM Live Controls (Mid-Battle Tweaks & 1-Round Undo)
   // --------------------------------------------------------------------------
 
+  function updateSideName(side, rawValue) {
+    const key = side === 'B' ? 'B' : 'A';
+    const defName = key === 'A' ? 'BLUEFOR // SIDE A' : 'OPFOR // SIDE B';
+    const cleaned = typeof rawValue === 'string' ? rawValue.trim() : '';
+    const finalName = cleaned || defName;
+
+    const sideObj = key === 'A' ? ID.state.battle.sideA : ID.state.battle.sideB;
+    sideObj.name = finalName;
+    H.safeSaveStorage(`ttrpg_side${key}_name_v1`, finalName);
+
+    const inp = document.getElementById(`side${key}-name-input`);
+    if (inp && inp.value !== finalName) {
+      inp.value = finalName;
+    }
+
+    if (ID.UI) {
+      if (typeof ID.UI.renderEnvironmentSelectors === 'function') ID.UI.renderEnvironmentSelectors();
+      if (typeof ID.UI.renderCombatRound === 'function') ID.UI.renderCombatRound();
+    }
+  }
+
+  function toggleTheatreBar() {
+    const body = document.getElementById('theatre-controls-body');
+    const btn = document.getElementById('btn-toggle-theatre');
+    const collapsedSummary = document.getElementById('theatre-collapsed-summary');
+    if (!body) return;
+    const isNowHidden = body.classList.toggle('hidden');
+    if (btn) {
+      btn.textContent = isNowHidden ? '▼ EXPAND' : '▲ COLLAPSE';
+    }
+    if (collapsedSummary) {
+      collapsedSummary.classList.toggle('hidden', !isNowHidden);
+    }
+  }
+
   function toggleGMMode() {
     ID.state.gmMode = !ID.state.gmMode;
     const btn = document.getElementById('btn-gm-mode');
@@ -1194,6 +1231,8 @@ window.IronDivision = window.IronDivision || {};
     saveTrait,
     loadTerrainIntoForm,
     saveTerrainConfig,
+    updateSideName,
+    toggleTheatreBar,
     toggleGMMode,
     undoLastRound,
     gmAdjustUnit,
@@ -1264,7 +1303,9 @@ window.IronDivision = window.IronDivision || {};
     loadTerrainIntoForm,
     saveTerrainConfig,
 
-    // GM Live Controls & Presets JSON
+    // GM Live Controls, Side Names & Presets JSON
+    updateSideName,
+    toggleTheatreBar,
     toggleGMMode,
     undoLastRound,
     gmAdjustUnit,

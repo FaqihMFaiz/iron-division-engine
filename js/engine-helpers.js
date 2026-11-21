@@ -20,6 +20,18 @@ window.IronDivision = window.IronDivision || {};
     return Math.max(min, Math.min(max, val));
   }
 
+  const DEFAULT_SIDE_NAMES = {
+    A: 'BLUEFOR // SIDE A',
+    B: 'OPFOR // SIDE B'
+  };
+
+  function getSideName(side) {
+    const key = side === 'B' ? 'B' : 'A';
+    const raw = key === 'A' ? ID.state?.battle?.sideA?.name : ID.state?.battle?.sideB?.name;
+    const trimmed = typeof raw === 'string' ? raw.trim() : '';
+    return trimmed || DEFAULT_SIDE_NAMES[key];
+  }
+
   function getTraitById(id) {
     if (ID.state && ID.state.traits) {
       const found = ID.state.traits.find(t => t.id === id);
@@ -543,6 +555,8 @@ window.IronDivision = window.IronDivision || {};
   ID.Helpers = {
     rollDie,
     clamp,
+    DEFAULT_SIDE_NAMES,
+    getSideName,
     getTraitById,
     addLog,
     showToast,
@@ -569,6 +583,7 @@ window.IronDivision = window.IronDivision || {};
   // Backwards-compatible bindings on window
   window.rollDie = rollDie;
   window.clamp = clamp;
+  window.getSideName = getSideName;
   window.getTraitById = getTraitById;
   window.addLog = addLog;
   window.showToast = showToast;

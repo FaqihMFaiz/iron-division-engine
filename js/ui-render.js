@@ -268,8 +268,13 @@ window.IronDivision = window.IronDivision || {};
           ${visBadge}
           ${hazardBadges}
         </div>
-        <div class="font-mono text-[10px] uppercase tracking-wider text-[#c8a24b]">THEATRE LOCK: SIDE ${state.environment.theatreAttackerSide || 'A'} ASSAULT / SIDE ${(state.environment.theatreAttackerSide || 'A') === 'A' ? 'B' : 'A'} ENTRENCHED</div>
+        <div class="font-mono text-[10px] uppercase tracking-wider text-[#c8a24b]">THEATRE LOCK: ${escapeHtml(H.getSideName(state.environment.theatreAttackerSide || 'A').toUpperCase())} ASSAULT / ${escapeHtml(H.getSideName((state.environment.theatreAttackerSide || 'A') === 'A' ? 'B' : 'A').toUpperCase())} ENTRENCHED</div>
       `;
+    }
+
+    const collapsedSum = document.getElementById('theatre-collapsed-summary');
+    if (collapsedSum) {
+      collapsedSum.textContent = `${(terr.name || 'Plains').toUpperCase()} · ${(feat.name || 'Normal').toUpperCase()} · ${(weath.name || 'Sunny').toUpperCase()} · ${(tod.name || 'Daylight').toUpperCase()}`;
     }
   }
 
@@ -409,7 +414,7 @@ window.IronDivision = window.IronDivision || {};
     if (!listEl) return;
 
     if (sideObj.units.length === 0) {
-      listEl.innerHTML = `<div class="text-center py-8 text-xs text-slate-500 border border-dashed border-slate-800 rounded-lg">No units deployed on Side ${side}. Select a template above and click "+ Deploy Unit".</div>`;
+      listEl.innerHTML = `<div class="text-center py-8 text-xs text-slate-500 border border-dashed border-slate-800 rounded-lg">No units deployed on ${escapeHtml(H.getSideName(side))}. Select a template above and click "+ Deploy Unit".</div>`;
       return;
     }
 
@@ -584,12 +589,23 @@ window.IronDivision = window.IronDivision || {};
         ? `BATTLE CONCLUDED (RD ${state.battle.round})`
         : `ROUND ${state.battle.round}`;
     }
+    const nameA = H.getSideName('A');
+    const nameB = H.getSideName('B');
+    const inpA = document.getElementById('sideA-name-input');
+    const inpB = document.getElementById('sideB-name-input');
+    if (inpA && document.activeElement !== inpA) inpA.value = nameA;
+    if (inpB && document.activeElement !== inpB) inpB.value = nameB;
+    const yLblA = document.getElementById('yaxis-label-a');
+    const yLblB = document.getElementById('yaxis-label-b');
+    if (yLblA) yLblA.textContent = `◄ ${nameA}`;
+    if (yLblB) yLblB.textContent = `${nameB} ►`;
+
     if (phEl) {
       const atk = state.battle.attackerSide;
       const def = atk === 'A' ? 'B' : 'A';
       phEl.textContent = state.battle.isOver
-        ? `Winner: Side ${state.battle.winner}`
-        : `Side ${atk} Attacks ➔ Side ${def} Defends (& Return Fire)`;
+        ? (state.battle.winner === 'Draw' ? 'Result: Mutual Exhaustion' : `Winner: ${H.getSideName(state.battle.winner)}`)
+        : `${H.getSideName(atk)} Attacks -> ${H.getSideName(def)} Defends`;
     }
 
     const C = getCombat();
@@ -606,15 +622,15 @@ window.IronDivision = window.IronDivision || {};
 
     const lblA = document.getElementById('ratio-label-a');
     const lblB = document.getElementById('ratio-label-b');
-    if (lblA) lblA.textContent = `Side A: ${actA.toLocaleString()} Active`;
-    if (lblB) lblB.textContent = `Side B: ${actB.toLocaleString()} Active`;
+    if (lblA) lblA.textContent = `${nameA}: ${actA.toLocaleString()} Active`;
+    if (lblB) lblB.textContent = `${nameB}: ${actB.toLocaleString()} Active`;
 
     const bonusA = C.getOutnumberingBonusPct ? C.getOutnumberingBonusPct('A', 'B') : 0;
     const bonusB = C.getOutnumberingBonusPct ? C.getOutnumberingBonusPct('B', 'A') : 0;
     const pill = document.getElementById('outnumber-bonus-pill');
     if (pill) {
-      if (bonusA > 0) pill.textContent = `Side A Outnumbers (+${bonusA}% Atk/Def)`;
-      else if (bonusB > 0) pill.textContent = `Side B Outnumbers (+${bonusB}% Atk/Def)`;
+      if (bonusA > 0) pill.textContent = `${nameA} Outnumbers (+${bonusA}% Atk/Def)`;
+      else if (bonusB > 0) pill.textContent = `${nameB} Outnumbers (+${bonusB}% Atk/Def)`;
       else pill.textContent = `Balanced Forces (No Outnumber Bonus)`;
     }
 
@@ -1592,8 +1608,10 @@ window.IronDivision = window.IronDivision || {};
     } else if (rep.winner === 'Draw') {
       notes.push(`Mutual combat exhaustion reached in Round ${rep.rounds}; neither force retained operational capacity to hold the sector.`);
     } else {
-      const winLabel = rep.winner === 'A' ? 'BLUEFOR (Side A)' : 'OPFOR (Side B)';
-      const loseLabel = rep.winner === 'A' ? 'OPFOR (Side B)' : 'BLUEFOR (Side A)';
+      const sideAName = rep.sideAName || H.getSideName('A');
+      const sideBName = rep.sideBName || H.getSideName('B');
+      const winLabel = rep.winner === 'A' ? sideAName : sideBName;
+      const loseLabel = rep.winner === 'A' ? sideBName : sideAName;
       const deg = victoryInfo ? victoryInfo.label : 'VICTORY';
       notes.push(`Classification: ${deg} — ${winLabel} secured the ${rep.terrain} (${rep.feature}) sector in Round ${rep.rounds} after neutralizing ${loseLabel}'s frontline cohesion.`);
       if (victoryInfo && victoryInfo.summary) {
@@ -1601,12 +1619,14 @@ window.IronDivision = window.IronDivision || {};
       }
     }
 
-    notes.push(`Personnel attrition stands at ${pctA}% for BLUEFOR (${lossA.toLocaleString()} total losses) versus ${pctB}% for OPFOR (${lossB.toLocaleString()} total losses).`);
+    const labelA = rep.sideAName || H.getSideName('A');
+    const labelB = rep.sideBName || H.getSideName('B');
+    notes.push(`Personnel attrition stands at ${pctA}% for ${labelA} (${lossA.toLocaleString()} total losses) versus ${pctB}% for ${labelB} (${lossB.toLocaleString()} total losses).`);
 
     const totalArmorKoA = sumA.armorUnrec + sumA.armorRec;
     const totalArmorKoB = sumB.armorUnrec + sumB.armorRec;
     if (sumA.armorStart > 0 || sumB.armorStart > 0) {
-      notes.push(`Armored vehicle losses: BLUEFOR ${totalArmorKoA} knocked out (${sumA.armorUnrec} total write-offs), OPFOR ${totalArmorKoB} knocked out (${sumB.armorUnrec} total write-offs).`);
+      notes.push(`Armored vehicle losses: ${labelA} ${totalArmorKoA} knocked out (${sumA.armorUnrec} total write-offs), ${labelB} ${totalArmorKoB} knocked out (${sumB.armorUnrec} total write-offs).`);
     }
 
     if (isOver && rep.salvage && rep.salvage.abandoned > 0) {
@@ -1635,6 +1655,8 @@ window.IronDivision = window.IronDivision || {};
       feature: state.environment.feature,
       weather: state.environment.weather,
       theatreAttackerSide: state.environment.theatreAttackerSide || 'A',
+      sideAName: H.getSideName('A'),
+      sideBName: H.getSideName('B'),
       commanderA: getCmdName('A'),
       commanderB: getCmdName('B'),
       sideA: state.battle.sideA.units,
@@ -1673,7 +1695,7 @@ window.IronDivision = window.IronDivision || {};
     if (isOver) {
       titleEl.textContent = rep.winner === 'Draw'
         ? `MUTUAL EXHAUSTION — DRAW (RD-${String(rep.rounds).padStart(2, '0')})`
-        : `${victoryInfo.label} — ${rep.winner === 'A' ? 'BLUEFOR (SIDE A)' : 'OPFOR (SIDE B)'} (RD-${String(rep.rounds).padStart(2, '0')})`;
+        : `${victoryInfo.label} — ${(rep.winner === 'A' ? (rep.sideAName || H.getSideName('A')) : (rep.sideBName || H.getSideName('B'))).toUpperCase()} (RD-${String(rep.rounds).padStart(2, '0')})`;
     } else {
       titleEl.textContent = `LIVE OPERATIONAL SITREP — RD-${String(rep.rounds).padStart(2, '0')} (IN PROGRESS)`;
     }
@@ -1764,14 +1786,14 @@ window.IronDivision = window.IronDivision || {};
       </div>
 
       <!-- Section 2: ORBAT & Casualty Ledgers -->
-      ${renderSideReportTable('SECTION 2A // BLUEFOR (SIDE A — VANGUARD)', rep.commanderA || 'Autonomous Staff', rep.sideA, sumA, '#1d486e')}
-      ${renderSideReportTable('SECTION 2B // OPFOR (SIDE B — OPPOSING)', rep.commanderB || 'Autonomous Staff', rep.sideB, sumB, '#8b2e2a')}
+      ${renderSideReportTable(`SECTION 2A // ${escapeHtml((rep.sideAName || H.getSideName('A')).toUpperCase())}`, rep.commanderA || 'Autonomous Staff', rep.sideA, sumA, '#1d486e')}
+      ${renderSideReportTable(`SECTION 2B // ${escapeHtml((rep.sideBName || H.getSideName('B')).toUpperCase())}`, rep.commanderB || 'Autonomous Staff', rep.sideB, sumB, '#8b2e2a')}
 
       <!-- Section 3: Battlefield Salvage & Captured Equipment -->
       ${isOver && salvage && salvage.abandoned > 0 ? `
         <div class="tradoc-aar-salvage text-xs font-mono space-y-1.5">
           <span class="font-extrabold text-[#5e4411] uppercase tracking-wider block">SECTION 3 // BATTLEFIELD SALVAGE &amp; CAPTURED MATERIAL</span>
-          <div>Side ${rep.winner} field recovery units secured <b>${salvage.abandoned}</b> abandoned enemy combat hulls:</div>
+          <div>${escapeHtml(rep.winner === 'B' ? (rep.sideBName || H.getSideName('B')) : (rep.sideAName || H.getSideName('A')))} field recovery units secured <b>${salvage.abandoned}</b> abandoned enemy combat hulls:</div>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-[11px]">
             <div class="p-2 bg-[#faf8f2] border border-[#bfb7a2]">IMPRESSED (BEUTEPANZER): <b class="text-[#2f5e2c]">${salvage.impressed}</b></div>
             <div class="p-2 bg-[#faf8f2] border border-[#bfb7a2]">STRIPPED FOR DEPOT: <b class="text-[#1d486e]">+${salvage.supplyScrapped} SUP</b></div>
@@ -2054,8 +2076,8 @@ window.IronDivision = window.IronDivision || {};
   </div>
 
   <h2>2. Order of Battle &amp; Casualty Ledger</h2>
-  ${renderForceTable('2A. BLUEFOR — Side A (Vanguard Force)', rep.commanderA || 'Autonomous Staff', rep.sideA, sumA)}
-  ${renderForceTable('2B. OPFOR — Side B (Opposing Force)', rep.commanderB || 'Autonomous Staff', rep.sideB, sumB)}
+  ${renderForceTable(`2A. ${(rep.sideAName || H.getSideName('A')).toUpperCase()}`, rep.commanderA || 'Autonomous Staff', rep.sideA, sumA)}
+  ${renderForceTable(`2B. ${(rep.sideBName || H.getSideName('B')).toUpperCase()}`, rep.commanderB || 'Autonomous Staff', rep.sideB, sumB)}
 
   <h2>3. Material Recovery &amp; Battlefield Salvage</h2>
   <div class="box">

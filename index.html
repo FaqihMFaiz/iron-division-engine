@@ -92,10 +92,21 @@
   <main class="flex-1 max-w-[1600px] w-full mx-auto p-3 sm:p-4">
 
     <!-- ==================== TAB 1: BATTLEFIELD ==================== -->
-    <section id="view-battlefield" class="space-y-4">
-      <!-- Theatre Controls Bar -->
-      <div class="mil-monitor-frame p-3 sm:p-3.5">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-2.5 items-end">
+    <section id="view-battlefield" class="space-y-5">
+      <!-- Theatre Controls Bar (Collapsible, Expanded by Default) -->
+      <div class="mil-monitor-frame p-3.5 sm:p-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 pb-2.5 mb-2.5 border-b border-slate-800/80">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <span class="font-mono text-[11px] font-bold uppercase tracking-widest text-[#c8a24b]">THEATRE COMMAND &amp; ENVIRONMENT</span>
+            <span id="theatre-collapsed-summary" class="hidden font-mono text-[10.5px] uppercase tracking-wider text-[#9ca69a] truncate"></span>
+          </div>
+          <button type="button" id="btn-toggle-theatre" onclick="toggleTheatreBar()" class="mil-btn px-2.5 py-1 bg-[#1c221d] hover:bg-[#272f29] border border-[#3a453c] text-[#c8d1c7] font-mono text-[10px] font-bold">
+            ▲ COLLAPSE
+          </button>
+        </div>
+
+        <div id="theatre-controls-body">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3 items-end">
           <!-- Terrain Selector -->
           <div>
             <label class="block text-[10px] font-mono uppercase text-slate-400 mb-1">Base Terrain</label>
@@ -178,20 +189,21 @@
 
         <!-- Environmental Modifiers Status Bar -->
         <div id="env-summary-bar" class="mt-3 pt-2.5 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400"></div>
+        </div>
       </div>
 
       <!-- 3-Column Battlefield Layout -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
 
         <!-- SIDE A COLUMN (BLUEFOR) -->
-        <div class="lg:col-span-4 space-y-3">
-          <div class="mil-panel mil-panel-bluefor p-3.5">
-            <div class="side-title-plate flex items-center justify-between px-2.5 py-2 mb-3">
-              <div class="flex items-center gap-2">
-                <span class="w-2.5 h-2.5 bg-[#4e8ec4] inline-block border border-[#82b5df]"></span>
-                <h2 class="font-bold font-mono text-xs sm:text-sm text-[#8ec0e8] uppercase tracking-widest">BLUEFOR // SIDE A</h2>
+        <div class="lg:col-span-4 space-y-4">
+          <div class="mil-panel mil-panel-bluefor p-4">
+            <div class="side-title-plate flex items-center justify-between gap-2 px-2.5 py-2 mb-3.5">
+              <div class="flex items-center gap-2 flex-1 min-w-0">
+                <span class="w-2.5 h-2.5 bg-[#4e8ec4] inline-block border border-[#82b5df] shrink-0"></span>
+                <input type="text" id="sideA-name-input" value="BLUEFOR // SIDE A" onchange="updateSideName('A', this.value)" onblur="updateSideName('A', this.value)" title="Click to rename Side A (empty reverts to default)" class="side-name-input font-bold text-xs sm:text-sm text-[#e8f2fa] uppercase tracking-widest w-full min-w-0" />
               </div>
-              <span id="sideA-role-badge" class="text-[10px] font-mono px-2 py-0.5 bg-[#162533] text-[#8ec0e8] border border-[#355a7a] font-bold uppercase">INITIATIVE</span>
+              <span id="sideA-role-badge" class="text-[10px] font-mono px-2 py-0.5 bg-[#162533] text-[#8ec0e8] border border-[#355a7a] font-bold uppercase shrink-0">INITIATIVE</span>
             </div>
 
             <!-- Commander & Tactic Selection -->
@@ -210,15 +222,15 @@
             <div id="sideA-summary" class="bg-slate-950/80 border border-slate-800 rounded-lg p-2.5 mb-3 text-xs grid grid-cols-3 gap-2 text-center"></div>
 
             <!-- Deploy Unit Picker -->
-            <div class="flex gap-1.5 mb-3">
-              <select id="sideA-add-select" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white"></select>
-              <button type="button" onclick="deployUnitToSide('A')" class="mil-btn px-3 py-1.5 bg-[#234563] hover:bg-[#2d587d] border border-[#4e8ec4] text-[#d9ecfc] font-semibold text-[11px] shrink-0">
+            <div class="flex items-stretch gap-1.5 mb-3 min-w-0 w-full">
+              <select id="sideA-add-select" class="flex-1 min-w-0 w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white truncate"></select>
+              <button type="button" onclick="deployUnitToSide('A')" class="mil-btn px-2.5 py-1.5 bg-[#234563] hover:bg-[#2d587d] border border-[#4e8ec4] text-[#d9ecfc] font-semibold text-[11px] shrink-0 whitespace-nowrap">
                 + DEPLOY
               </button>
             </div>
 
             <!-- Deployed Units Roster -->
-            <div id="sideA-units-list" class="space-y-2.5 max-h-[620px] overflow-y-auto custom-scroll pr-1"></div>
+            <div id="sideA-units-list" class="space-y-3 max-h-[620px] overflow-y-auto custom-scroll pr-1"></div>
           </div>
         </div>
 
@@ -264,10 +276,10 @@
 
             <!-- Tactical Horizontal Y-Axis Rangefinder (-7 BLUEFOR ... 0 ... +7 OPFOR) -->
             <div id="battlefield-yaxis-panel" class="bg-slate-950 border border-slate-800 p-3">
-              <div class="flex items-center justify-between text-[10px] font-mono uppercase tracking-wider border-b border-slate-800 pb-1.5">
-                <span class="text-[#8ec0e8] font-bold">◄ SIDE A (BLUEFOR)</span>
-                <span class="text-[#c8a24b] font-bold">Y-AXIS CONTACT LINE (0)</span>
-                <span class="text-[#e69894] font-bold">SIDE B (OPFOR) ►</span>
+              <div class="flex items-center justify-between text-[10px] font-mono uppercase tracking-wider border-b border-slate-800 pb-1.5 gap-2">
+                <span id="yaxis-label-a" class="text-[#8ec0e8] font-bold truncate">◄ BLUEFOR // SIDE A</span>
+                <span class="text-[#c8a24b] font-bold shrink-0">Y-AXIS CONTACT (0)</span>
+                <span id="yaxis-label-b" class="text-[#e69894] font-bold truncate text-right">OPFOR // SIDE B ►</span>
               </div>
               <div id="yaxis-line-container"></div>
             </div>
@@ -300,14 +312,14 @@
         </div>
 
         <!-- SIDE B COLUMN (OPFOR) -->
-        <div class="lg:col-span-4 space-y-3">
-          <div class="mil-panel mil-panel-opfor p-3.5">
-            <div class="side-title-plate flex items-center justify-between px-2.5 py-2 mb-3">
-              <div class="flex items-center gap-2">
-                <span class="w-2.5 h-2.5 bg-[#c2524c] inline-block border border-[#e08984]"></span>
-                <h2 class="font-bold font-mono text-xs sm:text-sm text-[#e69894] uppercase tracking-widest">OPFOR // SIDE B</h2>
+        <div class="lg:col-span-4 space-y-4">
+          <div class="mil-panel mil-panel-opfor p-4">
+            <div class="side-title-plate flex items-center justify-between gap-2 px-2.5 py-2 mb-3.5">
+              <div class="flex items-center gap-2 flex-1 min-w-0">
+                <span class="w-2.5 h-2.5 bg-[#c2524c] inline-block border border-[#e08984] shrink-0"></span>
+                <input type="text" id="sideB-name-input" value="OPFOR // SIDE B" onchange="updateSideName('B', this.value)" onblur="updateSideName('B', this.value)" title="Click to rename Side B (empty reverts to default)" class="side-name-input font-bold text-xs sm:text-sm text-[#fae8e7] uppercase tracking-widest w-full min-w-0" />
               </div>
-              <span id="sideB-role-badge" class="text-[10px] font-mono px-2 py-0.5 bg-[#301918] text-[#e69894] border border-[#6e3532] font-bold uppercase">REACTING</span>
+              <span id="sideB-role-badge" class="text-[10px] font-mono px-2 py-0.5 bg-[#301918] text-[#e69894] border border-[#6e3532] font-bold uppercase shrink-0">REACTING</span>
             </div>
 
             <!-- Commander & Tactic Selection -->
@@ -326,15 +338,15 @@
             <div id="sideB-summary" class="bg-slate-950/80 border border-slate-800 rounded-lg p-2.5 mb-3 text-xs grid grid-cols-3 gap-2 text-center"></div>
 
             <!-- Deploy Unit Picker -->
-            <div class="flex gap-1.5 mb-3">
-              <select id="sideB-add-select" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white"></select>
-              <button type="button" onclick="deployUnitToSide('B')" class="mil-btn px-3 py-1.5 bg-[#5c2522] hover:bg-[#732f2b] border border-[#c2524c] text-[#fce0de] font-semibold text-[11px] shrink-0">
+            <div class="flex items-stretch gap-1.5 mb-3 min-w-0 w-full">
+              <select id="sideB-add-select" class="flex-1 min-w-0 w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white truncate"></select>
+              <button type="button" onclick="deployUnitToSide('B')" class="mil-btn px-2.5 py-1.5 bg-[#5c2522] hover:bg-[#732f2b] border border-[#c2524c] text-[#fce0de] font-semibold text-[11px] shrink-0 whitespace-nowrap">
                 + DEPLOY
               </button>
             </div>
 
             <!-- Deployed Units Roster -->
-            <div id="sideB-units-list" class="space-y-2.5 max-h-[620px] overflow-y-auto custom-scroll pr-1"></div>
+            <div id="sideB-units-list" class="space-y-3 max-h-[620px] overflow-y-auto custom-scroll pr-1"></div>
           </div>
         </div>
 

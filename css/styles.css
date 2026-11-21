@@ -187,9 +187,31 @@ body.mil-ui ::selection {
 
 .side-title-plate {
   border-radius: 0 !important;
-  border: 1px solid #525252;
-  background: linear-gradient(90deg, #2b2b2b 0%, #3a3a3a 50%, #2b2b2b 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  border: 1px solid #6c7278;
+  background-color: #52575c !important;
+  background-image: none !important;
+}
+
+.mil-ui .side-title-plate input[type="text"].side-name-input {
+  background: #52575c !important;
+  background-color: #52575c !important;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 1px 2px !important;
+  font-family: 'Chakra Petch', 'IBM Plex Sans Condensed', sans-serif !important;
+  letter-spacing: 0.06em;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.mil-ui .side-title-plate input[type="text"].side-name-input:hover {
+  background-color: #52575c !important;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.45) !important;
+}
+
+.mil-ui .side-title-plate input[type="text"].side-name-input:focus {
+  background-color: #464b50 !important;
+  border-bottom: 1px solid #c8a24b !important;
 }
 
 .mil-panel-cmd {
@@ -302,27 +324,20 @@ body.mil-ui ::selection {
 
 .unit-dossier {
   position: relative;
-  background-color: #242b25;
-  border: 3px solid #2b342d;
+  background-color: #303a32;
+  border: 3px solid #131714;
   transition: border-color 0.14s ease, background-color 0.14s ease;
 }
 
-.unit-dossier-a {
-  border-color: #244563;
-}
-
-.unit-dossier-a:hover {
-  border-color: #34628c;
-  background-color: #262f34;
-}
-
+.unit-dossier-a,
 .unit-dossier-b {
-  border-color: #632421;
+  border-color: #131714;
 }
 
+.unit-dossier-a:hover,
 .unit-dossier-b:hover {
-  border-color: #8a342f;
-  background-color: #2f2626;
+  border-color: #0b0e0c;
+  background-color: #374339;
 }
 
 .unit-dossier-defeated {
@@ -1556,6 +1571,157 @@ body.mil-ui ::selection {
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
-  padding: 12px;
+  padding: 22px 24px;
   border: 1px solid #29312b;
+}
+
+#view-terrain {
+  background-image:
+    linear-gradient(rgba(14, 17, 15, 0.78), rgba(14, 17, 15, 0.86)),
+    url('../img/terrain-bg.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  padding: 22px 24px;
+  border: 1px solid #29312b;
+}
+
+#view-units {
+  background-image:
+    linear-gradient(rgba(14, 17, 15, 0.78), rgba(14, 17, 15, 0.86)),
+    url('../img/orbat-bg.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  padding: 22px 24px;
+  border: 1px solid #29312b;
+}
+
+@media (max-width: 768px) {
+  #view-battlefield,
+  #view-terrain,
+  #view-units {
+    padding: 14px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Global Subtle Tactile Curved Pushbutton Style
+   -------------------------------------------------------------------------- */
+.mil-ui button:not(.tactics-toc-btn) {
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.06) 0%,
+    rgba(255, 255, 255, 0.01) 50%,
+    rgba(0, 0, 0, 0.08) 100%
+  ) !important;
+  border-bottom-width: 2px !important;
+  border-bottom-style: solid !important;
+  border-bottom-color: rgba(0, 0, 0, 0.42) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10), 0 1px 1px rgba(0, 0, 0, 0.28);
+  transition: transform 0.06s ease, box-shadow 0.08s ease, filter 0.12s ease, background-color 0.12s ease;
+}
+
+.mil-ui button:not(.tactics-toc-btn):hover:not(:disabled) {
+  filter: brightness(1.04);
+}
+
+.mil-ui button:not(.tactics-toc-btn):active:not(:disabled) {
+  transform: translateY(1px);
+  border-bottom-width: 1px !important;
+  background-image: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.09) 0%,
+    rgba(255, 255, 255, 0.02) 100%
+  ) !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.32);
+}
+
+.tactics-bar-btn {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 7px;
+  background-color: #161c16;
+  color: #d4b054;
+  border: 1px solid #4c594a;
+  cursor: pointer;
+}
+
+.tactics-bar-btn:hover {
+  background-color: #2f3b2e;
+  color: #ffffff;
+}
+
+/* Dark Night-Ops Mode for Tactics Manual */
+.tactics-book.tactics-book-dark {
+  background-color: #151916;
+  color: #dde3da;
+  border-color: #3c473e;
+  border-left-color: #c8a24b;
+  box-shadow:
+    5px 5px 0 0 #101311,
+    6px 6px 0 1px #2b332d,
+    0 10px 24px rgba(0, 0, 0, 0.65);
+}
+
+.tactics-book.tactics-book-dark h2,
+.tactics-book.tactics-book-dark h3 {
+  color: #e7ece4 !important;
+}
+
+.tactics-book.tactics-book-dark p,
+.tactics-book.tactics-book-dark .text-sm {
+  color: #c8d1c7 !important;
+}
+
+.tactics-book.tactics-book-dark .tactics-sec-block,
+.tactics-book.tactics-book-dark .tactics-toc-row {
+  background-color: #101411;
+  border-color: #2f3831;
+  color: #dde3da;
+}
+
+.tactics-book.tactics-book-dark .tactics-toc-row:hover {
+  background-color: #232b24;
+  border-color: #c8a24b;
+  color: #f4f1e6;
+}
+
+.tactics-book.tactics-book-dark .tactics-mod-strip {
+  background-color: #1a201b;
+  border-color: #364038;
+  border-left-color: #c8a24b;
+}
+
+.tactics-book.tactics-book-dark .tactics-mod-chip {
+  background-color: #101411;
+  border-color: #3c473e;
+  color: #dde3da;
+}
+
+.tactics-book.tactics-book-dark .tactics-mod-pos {
+  background-color: #152414;
+  border-color: #4c7548;
+  color: #89b884;
+}
+
+.tactics-book.tactics-book-dark .tactics-mod-neg {
+  background-color: #2b1514;
+  border-color: #7d3633;
+  color: #e69894;
+}
+
+.tactics-book.tactics-book-dark .tactics-book-footer {
+  background-color: #101411;
+  border-top-color: #3c473e;
+  color: #c8d1c7;
+}
+
+.tactics-book.tactics-book-dark .tactics-nav-btn-secondary {
+  background-color: #1c221d;
+  color: #dde3da;
+  border-color: #3c473e;
 }

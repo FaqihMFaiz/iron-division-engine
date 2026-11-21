@@ -79,7 +79,7 @@ window.IronDivision = window.IronDivision || {};
       H.addLog('rolls', `[END] BATTLE OVER — Mutual Exhaustion after ${state.battle.round} rounds!`);
     } else {
       const loserSide = winnerSide === 'A' ? 'B' : 'A';
-      H.addLog('rolls', `[VIC] BATTLE OVER — Side ${winnerSide} achieves victory over Side ${loserSide} in Round ${state.battle.round}!`);
+      H.addLog('rolls', `[VIC] BATTLE OVER — ${H.getSideName(winnerSide)} achieves victory over ${H.getSideName(loserSide)} in Round ${state.battle.round}!`);
       resolveRetreatAndPursuit(winnerSide, loserSide);
     }
 
@@ -118,7 +118,7 @@ window.IronDivision = window.IronDivision || {};
     // Check if victor includes Monsters or Zombies (triggers No Quarter doctrine)
     const victorIsMonstersOrZombies = winUnits.some(u => u.isMonster || u.isZombie);
 
-    H.addLog('rolls', `[MOV] [Post-Battle Mobility Pursuit] Side ${winnerSide} (Avg Speed: Class ${avgWinSpeed}) pursues retreating Side ${loserSide}!`);
+    H.addLog('rolls', `[MOV] [Post-Battle Mobility Pursuit] ${H.getSideName(winnerSide)} (Avg Speed: Class ${avgWinSpeed}) pursues retreating ${H.getSideName(loserSide)}!`);
     if (victorIsMonstersOrZombies) {
       H.addLog('damage', `[CAS] [NO QUARTER] The victorious Monster/Zombie horde takes NO prisoners! All captured troops and wounded left on the field are slaughtered or devoured!`);
     }
@@ -257,7 +257,7 @@ window.IronDivision = window.IronDivision || {};
         scuttledHulls = totalAbandonedHulls - impressedTanks - scrappedCount;
         supplyScrapped = scrappedCount * 5;
 
-        H.addLog('armor', `[AFV] [FIELD SALVAGE] Side ${winnerSide} (Roll ${salvageScore}) secured ${totalAbandonedHulls} abandoned hulls: ` +
+        H.addLog('armor', `[AFV] [FIELD SALVAGE] ${H.getSideName(winnerSide)} (Roll ${salvageScore}) secured ${totalAbandonedHulls} abandoned hulls: ` +
           `${impressedTanks} Beutepanzers restored, ${scrappedCount} stripped (+${supplyScrapped} Supply), ${scuttledHulls} scuttled/burned.`);
       }
     }
@@ -293,6 +293,8 @@ window.IronDivision = window.IronDivision || {};
       feature: state.environment.feature,
       weather: state.environment.weather,
       theatreAttackerSide: state.environment.theatreAttackerSide || 'A',
+      sideAName: H.getSideName('A'),
+      sideBName: H.getSideName('B'),
       commanderA: getCmdName('A'),
       commanderB: getCmdName('B'),
       sideA: structuredClone(state.battle.sideA.units),

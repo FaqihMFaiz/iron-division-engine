@@ -223,7 +223,7 @@ window.IronDivision = window.IronDivision || {};
       u.personnel = 0;
       u.defeated = true;
       u.defeatReason = 'All personnel eliminated';
-      H.addLog('damage', `[KIA] [${u.side}] ${u.name} has lost all active personnel and is wiped out!`);
+      H.addLog('damage', `[KIA] [${H.getSideName(u.side)}] ${u.name} has lost all active personnel and is wiped out!`);
       return true;
     }
 
@@ -237,7 +237,7 @@ window.IronDivision = window.IronDivision || {};
       } else {
         u.defeated = true;
         u.defeatReason = 'All combat-ready armor destroyed/disabled';
-        H.addLog('armor', `[BRK] [${u.side}] ${u.name} has 0 combat-ready armor remaining and is defeated!`);
+        H.addLog('armor', `[BRK] [${H.getSideName(u.side)}] ${u.name} has 0 combat-ready armor remaining and is defeated!`);
         return true;
       }
     }
@@ -256,7 +256,7 @@ window.IronDivision = window.IronDivision || {};
         } else {
           u.defeated = true;
           u.defeatReason = 'Organization broke (Permanently routed)';
-          H.addLog('damage', `[ROUT] [${u.side}] ${u.name} reached 0 Organization! Cohesion broke and the unit is permanently routed!`);
+          H.addLog('damage', `[ROUT] [${H.getSideName(u.side)}] ${u.name} reached 0 Organization! Cohesion broke and the unit is permanently routed!`);
           return true;
         }
       } else {
@@ -412,7 +412,7 @@ window.IronDivision = window.IronDivision || {};
       const manual = eligible.find(t => t.id === sideState.tacticId);
       if (manual) {
         if (manual.id === 'urb_atk_barrage' && sideState.barrageCooldown > 0) {
-          H.addLog('rolls', `[WARN] [Side ${side}] Street-by-Street Barrage is on cooldown (${sideState.barrageCooldown} rds left); defaulting to Attack.`);
+          H.addLog('rolls', `[WARN] [${H.getSideName(side)}] Street-by-Street Barrage is on cooldown (${sideState.barrageCooldown} rds left); defaulting to Attack.`);
           return eligible[0];
         }
         return manual;
@@ -665,7 +665,7 @@ window.IronDivision = window.IronDivision || {};
       defState.nextRoundAtkMod = 0;
 
       H.addLog('rolls', `================================================`);
-      H.addLog('rolls', `[OP] ROUND ${rd} BEGINS — Side ${atkSide} Attacks | Side ${defSide} Defends`);
+      H.addLog('rolls', `[OP] ROUND ${rd} BEGINS — ${H.getSideName(atkSide)} Attacks | ${H.getSideName(defSide)} Defends`);
 
       atkState.breakthroughTriggeredThisRound = false;
       defState.breakthroughTriggeredThisRound = false;
@@ -693,7 +693,7 @@ window.IronDivision = window.IronDivision || {};
       atkState.lastChosenTacticId = atkTactic.id;
       defState.lastChosenTacticId = defTactic.id;
 
-      H.addLog('rolls', `[TAC] Tactics Selected — Side ${atkSide} (Attacker): [${atkTactic.name}${H.formatTacticModifiers(atkTactic)}] | Side ${defSide} (Defender): [${defTactic.name}${H.formatTacticModifiers(defTactic)}]`);
+      H.addLog('rolls', `[TAC] Tactics Selected — ${H.getSideName(atkSide)} (Attacker): [${atkTactic.name}${H.formatTacticModifiers(atkTactic)}] | ${H.getSideName(defSide)} (Defender): [${defTactic.name}${H.formatTacticModifiers(defTactic)}]`);
 
       if (atkState.barrageCooldown > 0 && atkTactic.id !== 'urb_atk_barrage') atkState.barrageCooldown--;
       if (defState.barrageCooldown > 0) defState.barrageCooldown--;
@@ -1021,12 +1021,12 @@ window.IronDivision = window.IronDivision || {};
 
     let sideRollD3 = 0;
     if (isUncontestedFrontline) {
-      H.addLog('support', `[HOLD] [Uncontested Frontline] Side ${side} holds the field with no active opposing forces. Supply drain and attrition are paused.`);
+      H.addLog('support', `[HOLD] [Uncontested Frontline] ${H.getSideName(side)} holds the field with no active opposing forces. Supply drain and attrition are paused.`);
     } else if (isPreContact) {
-      H.addLog('support', `[LOG] [Side ${side} Approach March] No units in engagement range yet — combat ammunition burn paused (0 base drain) | Depot: ${sideState.supplyDepot}/${sideState.maxSupplyDepot}`);
+      H.addLog('support', `[LOG] [${H.getSideName(side)} Approach March] No units in engagement range yet — combat ammunition burn paused (0 base drain) | Depot: ${sideState.supplyDepot}/${sideState.maxSupplyDepot}`);
     } else {
       sideRollD3 = H.rollDie(3);
-      H.addLog('support', `[LOG] [Side ${side} Supply] Base operational drain d3 = ${sideRollD3} | Depot Stockpile: ${sideState.supplyDepot}/${sideState.maxSupplyDepot}`);
+      H.addLog('support', `[LOG] [${H.getSideName(side)} Supply] Base operational drain d3 = ${sideRollD3} | Depot Stockpile: ${sideState.supplyDepot}/${sideState.maxSupplyDepot}`);
     }
 
     // 3. Frontline Unit Loop
@@ -1053,7 +1053,7 @@ window.IronDivision = window.IronDivision || {};
               actualRegenDrawn = Math.min(sideState.supplyDepot, potentialRegen);
               sideState.supplyDepot = Math.max(0, sideState.supplyDepot - actualRegenDrawn);
             } else {
-              H.addLog('support', `[WARN] [Depot Empty] ${u.name} has logistics traits (+${potentialRegen}), but Side ${side}'s Depot is empty! Regeneration failed.`);
+              H.addLog('support', `[WARN] [Depot Empty] ${u.name} has logistics traits (+${potentialRegen}), but ${H.getSideName(side)}'s Depot is empty! Regeneration failed.`);
             }
           }
 
@@ -1336,7 +1336,7 @@ window.IronDivision = window.IronDivision || {};
     if (!attackerWonVig && defTactic.id === 'urb_def_ambush' && diff >= 15) {
       const atkState = atkSide === 'A' ? ID.state.battle.sideA : ID.state.battle.sideB;
       atkState.nextRoundVigMod -= 10;
-      H.addLog('rolls', `[TGT] [Urban Ambush] Side ${defSide} won Vigilance by >=15! Side ${atkSide} suffers -10 Vigilance next round.`);
+      H.addLog('rolls', `[TGT] [Urban Ambush] ${H.getSideName(defSide)} won Vigilance by >=15! ${H.getSideName(atkSide)} suffers -10 Vigilance next round.`);
     }
 
     return { atkTotal, defTotal, diff, statBoost, attackerWonVig };
@@ -1362,7 +1362,7 @@ window.IronDivision = window.IronDivision || {};
         enemyState.units.filter(isUnitActive).forEach(eu => {
           eu.roundTemp.defMalus += defRed;
         });
-        H.addLog('support', `[BRCH] [Street-by-Street Barrage] Side ${firingSide} expends ${supCost} supply: Enemy Defense reduced by -(2+d6)=-${defRed}!`);
+        H.addLog('support', `[BRCH] [Street-by-Street Barrage] ${H.getSideName(firingSide)} expends ${supCost} supply: Enemy Defense reduced by -(2+d6)=-${defRed}!`);
       }
     }
 
@@ -1485,7 +1485,7 @@ window.IronDivision = window.IronDivision || {};
             } else if (d8 === 8) {
               shotDownAll = true;
               firingState.airstrikeDisabled = true;
-              H.addLog('support', `[BRCH] [AA Gun CRITICAL 8!] ${eu.name} shot down the majority of Side ${firingSide}'s strike aircraft! Air Support banned for rest of battle!`);
+              H.addLog('support', `[BRCH] [AA Gun CRITICAL 8!] ${eu.name} shot down the majority of ${H.getSideName(firingSide)}'s strike aircraft! Air Support banned for rest of battle!`);
             } else {
               H.addLog('support', `[TGT] [AA Gun] ${eu.name} reduces airstrike by 4+d8 = ${red}.`);
             }
@@ -1849,7 +1849,7 @@ window.IronDivision = window.IronDivision || {};
       if (atkTactic.id === 'atk_breakthrough' && inflictedRatio >= 0.10 && !atkSideStateRef.breakthroughTriggeredThisRound) {
         atkSideStateRef.breakthroughTriggeredThisRound = true;
         atkSideStateRef.nextRoundAtkMod = (atkSideStateRef.nextRoundAtkMod || 0) + 10;
-        H.addLog('rolls', `[BRK] [Breakthrough Exploitation] ${attacker.name} inflicted >=10% losses on ${defender.name} — Side ${atkSide} gains +10% Attack next round!`);
+        H.addLog('rolls', `[BRK] [Breakthrough Exploitation] ${attacker.name} inflicted >=10% losses on ${defender.name} — ${H.getSideName(atkSide)} gains +10% Attack next round!`);
       }
 
       const hasRaiders = atkTraits.some(t => t.id === 'supply_raiders');
@@ -1897,7 +1897,7 @@ window.IronDivision = window.IronDivision || {};
       if (defTactic.id === 'def_delay') {
         const atkSideState = atkSide === 'A' ? ID.state.battle.sideA : ID.state.battle.sideB;
         atkSideState.nextRoundAtkMod = -10;
-        H.addLog('rolls', `[HOLD] [Delay Tactic] Successful defense imposes -10% Attack on Side ${atkSide} next round.`);
+        H.addLog('rolls', `[HOLD] [Delay Tactic] Successful defense imposes -10% Attack on ${H.getSideName(atkSide)} next round.`);
       }
     }
 
