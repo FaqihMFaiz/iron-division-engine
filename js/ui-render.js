@@ -43,7 +43,8 @@ window.IronDivision = window.IronDivision || {};
       sideA_tplHash: '',
       sideB_tplHash: ''
     },
-    renderedLogIds: new Set()
+    renderedLogIds: new Set(),
+    tacticsPage: 0
   };
 
   function escapeHtml(str) {
@@ -973,24 +974,320 @@ window.IronDivision = window.IronDivision || {};
     }
   }
 
-  function renderTacticsGuide() {
-    const grid = document.getElementById('tactics-reference-grid');
-    if (!grid) return;
+  // Authentic real-world combat doctrine & employment notes for all 25 tactics
+  const TACTIC_DOCTRINE_NOTES = {
+    atk_attack: {
+      realWorld: 'A deliberate, coordinated advance using standard fire-and-maneuver drills. Rifle squads bound forward under covering fire from support weapons without overextending flanks or burning excessive ammunition.',
+      recommended: 'Default opening doctrine when enemy strength, armor composition, or defensive posture is unconfirmed. Keeps return-fire exposure low while steadily testing the line.'
+    },
+    atk_assault: {
+      realWorld: 'A concentrated close-quarters push directly into enemy trench lines or strongpoints. Assault elements abandon cover to close distance rapidly, trading personal protection for maximum shock at the point of contact.',
+      recommended: 'Deploy when enemy cohesion is wavering or when you must crack a moderate defensive line quickly. Avoid using against fresh Counterattack or Ambush defenders.'
+    },
+    atk_encirclement: {
+      realWorld: 'Double-envelopment maneuver (Kesselschlacht) designed to pin the enemy center while mobile wings sweep around exposed flanks to sever lines of retreat and trap formations in a pocket.',
+      recommended: 'Most effective with multiple active formations outnumbering the defender. Pairs well with high-mobility Armor or Mechanized units to maximize post-battle POW captures.'
+    },
+    atk_shock: {
+      realWorld: 'Sudden, high-intensity violence of action combining heavy direct fire, suppressive bursts, and aggressive forward pressure to shatter enemy morale and command cohesion before they can react.',
+      recommended: 'Use against low-organization infantry, militia, or recently rallied units to force an immediate rout. Watch your own Org attrition over prolonged fights.'
+    },
+    atk_breakthrough: {
+      realWorld: 'Concentrating armor, anti-tank guns, and assault engineers on a narrow sector (Schwerpunkt) to punch cleanly through fortified belts and create a gap for exploitation.',
+      recommended: 'Ideal against Fortified Strongpoints, Heavy Tanks, or entrenched Frontliner screens. The +3 flat Piercing helps medium guns defeat heavy armor plate.'
+    },
+    atk_blitz: {
+      realWorld: 'High-tempo armored maneuver warfare that prioritizes speed and operational disruption over methodical consolidation—striking faster than the defender can reorganize or restore command links.',
+      recommended: 'Best employed by well-supplied Tank and Mechanized spearheads on open terrain (Plains/Desert/Roads) against disorganized defenders. Vulnerable to Delay tactics and supply drain.'
+    },
+    atk_mass_charge: {
+      realWorld: 'Overwhelming human-wave or broad-front massed assault relying on sheer numerical superiority to saturate defender firing arcs and overrun positions through weight of numbers.',
+      recommended: 'Only employ when holding at least a 1.5:1 (ideally 2:1) active personnel advantage. Never charge into intact Artillery, Machine Guns, or Explosive-heavy defenders.'
+    },
+    atk_infiltration: {
+      realWorld: 'Hutier-style stormtrooper tactics: small, decentralized teams slip through gaps in the enemy frontline under cover of rough terrain to bypass strongpoints and strike vulnerable rear artillery and HQ elements.',
+      recommended: 'Pair with Special Forces or Infiltration Specialists in Forest, Hills, Mountain, or Urban terrain to bypass Frontliner screens and neutralize enemy Artillery batteries.'
+    },
+    atk_well_planned: {
+      realWorld: 'Set-piece offensive built on thorough reconnaissance, pre-registered fire plans, and rehearsed timing—maximizing combat power while maintaining disciplined defensive intervals against counter-fire.',
+      recommended: 'Strongest from Round 2 onward once enemy doctrine patterns are revealed. Avoid selecting on Round 1 if Surprise / Unexpected Initiative is active.'
+    },
+    atk_relentless: {
+      realWorld: 'Continuous echeloned pressure that refuses to grant a battered enemy any operational pause, rotating fresh fire elements forward to finish off collapsing formations.',
+      recommended: 'Deploy as a finisher when enemy units drop to 30% Organization or below and your supply depot can absorb the extra +1 Supply/round burn.'
+    },
+    atk_unexpected_thrust: {
+      realWorld: 'A sudden, unannounced lunge along an unguarded axis achieving tactical surprise and forcing enemy officers onto the back foot before they can orient reserves.',
+      recommended: 'Use as a single-round opener or pivot tactic—never repeat it two rounds in a row, as the enemy adapts and turns the bonus into a -10% Atk/Def penalty.'
+    },
+    def_defend: {
+      realWorld: 'Classical positional area defense: troops hold prepared trenches, interlocking fields of fire, and pre-sighted kill zones to bleed attackers while conserving manpower and ammunition.',
+      recommended: 'Reliable all-purpose defensive posture, especially inside Fortified Strongpoints (+30% Def) when you want to hold ground and inflict steady return-fire losses.'
+    },
+    def_counterattack: {
+      realWorld: 'Immediate local counter-thrust launched at the moment an enemy assault loses momentum, catching overextended attackers out of cover before they can consolidate captured ground.',
+      recommended: 'Select against aggressive doctrines (Assault, Shock, Mass Charge) when your formations still have healthy firepower to punish the attacker during Return Fire.'
+    },
+    def_delay: {
+      realWorld: 'Trading space for time through phased blocking positions, demolitions, and hit-and-run firefights designed to disrupt enemy tempo and blunt armored thrusts.',
+      recommended: 'Use when outnumbered or facing Blitz / Relentless Assault—halves enemy Blitz attack bonuses, imposes -10% Atk next round on a hold, and boosts Retreat safety.'
+    },
+    def_tactical_withdrawal: {
+      realWorld: 'Planned, screened retrograde movement to disengage from an untenable fight while minimizing casualties and preserving combat formations for future operations.',
+      recommended: 'Use when facing overwhelming odds or critical supply starvation to cut incoming casualties by 20% and maximize surviving personnel during post-battle pursuit.'
+    },
+    def_ambush: {
+      realWorld: 'Concealed fire-sack set along expected enemy approach routes, holding fire until the opposing column enters point-blank kill zones to maximize initial shock and vigilance dominance.',
+      recommended: 'Deadly in Forest, Jungle, Mountain, or Urban sectors—especially paired with Recon or Concealment Specialists against Blitz, Infiltration, or Unexpected Thrust.'
+    },
+    def_backhand_blow: {
+      realWorld: 'Mobile operational defense (modeled on Manstein’s 1943 Kharkov counter-stroke): absorb the initial enemy lunge defensively, then strike the exhausted spearhead with a devastating counter-blow.',
+      recommended: 'Excellent with armored or heavy combined-arms reserves against high-commitment enemy pushes (Assault, Breakthrough, Shock) that expose their own flanks.'
+    },
+    def_guerrilla: {
+      realWorld: 'Asymmetric irregular warfare leveraging difficult terrain, stealth, and raids against enemy logistics trains to bleed conventional forces without offering a decisive pitched battle.',
+      recommended: 'Use in Forest, Jungle, Mountain, or Urban sectors against supply-hungry Tank or Artillery columns; steals enemy supply on hit and punishes forces below 50% supply.'
+    },
+    urb_atk_street_fighting: {
+      realWorld: 'Systematic block-by-block urban infantry combat using grenades, submachine guns, and short-range anti-tank launchers to clear rooms, cellars, and barricaded intersections.',
+      recommended: 'Premier Urban offensive doctrine for infantry-heavy divisions and Anti-Tank squads. Keep Tanks out of the lead role due to the -15% armor penalty in tight streets.'
+    },
+    urb_atk_barrage: {
+      realWorld: 'Methodical preparatory bombardment rolling one city block ahead of assaulting troops, collapsing fortified walls and suppressing defenders before infantry storm the rubble.',
+      recommended: 'Use every 2 rounds against heavily entrenched urban strongpoints (Fortified Defense / Defend City) when you have >=50% supply to spare for the 2+d3 supply cost.'
+    },
+    urb_atk_armour_supported: {
+      realWorld: 'Combined-arms urban doctrine pairing direct-fire tank cannons with close infantry escorts: tanks blast fortified firing ports while infantry screen rooftops and alleyways against AT teams.',
+      recommended: 'Deploy in Urban terrain whenever you field both active Infantry and operational Tanks/AFVs together. Avoid if your armor has been knocked out or supply is tight.'
+    },
+    urb_atk_mouse_holing: {
+      realWorld: 'Pioneered at Ortona and Stalingrad: assault engineers blast interior breach holes through adjoining building walls to move between structures completely hidden from street-level kill zones.',
+      recommended: 'Pair with Infiltration Specialists in Urban terrain to achieve a 35% frontline bypass chance, letting infantry flank directly into enemy support and artillery units.'
+    },
+    urb_def_city: {
+      realWorld: 'Elastic urban area defense turning multi-story masonry buildings, rubble piles, and barricaded avenues into mutually supporting strongpoints that funnel attackers into crossfire.',
+      recommended: 'Go-to defensive doctrine for Infantry garrisons holding Urban sectors against general assaults. Note the -10% Retreat penalty if the line collapses.'
+    },
+    urb_def_fortified: {
+      realWorld: 'Hold-at-all-costs fortress defense utilizing reinforced concrete bunkers, steel shutters, sandbagged cellars, and underground shelters to absorb heavy bombardment and protect cohesion.',
+      recommended: 'Pair with Fortification Engineers against frontal Assault, Breakthrough, or Street Fighting pushes. Reduces incoming Org shock sharply, though retreat is difficult (-15).'
+    },
+    urb_def_ambush: {
+      realWorld: 'Hidden sniper nests, cellar MG bunkers, and booby-trapped kill zones sprung from upper windows and rubble at point-blank range against advancing urban columns.',
+      recommended: 'Devastating in Urban sectors with Concealment Specialists against Armour-Supported Urban Assault or Street Fighting—can inflict bonus casualties and blind enemy recon next round.'
+    }
+  };
 
-    grid.innerHTML = (D.TACTICS_DB || []).map(t => `
-      <div class="bg-slate-950 border ${t.urbanOnly ? 'border-amber-500/40' : 'border-slate-800'} rounded-xl p-3.5 space-y-1.5">
-        <div class="flex items-center justify-between gap-2">
-          <span class="font-bold text-sm text-white">${t.name}</span>
-          <div class="flex items-center gap-1">
-            ${t.urbanOnly ? `<span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300">URBAN</span>` : ''}
-            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded ${t.role === 'attack' ? 'bg-rose-500/20 text-rose-300' : 'bg-sky-500/20 text-sky-300'} uppercase">${t.role}</span>
+  function getTacticModifierChips(t) {
+    const chips = [];
+    const add = (label, val, unit = '') => {
+      if (!val) return;
+      const cls = val > 0 ? 'tactics-mod-pos' : 'tactics-mod-neg';
+      chips.push(`<span class="tactics-mod-chip ${cls}">${val > 0 ? '+' : ''}${val}${unit} ${label}</span>`);
+    };
+    add('ATK', t.atkPct, '%');
+    add('DEF', t.defPct, '%');
+    if (t.returnFireAtkPct) add('RET-FIRE ATK', t.returnFireAtkPct, '%');
+    if (t.returnFireDefPct) add('RET-FIRE DEF', t.returnFireDefPct, '%');
+    if (t.breakthroughPct) add('BREAKTHROUGH', t.breakthroughPct, '%');
+    add('VIG', t.vigMod);
+    add('FLAT ATK', t.flatAtk);
+    add('FLAT DEF', t.flatDef);
+    add('PIERCE', t.flatPierce);
+    if (t.pursueBonus) add('PURSUIT', t.pursueBonus);
+    if (t.retreatBonus) add('RETREAT', t.retreatBonus);
+    if (t.casualtyReductionPct) chips.push(`<span class="tactics-mod-chip tactics-mod-pos">-${t.casualtyReductionPct}% CASUALTIES</span>`);
+    if (t.orgDmgPct) chips.push(`<span class="tactics-mod-chip tactics-mod-pos">+${t.orgDmgPct}% ORG DMG</span>`);
+    if (t.orgDmgResistPct) chips.push(`<span class="tactics-mod-chip tactics-mod-pos">-${t.orgDmgResistPct}% ORG TAKEN</span>`);
+    if (t.hitOrgHeal) chips.push(`<span class="tactics-mod-chip tactics-mod-pos">+${t.hitOrgHeal} ORG ON HIT</span>`);
+    if (t.bypassChance) chips.push(`<span class="tactics-mod-chip tactics-mod-pos">${t.bypassChance}% BYPASS</span>`);
+    if (t.supplyAdd) chips.push(`<span class="tactics-mod-chip tactics-mod-neg">+${t.supplyAdd} SUP/RD</span>`);
+    if (t.selfEndOrgDmg) chips.push(`<span class="tactics-mod-chip tactics-mod-neg">-${t.selfEndOrgDmg} SELF ORG</span>`);
+    if (t.cooldown) chips.push(`<span class="tactics-mod-chip">${t.cooldown}-RD COOLDOWN</span>`);
+    if (chips.length === 0) chips.push('<span class="tactics-mod-chip">STANDARD DOCTRINE</span>');
+    return chips.join('');
+  }
+
+  function goToTacticsPage(pageNum) {
+    const total = (D.TACTICS_DB || []).length;
+    uiState.tacticsPage = H.clamp(Number(pageNum) || 0, 0, total);
+    renderTacticsGuide();
+  }
+
+  function flipTacticsPage(delta) {
+    goToTacticsPage((uiState.tacticsPage || 0) + delta);
+  }
+
+  function renderTacticsGuide() {
+    const container = document.getElementById('tactics-reference-grid');
+    if (!container) return;
+
+    const list = D.TACTICS_DB || [];
+    const totalPages = list.length;
+    const page = H.clamp(uiState.tacticsPage || 0, 0, totalPages);
+    uiState.tacticsPage = page;
+
+    // PAGE 0: CLICKABLE TABLE OF CONTENTS
+    if (page === 0) {
+      const stdAtk = list.map((t, idx) => ({ t, pg: idx + 1 })).filter(x => x.t.role === 'attack' && !x.t.urbanOnly);
+      const stdDef = list.map((t, idx) => ({ t, pg: idx + 1 })).filter(x => x.t.role === 'defense' && !x.t.urbanOnly);
+      const urban = list.map((t, idx) => ({ t, pg: idx + 1 })).filter(x => x.t.urbanOnly);
+
+      const renderGroup = (title, items) => `
+        <div class="space-y-1">
+          <div class="tactics-toc-group-title">
+            <span>${title}</span>
+            <span>${items.length} DOCTRINES</span>
+          </div>
+          <div class="space-y-1">
+            ${items.map(({ t, pg }) => `
+              <button type="button" onclick="goToTacticsPage(${pg})" class="tactics-toc-row">
+                <span class="font-bold">${escapeHtml(t.name)}</span>
+                <span class="tactics-toc-dots"></span>
+                <span class="tactics-toc-meta">${escapeHtml(t.personality)} // PG ${String(pg).padStart(2, '0')}</span>
+              </button>
+            `).join('')}
           </div>
         </div>
-        <div class="text-[11px] font-mono text-slate-400">Doctrine: <span class="text-slate-200">${t.personality}</span></div>
-        <p class="text-xs text-slate-300 leading-relaxed">${t.summary}</p>
-        <p class="text-[11px] text-emerald-400"><b>Best Against:</b> ${t.bestAgainst}</p>
-      </div>
-    `).join('');
+      `;
+
+      container.innerHTML = `
+        <article class="tactics-book" aria-label="Tactical Doctrine Field Manual — Table of Contents">
+          <div class="tactics-book-bar">
+            <span>FM 100-5-TAC // TACTICAL DOCTRINE COMPENDIUM</span>
+            <span>INDEX // PAGE 00 OF ${String(totalPages).padStart(2, '0')}</span>
+          </div>
+
+          <div class="tactics-book-body space-y-5">
+            <div class="border-b-2 border-[#2f3b2e] pb-3">
+              <div class="font-mono text-[10.5px] font-bold uppercase tracking-widest text-[#4a5448]">
+                HEADQUARTERS, COMBINED-ARMS SIMULATION COMMAND — DOCTRINE MANUAL
+              </div>
+              <h2 class="text-2xl font-black uppercase text-[#141815] mt-1">
+                Table of Contents (${totalPages} Combat Tactics)
+              </h2>
+              <p class="text-xs sm:text-sm text-[#323a33] mt-1">
+                Select any tactical doctrine below to flip directly to its operational page, or use the page-turn controls at the bottom (Left/Right arrow keys supported).
+              </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div class="space-y-4">
+                ${renderGroup('PART I // OFFENSIVE DOCTRINES', stdAtk)}
+              </div>
+              <div class="space-y-4">
+                ${renderGroup('PART II // DEFENSIVE DOCTRINES', stdDef)}
+                ${renderGroup('PART III // URBAN OPERATIONS (URBAN / FORT)', urban)}
+              </div>
+            </div>
+          </div>
+
+          <div class="tactics-book-footer">
+            <button type="button" disabled class="tactics-nav-btn">◄ PREV PAGE</button>
+            <div class="text-xs font-bold uppercase text-[#262f25]">TABLE OF CONTENTS (PG 00 / ${String(totalPages).padStart(2, '0')})</div>
+            <button type="button" onclick="flipTacticsPage(1)" class="tactics-nav-btn">FIRST TACTIC ►</button>
+          </div>
+        </article>
+      `;
+      return;
+    }
+
+    // PAGES 1..25: SINGLE TACTIC DOCTRINE SHEET
+    const t = list[page - 1];
+    const notes = TACTIC_DOCTRINE_NOTES[t.id] || {
+      realWorld: 'Standard combined-arms tactical maneuver executed by frontline formations to gain local combat advantage.',
+      recommended: t.bestAgainst || 'General tactical engagements.'
+    };
+    const roleLabel = t.role === 'attack' ? 'OFFENSIVE DOCTRINE' : 'DEFENSIVE DOCTRINE';
+    const scopeLabel = t.urbanOnly ? 'URBAN / FORTIFICATIONS ONLY' : 'ALL THEATRE TERRAINS';
+
+    container.innerHTML = `
+      <article class="tactics-book" aria-label="Tactical Doctrine Page ${page}: ${escapeHtml(t.name)}">
+        <div class="tactics-book-bar">
+          <span>FM 100-5-TAC // ${roleLabel}</span>
+          <span>PAGE ${String(page).padStart(2, '0')} OF ${String(totalPages).padStart(2, '0')}</span>
+        </div>
+
+        <div class="tactics-book-body space-y-4">
+          <!-- Tactic Sheet Title Block -->
+          <div class="border-b-2 border-[#2f3b2e] pb-3 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <div class="font-mono text-[10px] font-bold uppercase tracking-widest text-[#4a5448]">
+                DOCTRINE SHEET #${String(page).padStart(2, '0')} // ${scopeLabel}
+              </div>
+              <h2 class="text-2xl sm:text-3xl font-black uppercase text-[#141815] mt-0.5">
+                ${escapeHtml(t.name)}
+              </h2>
+            </div>
+            <div class="font-mono text-[11px] bg-[#faf8f2] border border-[#b5ad98] px-3 py-2 space-y-0.5 text-right">
+              <div><strong>ROLE:</strong> <span class="${t.role === 'attack' ? 'text-[#8b2e2a]' : 'text-[#1d486e]'} font-bold uppercase">${escapeHtml(t.role)}</span></div>
+              <div><strong>PERSONALITY:</strong> <span class="font-bold uppercase">${escapeHtml(t.personality)}</span></div>
+              <div><strong>TERRAIN:</strong> <span class="font-bold">${t.urbanOnly ? 'URBAN / FORT' : 'ALL'}</span></div>
+            </div>
+          </div>
+
+          <!-- Key Simulation Modifier Chips -->
+          <div>
+            <div class="font-mono text-[10px] font-bold uppercase tracking-wider text-[#4a5448] mb-1.5">
+              COMBAT TELEMETRY MODIFIERS
+            </div>
+            <div class="tactics-mod-strip">
+              ${getTacticModifierChips(t)}
+            </div>
+          </div>
+
+          <!-- Section 1: Real-World Combat Explanation -->
+          <div class="tactics-sec-block">
+            <h3 class="tactics-sec-head">1. General Combat Explanation (Real-World Doctrine)</h3>
+            <p class="text-sm text-[#1f2620] leading-relaxed">${escapeHtml(notes.realWorld)}</p>
+          </div>
+
+          <!-- Section 2: Battlefield Simulation Effects -->
+          <div class="tactics-sec-block">
+            <h3 class="tactics-sec-head">2. Battlefield Simulation Effects (Engine Rules)</h3>
+            <p class="text-sm font-mono text-[#181c19] leading-relaxed">${escapeHtml(t.summary)}</p>
+          </div>
+
+          <!-- Section 3: Recommended Tactical Employment -->
+          <div class="tactics-sec-block" style="border-left: 4px solid #2f3b2e;">
+            <h3 class="tactics-sec-head">3. Recommended Use &amp; Optimal Targets</h3>
+            <p class="text-sm text-[#1f2620] leading-relaxed mb-2">${escapeHtml(notes.recommended)}</p>
+            <div class="font-mono text-xs bg-[#ebe5d5] border border-[#bfb7a2] px-3 py-2 text-[#1f2b1e]">
+              <strong>BEST EMPLOYED AGAINST:</strong> ${escapeHtml(t.bestAgainst)}
+            </div>
+          </div>
+        </div>
+
+        <!-- Book Page-Flip Navigation Footer -->
+        <div class="tactics-book-footer">
+          <button type="button" onclick="flipTacticsPage(-1)" class="tactics-nav-btn">
+            ◄ ${page === 1 ? 'INDEX' : `PREV (PG ${String(page - 1).padStart(2, '0')})`}
+          </button>
+
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="goToTacticsPage(0)" class="tactics-nav-btn tactics-nav-btn-secondary">
+              TABLE OF CONTENTS
+            </button>
+            <span class="text-xs font-bold text-[#262f25]">PG ${String(page).padStart(2, '0')} / ${String(totalPages).padStart(2, '0')}</span>
+          </div>
+
+          <button type="button" onclick="flipTacticsPage(1)" ${page >= totalPages ? 'disabled' : ''} class="tactics-nav-btn">
+            ${page >= totalPages ? 'END OF MANUAL' : `NEXT (PG ${String(page + 1).padStart(2, '0')}) ►`}
+          </button>
+        </div>
+      </article>
+    `;
+  }
+
+  // Keyboard Left/Right page flipping when Doctrines tab is active
+  if (typeof document !== 'undefined' && document.addEventListener) {
+    document.addEventListener('keydown', (e) => {
+      if (uiState.activeTab !== 'tactics') return;
+      const tag = e.target && e.target.tagName ? e.target.tagName.toUpperCase() : '';
+      if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+      if (e.key === 'ArrowRight') flipTacticsPage(1);
+      else if (e.key === 'ArrowLeft') flipTacticsPage(-1);
+    });
   }
 
   // --------------------------------------------------------------------------
@@ -1831,6 +2128,8 @@ window.IronDivision = window.IronDivision || {};
     renderTraitsTab,
     renderCommandersTab,
     renderTerrainTab,
+    goToTacticsPage,
+    flipTacticsPage,
     renderTacticsGuide,
     stripEmojisForAAR,
     classifyVictoryDegree,
@@ -1851,6 +2150,8 @@ window.IronDivision = window.IronDivision || {};
   window.openBattleSummaryModal = openBattleSummaryModal;
   window.closeBattleSummaryModal = closeBattleSummaryModal;
   window.exportAARToPDF = exportAARToPDF;
+  window.goToTacticsPage = goToTacticsPage;
+  window.flipTacticsPage = flipTacticsPage;
   window.renderAll = renderAll;
 
 })(window.IronDivision);

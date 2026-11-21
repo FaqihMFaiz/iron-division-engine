@@ -1331,3 +1331,230 @@ body.mil-ui ::selection {
   font-family: 'Chakra Petch', 'IBM Plex Sans Condensed', sans-serif !important;
   letter-spacing: 0.06em;
 }
+
+/* Military Rank Insignia Patch (Unit Experience Tier) */
+.mil-rank-patch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background-color: #1c2017;
+  border: 1px solid #594b27;
+  color: #d4b054;
+  flex-shrink: 0;
+}
+
+.mil-rank-svg {
+  width: 16px;
+  height: 18px;
+  display: block;
+}
+
+/* --------------------------------------------------------------------------
+   12. Flippable One-Page TRADOC Tactical Doctrine Manual (Tab 6)
+   -------------------------------------------------------------------------- */
+@keyframes page-turn-in {
+  0% {
+    opacity: 0.45;
+    transform: translateX(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.tactics-book {
+  position: relative;
+  max-width: 980px;
+  margin: 0 auto 14px auto;
+  background-color: #f4f1e6;
+  color: #181c19;
+  border: 2px solid #2f3b2e;
+  border-left: 8px solid #262f25;
+  box-shadow:
+    5px 5px 0 0 #ddd6c2,
+    6px 6px 0 1px #756e5c,
+    10px 10px 0 0 #cbc3ae,
+    11px 11px 0 1px #4c483d;
+  animation: page-turn-in 0.18s ease-out;
+}
+
+.tactics-book-bar {
+  background-color: #252e24;
+  color: #f4f1e6;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 7px 22px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tactics-book-body {
+  padding: 24px 28px;
+  min-height: 540px;
+}
+
+.tactics-toc-group-title {
+  font-family: 'Chakra Petch', 'IBM Plex Sans Condensed', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #f4f1e6;
+  background-color: #262f25;
+  padding: 5px 10px;
+  margin-bottom: 6px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.tactics-toc-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  background-color: #faf8f2;
+  border: 1px solid #cbc3ae;
+  color: #181c19;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11.5px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.12s ease, border-color 0.12s ease, transform 0.08s ease;
+}
+
+.tactics-toc-row:hover {
+  background-color: #2f3b2e;
+  border-color: #2f3b2e;
+  color: #f4f1e6;
+  transform: translateX(2px);
+}
+
+.tactics-toc-row:hover .tactics-toc-meta {
+  color: #d4c9a8;
+}
+
+.tactics-toc-dots {
+  flex: 1;
+  border-bottom: 1px dotted #9e9682;
+  margin: 0 6px;
+  height: 1px;
+}
+
+.tactics-toc-meta {
+  font-size: 10px;
+  color: #525c50;
+  text-transform: uppercase;
+}
+
+.tactics-mod-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 12px;
+  background-color: #ebe5d5;
+  border: 1px solid #b5ad98;
+  border-left: 4px solid #2f3b2e;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+}
+
+.tactics-mod-chip {
+  padding: 2px 7px;
+  background-color: #faf8f2;
+  border: 1px solid #9e9682;
+  color: #181c19;
+  font-weight: 700;
+}
+
+.tactics-mod-pos {
+  border-color: #3d633a;
+  color: #234a20;
+  background-color: #edf4ec;
+}
+
+.tactics-mod-neg {
+  border-color: #9e4742;
+  color: #7d2420;
+  background-color: #f7eceb;
+}
+
+.tactics-sec-block {
+  background-color: #faf8f2;
+  border: 1px solid #c4bca8;
+  padding: 14px 16px;
+}
+
+.tactics-sec-head {
+  font-family: 'Chakra Petch', 'IBM Plex Sans Condensed', sans-serif;
+  font-size: 12.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #262f25;
+  border-bottom: 2px solid #2f3b2e;
+  padding-bottom: 4px;
+  margin-bottom: 8px;
+}
+
+.tactics-book-footer {
+  background-color: #e8e2d1;
+  border-top: 2px solid #2f3b2e;
+  padding: 12px 24px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.tactics-nav-btn {
+  font-family: 'Chakra Petch', 'IBM Plex Mono', sans-serif;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 6px 14px;
+  background-color: #262f25;
+  color: #f4f1e6;
+  border: 1px solid #181c19;
+  cursor: pointer;
+  transition: background-color 0.14s ease, opacity 0.14s ease;
+}
+
+.tactics-nav-btn:hover:not(:disabled) {
+  background-color: #3a4738;
+}
+
+.tactics-nav-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.tactics-nav-btn-secondary {
+  background-color: #f4f1e6;
+  color: #181c19;
+  border: 1px solid #8f8773;
+}
+
+.tactics-nav-btn-secondary:hover:not(:disabled) {
+  background-color: #dbd3be;
+}
+
+@media (max-width: 640px) {
+  .tactics-book-body,
+  .tactics-book-footer,
+  .tactics-book-bar {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
