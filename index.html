@@ -1123,6 +1123,54 @@
   </main>
 
   <!-- ==================== POST-BATTLE AAR MODAL ==================== -->
+  <!-- ==================== FIRST-VISIT WELCOME BRIEFING MODAL ==================== -->
+  <div id="welcome-modal" onclick="if(event.target===this) closeWelcomeModal(false)" class="hidden fixed inset-0 z-50 bg-black/85 items-center justify-center p-3 sm:p-6">
+    <div class="paper-sitrep-panel w-full max-w-2xl p-5 sm:p-6 shadow-2xl space-y-4">
+      <div class="paper-sitrep-header pb-3 border-b-2 border-[#1a1e1a] flex items-start justify-between gap-3">
+        <div>
+          <span class="paper-sitrep-kicker">HEADQUARTERS, IRON DIVISION // FORM DA-100-INDUCT</span>
+          <h2 class="paper-sitrep-title text-lg sm:text-xl mt-0.5">INITIAL ORIENTATION BRIEFING</h2>
+        </div>
+        <span class="font-mono text-[10px] font-bold uppercase px-2 py-0.5 border border-[#8a3c38] text-[#8a3c38] bg-[#f8eceb] shrink-0">READ FIRST</span>
+      </div>
+
+      <div class="space-y-3 text-xs sm:text-[13px] leading-relaxed text-[#222822] font-sans">
+        <p>
+          <strong>Welcome to Iron Division</strong> — a division-level combined-arms operational combat simulator built for tabletop RPGs and historical wargaming. Instead of arcade hit-point trading, it simulates <strong>unit cohesion (Organization)</strong>, <strong>armor piercing vs. hardness</strong>, <strong>realistic weapon engagement ranges</strong>, <strong>shared Supply Depots</strong>, <strong>dynamic weather &amp; 24-hour lighting</strong>, and generates printable <strong>Form DA-774 After-Action Reports</strong>.
+        </p>
+
+        <div class="p-3 bg-[#efe9d8] border-l-4 border-[#9c7a26] font-mono text-[11.5px] space-y-1.5 text-[#1c211d]">
+          <div class="font-bold uppercase tracking-wider text-[#6e5210]">DRILL SERGEANT'S RECOMMENDATION:</div>
+          <p class="leading-snug">
+            New to Hearts of Iron or operational wargaming? <strong>Read the Field Manual ([FM] Manual) before you touch a single button.</strong> It breaks down every stat, every round phase, the Theatre Settings bar, and why your riflemen can't snipe across two kilometers — written in plain English by a Drill Sergeant.
+          </p>
+        </div>
+
+        <ul class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 font-mono text-[11px] text-[#2c332c]">
+          <li class="px-2 py-1 bg-[#f7f3e8] border border-[#cfc7b2]"><strong>DEFAULT OP:</strong> Battle of San Marino (17 SEP 1944)</li>
+          <li class="px-2 py-1 bg-[#f7f3e8] border border-[#cfc7b2]"><strong>CUSTOMIZE:</strong> ORBAT, Traits, Generals &amp; Terrain</li>
+          <li class="px-2 py-1 bg-[#f7f3e8] border border-[#cfc7b2]"><strong>GM TOOLS:</strong> Live Adjustments &amp; 1-Round Undo</li>
+          <li class="px-2 py-1 bg-[#f7f3e8] border border-[#cfc7b2]"><strong>EXPORT:</strong> Preset JSON &amp; Printable A4 AAR</li>
+        </ul>
+      </div>
+
+      <div class="pt-3 border-t border-[#c9c1ab] flex flex-wrap items-center justify-between gap-3">
+        <label class="flex items-center gap-2 font-mono text-[11px] text-[#3a423a] cursor-pointer">
+          <input type="checkbox" id="welcome-dont-show" checked class="accent-[#c8a24b]">
+          <span>Don't show this briefing on next visit</span>
+        </label>
+        <div class="flex flex-wrap items-center gap-2">
+          <button type="button" onclick="closeWelcomeModal(false)" class="paper-sitrep-btn paper-sitrep-btn-muted px-3 py-1.5">
+            PROCEED TO BATTLEFIELD
+          </button>
+          <button type="button" onclick="closeWelcomeModal(true)" class="mil-btn px-4 py-1.5 bg-[#c8a24b] hover:bg-[#d8b45c] border border-[#8a6d20] text-[#0d100d] font-bold text-xs tracking-wider">
+            READ THE FIELD MANUAL
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Expanded Combat Logs Modal -->
   <div id="log-expand-modal" onclick="if(event.target===this) closeExpandedLogModal()" class="hidden fixed inset-0 z-50 bg-black/80 items-center justify-center p-3 sm:p-6">
     <div class="paper-sitrep-panel w-full max-w-5xl h-[85vh] flex flex-col p-4 sm:p-5 shadow-2xl">

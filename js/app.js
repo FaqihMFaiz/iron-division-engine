@@ -1061,6 +1061,30 @@ window.IronDivision = window.IronDivision || {};
     });
   }
 
+  function openWelcomeModal(force = false) {
+    if (!force && H.safeLoadStorage('ttrpg_welcome_seen_v1', false)) return;
+    const modal = document.getElementById('welcome-modal');
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+  }
+
+  function closeWelcomeModal(goToManual = false) {
+    const chk = document.getElementById('welcome-dont-show');
+    if (!chk || chk.checked) {
+      H.safeSaveStorage('ttrpg_welcome_seen_v1', true);
+    }
+    const modal = document.getElementById('welcome-modal');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+    if (goToManual && ID.UI && typeof ID.UI.switchTab === 'function') {
+      ID.UI.switchTab('guide');
+    }
+  }
+
   function toggleTheatreBar() {
     const body = document.getElementById('theatre-controls-body');
     const btn = document.getElementById('btn-toggle-theatre');
@@ -1298,6 +1322,8 @@ window.IronDivision = window.IronDivision || {};
     loadTerrainIntoForm,
     saveTerrainConfig,
     updateSideName,
+    openWelcomeModal,
+    closeWelcomeModal,
     toggleSectionBox,
     filterOrbatTraits,
     toggleTheatreBar,
@@ -1373,6 +1399,8 @@ window.IronDivision = window.IronDivision || {};
 
     // GM Live Controls, Side Names & Presets JSON
     updateSideName,
+    openWelcomeModal,
+    closeWelcomeModal,
     toggleSectionBox,
     filterOrbatTraits,
     toggleTheatreBar,
@@ -1397,6 +1425,7 @@ window.IronDivision = window.IronDivision || {};
     if (ID.UI && typeof ID.UI.renderAll === 'function') {
       ID.UI.renderAll();
     }
+    openWelcomeModal(false);
   });
 
 })(window.IronDivision);
