@@ -345,12 +345,12 @@ window.IronDivision = window.IronDivision || {};
         <div class="col-span-3 pt-2 mt-1 border-t border-slate-800 text-left">
           <div class="flex justify-between text-[10px] font-mono uppercase mb-1">
             <span class="text-[#a5b0a3] font-bold">SUPPLY DEPOT // ${escapeHtml((cmd?.name?.split(' ')[0] || 'HQ').toUpperCase())}</span>
-            <span class="${curDepot <= 0 ? 'text-[#e06c65] font-extrabold' : (depotPct < 30 ? 'text-[#c8a24b]' : 'text-[#89b884]')}">
+            <span class="${curDepot <= 0 ? 'text-[#e06c65] font-extrabold' : (depotPct < 30 ? 'text-[#d99b52]' : 'text-[#d4b054]')}">
               ${curDepot}/${maxDepot} PTS (${depotPct}%)
             </span>
           </div>
           <div class="w-full h-2 bar-track">
-            <div class="h-full bar-fill ${curDepot <= 0 ? 'bg-[#b84a45]' : (depotPct < 30 ? 'bg-[#c8a24b]' : 'bg-[#5e8f59]')}" style="width: ${depotPct}%"></div>
+            <div class="h-full bar-fill ${curDepot <= 0 ? 'bg-[#b84a45]' : (depotPct < 30 ? 'bg-[#c27a34]' : 'bg-[#c8a24b]')}" style="width: ${depotPct}%"></div>
           </div>
         </div>
       `;

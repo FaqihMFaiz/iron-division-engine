@@ -307,7 +307,7 @@
 
     <!-- ==================== TAB 2: UNIT DESIGNER ==================== -->
     <section id="view-units" class="hidden space-y-4">
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
         <!-- Form -->
         <div class="lg:col-span-5 mil-monitor-frame p-4">
           <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
@@ -413,14 +413,14 @@
               Restore Sample Templates
             </button>
           </div>
-          <div id="unit-templates-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[680px] overflow-y-auto custom-scroll pr-1"></div>
+          <div id="unit-templates-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3 items-start max-h-[680px] overflow-y-auto custom-scroll pr-1"></div>
         </div>
       </div>
     </section>
 
     <!-- ==================== TAB 3: TRAITS & SUPPORT ==================== -->
     <section id="view-traits" class="hidden space-y-4">
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
         <!-- Form -->
         <div class="lg:col-span-5 mil-monitor-frame p-4">
           <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
@@ -563,14 +563,14 @@
               <p class="text-xs text-slate-400">Click any trait to edit its numerical values.</p>
             </div>
           </div>
-          <div id="traits-list-container" class="grid grid-cols-1 md:grid-cols-2 gap-2.5 max-h-[680px] overflow-y-auto custom-scroll pr-1"></div>
+          <div id="traits-list-container" class="grid grid-cols-1 md:grid-cols-2 gap-2.5 items-start max-h-[680px] overflow-y-auto custom-scroll pr-1"></div>
         </div>
       </div>
     </section>
 
     <!-- ==================== TAB 4: COMMANDERS ==================== -->
     <section id="view-commanders" class="hidden space-y-4">
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
         <!-- Commander Form -->
         <div class="lg:col-span-5 mil-monitor-frame p-4 space-y-4">
           <div class="border-b border-slate-800 pb-3">
@@ -653,7 +653,7 @@
             </div>
             <button type="button" onclick="restoreDefaultCommanders()" class="text-xs px-2.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">Restore Defaults</button>
           </div>
-          <div id="commanders-list-container" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[680px] overflow-y-auto custom-scroll pr-1"></div>
+          <div id="commanders-list-container" class="grid grid-cols-1 md:grid-cols-2 gap-3 items-start max-h-[680px] overflow-y-auto custom-scroll pr-1"></div>
         </div>
       </div>
     </section>
@@ -834,7 +834,7 @@
 
     <!-- ==================== TAB 5: TERRAIN & WEATHER ==================== -->
     <section id="view-terrain" class="hidden space-y-4">
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
         <div class="lg:col-span-5 mil-monitor-frame p-4">
           <h2 class="font-bold text-base text-amber-400 border-b border-slate-800 pb-3 mb-3">Customize Base Terrain</h2>
           <div class="space-y-2.5 text-xs">
@@ -920,7 +920,7 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
             <div class="mil-monitor-frame p-4">
               <h3 class="font-bold text-sm text-amber-400 mb-2">Features Matrix</h3>
               <div id="features-matrix-list" class="space-y-2 text-xs"></div>
