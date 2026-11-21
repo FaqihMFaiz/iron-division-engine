@@ -32,6 +32,54 @@ window.IronDivision = window.IronDivision || {};
     return trimmed || DEFAULT_SIDE_NAMES[key];
   }
 
+  function getSimulatedBattleDate(roundNumber = null) {
+    const env = ID.state?.environment || {};
+    const yr = Number.isFinite(Number(env.battleYear)) ? Number(env.battleYear) : 1944;
+    const mo = clamp(Number(env.battleMonth) || 6, 1, 12);
+    const dy = clamp(Number(env.battleDay) || 6, 1, 31);
+    const hr = clamp(Number.isFinite(Number(env.battleHour)) ? Number(env.battleHour) : 6, 0, 23);
+    const mn = clamp(Number.isFinite(Number(env.battleMinute)) ? Number(env.battleMinute) : 0, 0, 59);
+
+    const durVal = Math.max(1, Number(env.roundDurationValue) || 30);
+    const durUnit = env.roundDurationUnit || 'minutes';
+    const multMs = durUnit === 'days' ? 86400000 : (durUnit === 'hours' ? 3600000 : 60000);
+
+    const rd = (roundNumber !== null && roundNumber !== undefined)
+      ? Math.max(1, Number(roundNumber) || 1)
+      : Math.max(1, Number(ID.state?.battle?.round) || 1);
+
+    const baseMs = Date.UTC(yr, mo - 1, dy, hr, mn, 0);
+    return new Date(baseMs + (rd - 1) * durVal * multMs);
+  }
+
+  function formatSimulatedClock(dateObj) {
+    const d = dateObj instanceof Date ? dateObj : getSimulatedBattleDate();
+    const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    const dd = String(d.getUTCDate()).padStart(2, '0');
+    const mon = months[d.getUTCMonth()];
+    const yyyy = d.getUTCFullYear();
+    const hh = String(d.getUTCHours()).padStart(2, '0');
+    const mm = String(d.getUTCMinutes()).padStart(2, '0');
+    return `${dd} ${mon} ${yyyy} · ${hh}:${mm}`;
+  }
+
+  function getClockTimeOfDay(dateObj = null) {
+    const d = dateObj instanceof Date ? dateObj : getSimulatedBattleDate();
+    const hr = d.getUTCHours();
+    if (hr >= 5 && hr <= 6) return { key: 'DuskDawn', phase: 'Dawn', label: 'DAWN' };
+    if (hr >= 7 && hr <= 17) return { key: 'Day', phase: 'Daylight', label: 'DAYLIGHT' };
+    if (hr >= 18 && hr <= 19) return { key: 'DuskDawn', phase: 'Dusk', label: 'DUSK' };
+    return { key: 'Night', phase: 'Night', label: 'NIGHT' };
+  }
+
+  function getRoundDurationLabel() {
+    const env = ID.state?.environment || {};
+    const durVal = Math.max(1, Number(env.roundDurationValue) || 30);
+    const durUnit = env.roundDurationUnit || 'minutes';
+    const unitTag = durUnit === 'days' ? (durVal === 1 ? 'DAY' : 'DAYS') : (durUnit === 'hours' ? (durVal === 1 ? 'HR' : 'HRS') : 'MIN');
+    return `${durVal} ${unitTag}/RD`;
+  }
+
   function getTraitById(id) {
     if (ID.state && ID.state.traits) {
       const found = ID.state.traits.find(t => t.id === id);
@@ -191,7 +239,8 @@ window.IronDivision = window.IronDivision || {};
     const terrKey = env.terrain || 'Plains';
     const featKey = env.feature || 'Normal';
     const weathKey = env.weather || 'Sunny';
-    const todKey = env.timeOfDay || 'Day';
+    const clockTod = getClockTimeOfDay(getSimulatedBattleDate());
+    const todKey = clockTod.key;
 
     const terr = (ID.state?.terrains && ID.state.terrains[terrKey]) || D.DEFAULT_TERRAINS?.[terrKey] || D.DEFAULT_TERRAINS?.Plains || {};
     const feat = D.TERRAIN_FEATURES?.[featKey] || D.TERRAIN_FEATURES?.Normal || {};
@@ -249,6 +298,8 @@ window.IronDivision = window.IronDivision || {};
       featKey,
       weathKey,
       todKey,
+      todPhase: clockTod.phase,
+      todLabel: clockTod.label,
       terr,
       feat,
       weath,
@@ -557,6 +608,10 @@ window.IronDivision = window.IronDivision || {};
     clamp,
     DEFAULT_SIDE_NAMES,
     getSideName,
+    getSimulatedBattleDate,
+    formatSimulatedClock,
+    getClockTimeOfDay,
+    getRoundDurationLabel,
     getTraitById,
     addLog,
     showToast,

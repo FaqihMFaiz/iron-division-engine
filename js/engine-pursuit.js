@@ -286,7 +286,10 @@ window.IronDivision = window.IronDivision || {};
 
     state.battle.afterActionReport = {
       docId: `AAR-ID-${String(Date.now()).slice(-6)}`,
-      timestamp: new Date().toISOString(),
+      timestamp: H.getSimulatedBattleDate ? H.getSimulatedBattleDate(state.battle.round).toISOString() : new Date().toISOString(),
+      simStartClock: H.formatSimulatedClock ? H.formatSimulatedClock(H.getSimulatedBattleDate(1)) : '',
+      simEndClock: H.formatSimulatedClock ? H.formatSimulatedClock(H.getSimulatedBattleDate(state.battle.round)) : '',
+      roundDurationLabel: H.getRoundDurationLabel ? H.getRoundDurationLabel() : '30 MIN/RD',
       winner: state.battle.winner,
       rounds: state.battle.round,
       terrain: state.environment.terrain,

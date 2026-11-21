@@ -613,19 +613,29 @@ window.IronDivision = window.IronDivision || {};
 
       const rd = ID.state.battle.round;
 
-      // 0. Dynamic Weather & Time-of-Day Progression (every 3 rounds after Round 1)
-      if (rd > 1 && (rd - 1) % 3 === 0) {
-        if (ID.state.environment.cycleTimeOfDay) {
-          const cycle = ['Day', 'DuskDawn', 'Night', 'DuskDawn'];
-          const curIdx = typeof ID.state.environment.todStep === 'number' ? ID.state.environment.todStep : Math.max(0, cycle.indexOf(ID.state.environment.timeOfDay || 'Day'));
-          const nextIdx = (curIdx + 1) % cycle.length;
-          ID.state.environment.todStep = nextIdx;
-          const prevTod = D.TIME_OF_DAY_TYPES?.[ID.state.environment.timeOfDay]?.name || ID.state.environment.timeOfDay || 'Daylight';
-          ID.state.environment.timeOfDay = cycle[nextIdx];
-          const newTod = D.TIME_OF_DAY_TYPES?.[ID.state.environment.timeOfDay]?.name || ID.state.environment.timeOfDay;
-          H.addLog('support', `[ENV] [Time Shift] Battlefield lighting shifts from ${prevTod} -> ${newTod}!`);
+      // 0. Clock-Driven Time-of-Day Transitions & Dynamic Weather
+      if (H.getClockTimeOfDay && H.getSimulatedBattleDate) {
+        const curDate = H.getSimulatedBattleDate(rd);
+        const curTod = H.getClockTimeOfDay(curDate);
+        ID.state.environment.timeOfDay = curTod.key;
+        if (rd > 1) {
+          const prevTod = H.getClockTimeOfDay(H.getSimulatedBattleDate(rd - 1));
+          if (curTod.phase !== prevTod.phase) {
+            const clk = H.formatSimulatedClock ? H.formatSimulatedClock(curDate) : '';
+            if (curTod.phase === 'Dawn') {
+              H.addLog('support', `[ENV] [Dawn Breaks] ${clk} HRS — First light breaks over the battlefield (Dusk / Dawn modifiers active).`);
+            } else if (curTod.phase === 'Dusk') {
+              H.addLog('support', `[ENV] [Dusk Falls] ${clk} HRS — Twilight settles over the sector (Dusk / Dawn modifiers active).`);
+            } else if (curTod.phase === 'Night') {
+              H.addLog('support', `[ENV] [Nightfall] ${clk} HRS — Darkness blankets the battlefield (Night modifiers & visibility cap active).`);
+            } else {
+              H.addLog('support', `[ENV] [Daylight] ${clk} HRS — Full daylight visibility restored across the sector.`);
+            }
+          }
         }
+      }
 
+      if (rd > 1 && (rd - 1) % 3 === 0) {
         if (ID.state.environment.dynamicWeather && Math.random() < 0.45) {
           const curW = ID.state.environment.weather || 'Sunny';
           const terrK = ID.state.environment.terrain || 'Plains';

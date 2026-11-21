@@ -1564,45 +1564,121 @@ body.mil-ui ::selection {
 /* --------------------------------------------------------------------------
    13. Battlefield Tactical Satellite Map Background
    -------------------------------------------------------------------------- */
-#view-battlefield {
-  background-image:
-    linear-gradient(rgba(14, 17, 15, 0.78), rgba(14, 17, 15, 0.86)),
-    url('../img/battlefield-bg.jpg');
+#view-battlefield,
+#view-terrain,
+#view-units,
+#view-traits,
+#view-commanders,
+#view-tactics {
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
   padding: 22px 24px;
+  min-height: calc(100vh - 88px);
   border: 1px solid #29312b;
+}
+
+#view-battlefield {
+  background-image:
+    linear-gradient(rgba(14, 17, 15, 0.78), rgba(14, 17, 15, 0.86)),
+    url('../img/battlefield-bg.jpg');
 }
 
 #view-terrain {
   background-image:
     linear-gradient(rgba(14, 17, 15, 0.78), rgba(14, 17, 15, 0.86)),
     url('../img/terrain-bg.jpg');
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
-  padding: 22px 24px;
-  border: 1px solid #29312b;
 }
 
 #view-units {
   background-image:
     linear-gradient(rgba(14, 17, 15, 0.78), rgba(14, 17, 15, 0.86)),
     url('../img/orbat-bg.jpg');
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
-  padding: 22px 24px;
-  border: 1px solid #29312b;
+}
+
+#view-traits {
+  background-image:
+    linear-gradient(rgba(14, 17, 15, 0.78), rgba(14, 17, 15, 0.86)),
+    url('../img/traits-bg.jpg');
+}
+
+#view-commanders {
+  background-image:
+    linear-gradient(rgba(14, 17, 15, 0.78), rgba(14, 17, 15, 0.86)),
+    url('../img/command-bg.jpg');
+}
+
+#view-tactics {
+  background-image:
+    linear-gradient(rgba(14, 17, 15, 0.76), rgba(14, 17, 15, 0.85)),
+    url('../img/doctrine-bg.jpg');
 }
 
 @media (max-width: 768px) {
   #view-battlefield,
   #view-terrain,
-  #view-units {
+  #view-units,
+  #view-traits,
+  #view-commanders,
+  #view-tactics {
     padding: 14px;
   }
+}
+
+/* --------------------------------------------------------------------------
+   Harmonize Editor Tabs (ORBAT, Traits, Command HQ, Terrains) to Military Palette
+   -------------------------------------------------------------------------- */
+#view-units .text-amber-400,
+#view-traits .text-amber-400,
+#view-commanders .text-amber-400,
+#view-terrain .text-amber-400 {
+  color: #c8a24b !important;
+}
+
+#view-units .text-sky-400,
+#view-traits .text-sky-400,
+#view-commanders .text-sky-400,
+#view-terrain .text-sky-400 {
+  color: #8ec0e8 !important;
+}
+
+#view-units .text-emerald-400,
+#view-traits .text-emerald-400,
+#view-commanders .text-emerald-400,
+#view-terrain .text-emerald-400 {
+  color: #89b884 !important;
+}
+
+#view-units .text-purple-400,
+#view-traits .text-purple-400,
+#view-commanders .text-purple-400,
+#view-terrain .text-purple-400 {
+  color: #c0a8d8 !important;
+}
+
+#view-units .text-rose-400,
+#view-traits .text-rose-400,
+#view-commanders .text-rose-400,
+#view-terrain .text-rose-400 {
+  color: #e08984 !important;
+}
+
+#view-units button.bg-slate-800,
+#view-traits button.bg-slate-800,
+#view-commanders button.bg-slate-800,
+#view-terrain button.bg-slate-800 {
+  background-color: #1c221d !important;
+  border: 1px solid #3a453c !important;
+  color: #c8d1c7 !important;
+}
+
+#view-units button.bg-slate-800:hover,
+#view-traits button.bg-slate-800:hover,
+#view-commanders button.bg-slate-800:hover,
+#view-terrain button.bg-slate-800:hover {
+  background-color: #272f29 !important;
+  border-color: #c8a24b !important;
+  color: #e7ece4 !important;
 }
 
 /* --------------------------------------------------------------------------
@@ -1724,4 +1800,94 @@ body.mil-ui ::selection {
   background-color: #1c221d;
   color: #dde3da;
   border-color: #3c473e;
+}
+
+
+/* --------------------------------------------------------------------------
+   Black Diamond-Pattern Dropdowns & Golden Option Highlight
+   -------------------------------------------------------------------------- */
+.mil-ui select,
+.mil-search-dd-trigger {
+  background-color: #0b0d0c !important;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none' stroke='%23c8a24b' stroke-width='1.8' stroke-linecap='square'%3E%3Cpath d='M2.5 4.25L6 7.75L9.5 4.25'/%3E%3C/svg%3E"),
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.035) 0px, rgba(255, 255, 255, 0.035) 1px, transparent 1px, transparent 7px),
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.035) 0px, rgba(255, 255, 255, 0.035) 1px, transparent 1px, transparent 7px) !important;
+  background-repeat: no-repeat, repeat, repeat !important;
+  background-position: right 8px center, 0 0, 0 0 !important;
+  background-size: 11px 11px, 10px 10px, 10px 10px !important;
+  border: 1px solid #3c473e !important;
+}
+
+.mil-search-dd-trigger {
+  background-image:
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.035) 0px, rgba(255, 255, 255, 0.035) 1px, transparent 1px, transparent 7px),
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.035) 0px, rgba(255, 255, 255, 0.035) 1px, transparent 1px, transparent 7px) !important;
+  background-repeat: repeat, repeat !important;
+  background-position: 0 0, 0 0 !important;
+  background-size: 10px 10px, 10px 10px !important;
+}
+
+.mil-ui select option {
+  background-color: #0d100e;
+  color: #e4eae2;
+}
+
+.mil-ui select option:checked,
+.mil-ui select option:hover,
+.mil-ui select option:focus {
+  background: #c8a24b linear-gradient(0deg, #c8a24b 0%, #c8a24b 100%) !important;
+  color: #0d100d !important;
+  font-weight: 700;
+}
+
+.mil-search-dd-menu {
+  position: absolute;
+  top: calc(100% + 3px);
+  left: 0;
+  right: 0;
+  z-index: 60;
+  min-width: 220px;
+  background-color: #090b0a;
+  background-image:
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.04) 0px, rgba(255, 255, 255, 0.04) 1px, transparent 1px, transparent 7px),
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.04) 0px, rgba(255, 255, 255, 0.04) 1px, transparent 1px, transparent 7px);
+  border: 1.5px solid #c8a24b;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.85);
+}
+
+.mil-search-dd-input {
+  background-color: #111512 !important;
+  border: 1px solid #3c473e !important;
+}
+
+.mil-search-dd-input:focus {
+  border-color: #c8a24b !important;
+  outline: none !important;
+}
+
+.mil-search-dd-item {
+  color: #dde3da;
+  border-left: 2px solid transparent;
+  transition: background-color 0.08s ease, color 0.08s ease;
+}
+
+.mil-search-dd-item:hover {
+  background-color: rgba(200, 162, 75, 0.24);
+  border-left-color: #c8a24b;
+  color: #f5df9d;
+}
+
+.mil-search-dd-item.is-selected {
+  background-color: #c8a24b;
+  border-left-color: #f5df9d;
+  color: #0d100d;
+  font-weight: 700;
+}
+
+/* Fix Combat Log channel dropdown readability over dark diamond background */
+.mil-ui .paper-sitrep-panel select,
+.mil-ui #log-filter {
+  color: #e7ece4 !important;
+  font-weight: 600;
 }

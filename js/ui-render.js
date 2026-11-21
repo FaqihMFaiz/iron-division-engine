@@ -137,9 +137,7 @@ window.IronDivision = window.IronDivision || {};
     const tSel = document.getElementById('bf-terrain');
     const fSel = document.getElementById('bf-feature');
     const wSel = document.getElementById('bf-weather');
-    const todSel = document.getElementById('bf-timeofday');
     const dynChk = document.getElementById('bf-dynamic-weather');
-    const cycChk = document.getElementById('bf-cycle-time');
     const thSel = document.getElementById('bf-theatre-atk');
     const uChk = document.getElementById('bf-unexpected');
 
@@ -155,15 +153,27 @@ window.IronDivision = window.IronDivision || {};
       }
     }
     if (wSel && wSel.value) state.environment.weather = wSel.value;
-    if (todSel && todSel.value) {
-      state.environment.timeOfDay = todSel.value;
-      const cycle = ['Day', 'DuskDawn', 'Night', 'DuskDawn'];
-      const idx = cycle.indexOf(todSel.value);
-      if (idx >= 0) state.environment.todStep = idx;
-    }
     if (dynChk) state.environment.dynamicWeather = dynChk.checked;
-    if (cycChk) state.environment.cycleTimeOfDay = cycChk.checked;
     if (uChk) state.environment.unexpectedInitiative = uChk.checked;
+
+    const dyEl = document.getElementById('bf-date-day');
+    const moEl = document.getElementById('bf-date-month');
+    const yrEl = document.getElementById('bf-date-year');
+    const hrEl = document.getElementById('bf-clock-hour');
+    const mnEl = document.getElementById('bf-clock-min');
+    const durValEl = document.getElementById('bf-round-dur-val');
+    const durUnitEl = document.getElementById('bf-round-dur-unit');
+
+    if (dyEl) state.environment.battleDay = H.clamp(parseInt(dyEl.value, 10) || 1, 1, 31);
+    if (moEl) state.environment.battleMonth = H.clamp(parseInt(moEl.value, 10) || 1, 1, 12);
+    if (yrEl && yrEl.value !== '') state.environment.battleYear = parseInt(yrEl.value, 10) || 1944;
+    if (hrEl && hrEl.value !== '') state.environment.battleHour = H.clamp(parseInt(hrEl.value, 10) || 0, 0, 23);
+    if (mnEl && mnEl.value !== '') state.environment.battleMinute = H.clamp(parseInt(mnEl.value, 10) || 0, 0, 59);
+    if (durValEl) state.environment.roundDurationValue = Math.max(1, parseInt(durValEl.value, 10) || 1);
+    if (durUnitEl && durUnitEl.value) state.environment.roundDurationUnit = durUnitEl.value;
+    if (H.getClockTimeOfDay && H.getSimulatedBattleDate) {
+      state.environment.timeOfDay = H.getClockTimeOfDay(H.getSimulatedBattleDate(state.battle?.round || 1)).key;
+    }
 
     if (state.battle.round === 1 && !state.battle.initialSnapshot) {
       [...state.battle.sideA.units, ...state.battle.sideB.units].forEach(u => {
@@ -228,20 +238,23 @@ window.IronDivision = window.IronDivision || {};
     }
     wSel.value = state.environment.weather;
 
-    const todSel = document.getElementById('bf-timeofday');
-    if (todSel) {
-      if (todSel.children.length === 0) {
-        todSel.innerHTML = Object.keys(D.TIME_OF_DAY_TYPES || {}).map(k => {
-          const td = D.TIME_OF_DAY_TYPES[k];
-          return `<option value="${k}">${td.name}</option>`;
-        }).join('');
-      }
-      todSel.value = state.environment.timeOfDay || 'Day';
-    }
     const dynChk = document.getElementById('bf-dynamic-weather');
     if (dynChk) dynChk.checked = !!state.environment.dynamicWeather;
-    const cycChk = document.getElementById('bf-cycle-time');
-    if (cycChk) cycChk.checked = !!state.environment.cycleTimeOfDay;
+
+    const dyEl = document.getElementById('bf-date-day');
+    const moEl = document.getElementById('bf-date-month');
+    const yrEl = document.getElementById('bf-date-year');
+    const hrEl = document.getElementById('bf-clock-hour');
+    const mnEl = document.getElementById('bf-clock-min');
+    const durValEl = document.getElementById('bf-round-dur-val');
+    const durUnitEl = document.getElementById('bf-round-dur-unit');
+    if (dyEl && document.activeElement !== dyEl) dyEl.value = state.environment.battleDay ?? 6;
+    if (moEl && document.activeElement !== moEl) moEl.value = state.environment.battleMonth ?? 6;
+    if (yrEl && document.activeElement !== yrEl) yrEl.value = state.environment.battleYear ?? 1944;
+    if (hrEl && document.activeElement !== hrEl) hrEl.value = String(state.environment.battleHour ?? 6).padStart(2, '0');
+    if (mnEl && document.activeElement !== mnEl) mnEl.value = String(state.environment.battleMinute ?? 0).padStart(2, '0');
+    if (durValEl && document.activeElement !== durValEl) durValEl.value = state.environment.roundDurationValue ?? 30;
+    if (durUnitEl) durUnitEl.value = state.environment.roundDurationUnit || 'minutes';
 
     const envFx = H.getActiveEnvironmentEffects ? H.getActiveEnvironmentEffects() : null;
     const terr = envFx ? envFx.terr : (state.terrains[state.environment.terrain] || D.DEFAULT_TERRAINS?.Plains || {});
@@ -258,13 +271,31 @@ window.IronDivision = window.IronDivision || {};
       ? envFx.hazards.map(hz => `<span class="px-2 py-0.5 bg-[#331a19] border border-[#8a3c38] text-[#f2a6a2] font-bold" title="${escapeHtml(hz.desc)}">HAZARD // ${hz.shortLabel}</span>`).join('')
       : '';
 
+    const simClockDate = H.getSimulatedBattleDate ? H.getSimulatedBattleDate(state.battle?.round || 1) : new Date();
+    const simClockStr = H.formatSimulatedClock ? H.formatSimulatedClock(simClockDate) : '';
+    const durLabel = H.getRoundDurationLabel ? H.getRoundDurationLabel() : '30 MIN/RD';
+    const todPhaseLabel = envFx?.todLabel || (H.getClockTimeOfDay ? H.getClockTimeOfDay(simClockDate).label : 'DAYLIGHT');
+
+    const todBadge = document.getElementById('bf-clock-tod-badge');
+    if (todBadge) {
+      todBadge.textContent = todPhaseLabel;
+      todBadge.className = 'px-2 py-1 font-mono text-[10.5px] font-bold uppercase border ' + (
+        todPhaseLabel === 'NIGHT'
+          ? 'bg-[#171624] border-[#5b4d82] text-[#c7b8f5]'
+          : (todPhaseLabel === 'DAWN' || todPhaseLabel === 'DUSK'
+              ? 'bg-[#2a1f14] border-[#8c6230] text-[#ebb467]'
+              : 'bg-[#172118] border-[#3c593e] text-[#9ad195]')
+      );
+    }
+
     const summaryBar = document.getElementById('env-summary-bar');
     if (summaryBar) {
       summaryBar.innerHTML = `
         <div class="flex flex-wrap items-center gap-1.5 font-mono text-[10.5px]">
+          <span class="px-2 py-0.5 bg-[#121613] border border-[#4d4224] text-[#e0be6a] font-bold">CLOCK // ${simClockStr} HRS (${durLabel})</span>
           <span class="px-2 py-0.5 bg-[#121613] border border-[#2e3730] text-[#c8a24b]">TERR // ${(terr.name || 'Plains').toUpperCase()}: INF ${terr.infAtk >= 0 ? '+' : ''}${terr.infAtk || 0}/${terr.infDef >= 0 ? '+' : ''}${terr.infDef || 0}% | TNK ${terr.tankAtk >= 0 ? '+' : ''}${terr.tankAtk || 0}/${terr.tankDef >= 0 ? '+' : ''}${terr.tankDef || 0}% | DIG ${maxDig} | OUTNUM ${outCap}%</span>
           <span class="px-2 py-0.5 bg-[#121613] border border-[#2e3730] text-[#8ec0e8]">FEAT // ${(feat.name || 'Normal').toUpperCase()}: ATK ×${feat.atkMult || 1} DEF ×${feat.defMult || 1}</span>
-          <span class="px-2 py-0.5 bg-[#121613] border border-[#2e3730] text-[#89b884]">METEO // ${(weath.name || 'Sunny').toUpperCase()} · ${(tod.name || 'Daylight').toUpperCase()} · AIR ${airPct}%${state.environment.dynamicWeather ? ' [DYN]' : ''}${state.environment.cycleTimeOfDay ? ' [CYC]' : ''}</span>
+          <span class="px-2 py-0.5 bg-[#121613] border border-[#2e3730] text-[#89b884]">METEO // ${(weath.name || 'Sunny').toUpperCase()} · ${todPhaseLabel} · AIR ${airPct}%${state.environment.dynamicWeather ? ' [DYN]' : ''}</span>
           ${visBadge}
           ${hazardBadges}
         </div>
@@ -274,7 +305,7 @@ window.IronDivision = window.IronDivision || {};
 
     const collapsedSum = document.getElementById('theatre-collapsed-summary');
     if (collapsedSum) {
-      collapsedSum.textContent = `${(terr.name || 'Plains').toUpperCase()} · ${(feat.name || 'Normal').toUpperCase()} · ${(weath.name || 'Sunny').toUpperCase()} · ${(tod.name || 'Daylight').toUpperCase()}`;
+      collapsedSum.textContent = `${simClockStr} HRS (${todPhaseLabel}) · ${(terr.name || 'Plains').toUpperCase()} · ${(weath.name || 'Sunny').toUpperCase()}`;
     }
   }
 
@@ -317,7 +348,7 @@ window.IronDivision = window.IronDivision || {};
       if (forceRebuild || roleChanged || urbanChanged || tacSel.children.length === 0) {
         const C = getCombat();
         const eligible = C.getEligibleTactics ? C.getEligibleTactics(role, isUrban) : [];
-        tacSel.innerHTML = `<option value="auto">🤖 Commander AI Auto-Select</option>` +
+        tacSel.innerHTML = `<option value="auto">[AI] Commander Auto-Select</option>` +
           eligible.map(t => `<option value="${t.id}">${t.name} (${t.personality})</option>`).join('');
         uiState.selectCache[roleKey] = role;
         uiState.selectCache[urbanKey] = isUrban;
@@ -339,6 +370,141 @@ window.IronDivision = window.IronDivision || {};
         uiState.selectCache[tplHashKey] = tplHash;
       }
     }
+
+    syncSearchableDropdown(`side${side}-commander`, 'Search general...');
+    syncSearchableDropdown(`side${side}-add-select`, 'Search unit template...');
+  }
+
+  // Reusable Black-Diamond Searchable Dropdown synchronized with underlying <select>
+  function closeAllSearchableDropdowns(exceptId = null) {
+    document.querySelectorAll('.mil-search-dd-menu').forEach(menu => {
+      if (!exceptId || menu.dataset.forSelect !== exceptId) {
+        menu.classList.add('hidden');
+      }
+    });
+  }
+
+  function syncSearchableDropdown(selectId, placeholderText = 'Search...') {
+    const sel = document.getElementById(selectId);
+    if (!sel || !sel.parentNode) return;
+
+    let wrap = document.getElementById(`${selectId}-dd-wrap`);
+    if (!wrap) {
+      wrap = document.createElement('div');
+      wrap.id = `${selectId}-dd-wrap`;
+      wrap.className = 'mil-search-dd relative flex-1 min-w-0 w-full';
+      sel.parentNode.insertBefore(wrap, sel);
+      wrap.appendChild(sel);
+      sel.classList.add('hidden');
+
+      const trigger = document.createElement('button');
+      trigger.type = 'button';
+      trigger.id = `${selectId}-dd-trigger`;
+      trigger.className = 'mil-search-dd-trigger w-full flex items-center justify-between gap-1.5 px-2 py-1.5 text-xs text-white text-left';
+      trigger.innerHTML = `<span class="mil-search-dd-label truncate"></span><span class="text-[#c8a24b] text-[10px] shrink-0">▼</span>`;
+
+      const menu = document.createElement('div');
+      menu.id = `${selectId}-dd-menu`;
+      menu.dataset.forSelect = selectId;
+      menu.className = 'mil-search-dd-menu hidden';
+
+      const searchWrap = document.createElement('div');
+      searchWrap.className = 'p-1.5 border-b border-[#2e3730]';
+      const searchInp = document.createElement('input');
+      searchInp.type = 'text';
+      searchInp.id = `${selectId}-dd-search`;
+      searchInp.placeholder = placeholderText;
+      searchInp.className = 'mil-search-dd-input w-full px-2 py-1 text-[11px] font-mono text-[#e7ece4]';
+      searchWrap.appendChild(searchInp);
+
+      const listEl = document.createElement('div');
+      listEl.id = `${selectId}-dd-list`;
+      listEl.className = 'max-h-52 overflow-y-auto custom-scroll py-0.5';
+
+      menu.appendChild(searchWrap);
+      menu.appendChild(listEl);
+      wrap.appendChild(trigger);
+      wrap.appendChild(menu);
+
+      trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const willOpen = menu.classList.contains('hidden');
+        closeAllSearchableDropdowns(selectId);
+        if (willOpen) {
+          menu.classList.remove('hidden');
+          searchInp.value = '';
+          renderSearchableOptions(selectId, '');
+          setTimeout(() => searchInp.focus(), 10);
+        } else {
+          menu.classList.add('hidden');
+        }
+      });
+
+      searchInp.addEventListener('input', () => {
+        renderSearchableOptions(selectId, searchInp.value);
+      });
+
+      searchInp.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          menu.classList.add('hidden');
+        }
+      });
+
+      menu.addEventListener('click', (e) => e.stopPropagation());
+    }
+
+    if (!window.__milSearchDdDocBound) {
+      window.__milSearchDdDocBound = true;
+      document.addEventListener('click', () => closeAllSearchableDropdowns(null));
+    }
+
+    const triggerLabel = wrap.querySelector('.mil-search-dd-label');
+    const opts = Array.from(sel.options || []);
+    const selectedOpt = opts.find(o => o.value === sel.value) || opts[0];
+    if (triggerLabel) {
+      triggerLabel.textContent = selectedOpt ? selectedOpt.textContent : 'Select...';
+    }
+    const searchInp = document.getElementById(`${selectId}-dd-search`);
+    renderSearchableOptions(selectId, searchInp ? searchInp.value : '');
+  }
+
+  function renderSearchableOptions(selectId, query = '') {
+    const sel = document.getElementById(selectId);
+    const listEl = document.getElementById(`${selectId}-dd-list`);
+    const menu = document.getElementById(`${selectId}-dd-menu`);
+    const wrap = document.getElementById(`${selectId}-dd-wrap`);
+    if (!sel || !listEl) return;
+
+    const q = (query || '').trim().toLowerCase();
+    const opts = Array.from(sel.options || []);
+    const filtered = q ? opts.filter(o => (o.textContent || '').toLowerCase().includes(q)) : opts;
+
+    if (filtered.length === 0) {
+      listEl.innerHTML = `<div class="px-2.5 py-2 text-[11px] font-mono text-[#7c877b]">No matches found.</div>`;
+      return;
+    }
+
+    listEl.innerHTML = '';
+    filtered.forEach(o => {
+      const item = document.createElement('div');
+      const isSelected = o.value === sel.value;
+      item.className = `mil-search-dd-item px-2.5 py-1.5 text-[11.5px] font-mono cursor-pointer truncate ${isSelected ? 'is-selected' : ''}`;
+      item.textContent = o.textContent;
+      item.title = o.textContent;
+      item.addEventListener('click', () => {
+        sel.value = o.value;
+        const triggerLabel = wrap?.querySelector('.mil-search-dd-label');
+        if (triggerLabel) triggerLabel.textContent = o.textContent;
+        if (menu) menu.classList.add('hidden');
+        if (typeof sel.onchange === 'function') {
+          sel.onchange({ target: sel });
+        } else {
+          sel.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        renderSearchableOptions(selectId, '');
+      });
+      listEl.appendChild(item);
+    });
   }
 
   /**
@@ -389,7 +555,7 @@ window.IronDivision = window.IronDivision || {};
         </div>
         <div class="col-span-3 pt-2 mt-1 border-t border-slate-800 text-left">
           <div class="flex justify-between text-[10px] font-mono uppercase mb-1">
-            <span class="text-[#a5b0a3] font-bold">SUPPLY DEPOT // ${escapeHtml((cmd?.name?.split(' ')[0] || 'HQ').toUpperCase())}</span>
+            <span class="text-[#a5b0a3] font-bold">SUPPLY DEPOT // ${escapeHtml((() => { const raw = (cmd?.name || '').replace(/\s*\([^)]*\)\s*/g, '').trim(); if (!raw || /^no assigned/i.test(raw)) return 'HQ'; const parts = raw.split(/\s+/); return parts[parts.length - 1].toUpperCase(); })())}</span>
             <span class="${curDepot <= 0 ? 'text-[#e06c65] font-extrabold' : (depotPct < 30 ? 'text-[#d99b52]' : 'text-[#d4b054]')}">
               ${curDepot}/${maxDepot} PTS (${depotPct}%)
             </span>
@@ -582,6 +748,7 @@ window.IronDivision = window.IronDivision || {};
     const state = ID.state;
     if (!state || !state.battle) return;
 
+    renderEnvironmentSelectors();
     const rdEl = document.getElementById('round-counter-display');
     const phEl = document.getElementById('phase-indicator');
     if (rdEl) {
@@ -973,10 +1140,10 @@ window.IronDivision = window.IronDivision || {};
             </div>
 
             <div class="grid grid-cols-2 gap-1.5 my-2 p-2 rounded bg-slate-900 text-[10px] font-mono">
-              <div>⚔ Atk: <b class="text-amber-400">Lvl ${c.attackLevel || 0} (+${((c.attackLevel || 0) * 2.5).toFixed(1)}%)</b></div>
-              <div>🛡 Def: <b class="text-sky-400">Lvl ${c.defenseLevel || 0} (+${((c.defenseLevel || 0) * 2.5).toFixed(1)}%)</b></div>
-              <div>🎖 Cmd: <b class="text-emerald-400">Lvl ${c.commandLevel || 0} (+${((c.commandLevel || 0) * 2.5).toFixed(1)}%)</b></div>
-              <div>📦 Log: <b class="text-purple-400">Lvl ${c.logisticsLevel || 0} (+${((c.logisticsLevel || 0) * 2.5).toFixed(1)}%)</b></div>
+              <div>ATK: <b class="text-[#c8a24b]">Lvl ${c.attackLevel || 0} (+${((c.attackLevel || 0) * 2.5).toFixed(1)}%)</b></div>
+              <div>DEF: <b class="text-[#8ec0e8]">Lvl ${c.defenseLevel || 0} (+${((c.defenseLevel || 0) * 2.5).toFixed(1)}%)</b></div>
+              <div>CMD: <b class="text-[#89b884]">Lvl ${c.commandLevel || 0} (+${((c.commandLevel || 0) * 2.5).toFixed(1)}%)</b></div>
+              <div>LOG: <b class="text-[#c0a8d8]">Lvl ${c.logisticsLevel || 0} (+${((c.logisticsLevel || 0) * 2.5).toFixed(1)}%)</b></div>
             </div>
 
             <p class="text-xs text-slate-400 mt-1"><b>Traits:</b> ${traitNames || 'None'}</p>
@@ -1648,7 +1815,10 @@ window.IronDivision = window.IronDivision || {};
 
     return {
       docId: `SITREP-RD${String(state.battle.round).padStart(2, '0')}`,
-      timestamp: new Date().toISOString(),
+      timestamp: H.getSimulatedBattleDate ? H.getSimulatedBattleDate(state.battle.round).toISOString() : new Date().toISOString(),
+      simStartClock: H.formatSimulatedClock ? H.formatSimulatedClock(H.getSimulatedBattleDate(1)) : '',
+      simEndClock: H.formatSimulatedClock ? H.formatSimulatedClock(H.getSimulatedBattleDate(state.battle.round)) : '',
+      roundDurationLabel: H.getRoundDurationLabel ? H.getRoundDurationLabel() : '30 MIN/RD',
       winner: state.battle.winner,
       rounds: state.battle.round,
       terrain: state.environment.terrain,
@@ -1763,7 +1933,7 @@ window.IronDivision = window.IronDivision || {};
       <div class="tradoc-aar-section font-mono text-[11px] space-y-2">
         <div class="flex flex-wrap items-center justify-between gap-2 border-b border-[#b5ad98] pb-1.5 text-[10px] text-[#3a4439] uppercase tracking-widest font-bold">
           <span>UNCLASSIFIED // SIMULATION OPS</span>
-          <span>DOC-REF: ${escapeHtml(rep.docId || 'AAR-ID-001')} | DTG: ${dtg}</span>
+          <span>DOC-REF: ${escapeHtml(rep.docId || 'AAR-ID-001')} | DTG: ${dtg}${rep.simStartClock ? ` | OP WINDOW: ${escapeHtml(rep.simStartClock)} - ${escapeHtml(rep.simEndClock || '')} HRS (${escapeHtml(rep.roundDurationLabel || '30 MIN/RD')})` : ''}</span>
         </div>
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
           <div class="tradoc-aar-kpi">
@@ -2048,6 +2218,7 @@ window.IronDivision = window.IronDivision || {};
     <div class="memo-grid">
       <div><strong>FROM:</strong> HQ COMBINED-ARMS SIMULATION</div>
       <div><strong>DTG:</strong> ${dtg}</div>
+      ${rep.simStartClock ? `<div><strong>OP CLOCK:</strong> ${escapeHtml(rep.simStartClock)} - ${escapeHtml(rep.simEndClock || '')} HRS (${escapeHtml(rep.roundDurationLabel || '30 MIN/RD')})</div>` : ''}
       <div><strong>TO:</strong> THEATRE OPERATIONS (G-3)</div>
       <div><strong>STATUS:</strong> ${isOver ? 'FINAL DEBRIEF' : 'INTERIM SITREP'}</div>
       <div><strong>SUBJECT:</strong> ${escapeHtml(rep.terrain.toUpperCase())} (${escapeHtml(rep.feature.toUpperCase())}) ENGAGEMENT</div>

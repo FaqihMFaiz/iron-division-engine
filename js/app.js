@@ -31,6 +31,13 @@ window.IronDivision = window.IronDivision || {};
       todStep: 0,
       dynamicWeather: false,
       cycleTimeOfDay: false,
+      battleYear: 1944,
+      battleMonth: 6,
+      battleDay: 6,
+      battleHour: 6,
+      battleMinute: 0,
+      roundDurationValue: 30,
+      roundDurationUnit: 'minutes',
       theatreAttackerSide: 'A',
       unexpectedInitiative: false
     },
@@ -995,6 +1002,27 @@ window.IronDivision = window.IronDivision || {};
     }
   }
 
+  function toggleSectionBox(bodyId, btn) {
+    const body = document.getElementById(bodyId);
+    if (!body) return;
+    const isNowHidden = body.classList.toggle('hidden');
+    if (btn) {
+      btn.textContent = isNowHidden ? '▼' : '▲';
+      btn.setAttribute('aria-expanded', isNowHidden ? 'false' : 'true');
+    }
+  }
+
+  function filterOrbatTraits(query) {
+    const container = document.getElementById('unit-traits-checkboxes');
+    if (!container) return;
+    const q = (query || '').trim().toLowerCase();
+    const items = container.querySelectorAll('label');
+    items.forEach(lbl => {
+      const txt = (lbl.textContent || '').toLowerCase();
+      lbl.classList.toggle('hidden', q.length > 0 && !txt.includes(q));
+    });
+  }
+
   function toggleTheatreBar() {
     const body = document.getElementById('theatre-controls-body');
     const btn = document.getElementById('btn-toggle-theatre');
@@ -1232,6 +1260,8 @@ window.IronDivision = window.IronDivision || {};
     loadTerrainIntoForm,
     saveTerrainConfig,
     updateSideName,
+    toggleSectionBox,
+    filterOrbatTraits,
     toggleTheatreBar,
     toggleGMMode,
     undoLastRound,
@@ -1305,6 +1335,8 @@ window.IronDivision = window.IronDivision || {};
 
     // GM Live Controls, Side Names & Presets JSON
     updateSideName,
+    toggleSectionBox,
+    filterOrbatTraits,
     toggleTheatreBar,
     toggleGMMode,
     undoLastRound,
