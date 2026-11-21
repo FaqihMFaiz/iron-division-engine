@@ -52,6 +52,32 @@ window.IronDivision = window.IronDivision || {};
     return new Date(baseMs + (rd - 1) * durVal * multMs);
   }
 
+  function formatClockHHMM(dateObj = null) {
+    const d = dateObj instanceof Date ? dateObj : getSimulatedBattleDate();
+    const hh = String(d.getUTCHours()).padStart(2, '0');
+    const mm = String(d.getUTCMinutes()).padStart(2, '0');
+    return `${hh}:${mm}`;
+  }
+
+  function getOrdinalSuffix(n) {
+    const mod100 = n % 100;
+    if (mod100 >= 11 && mod100 <= 13) return `${n}TH`;
+    const mod10 = n % 10;
+    if (mod10 === 1) return `${n}ST`;
+    if (mod10 === 2) return `${n}ND`;
+    if (mod10 === 3) return `${n}RD`;
+    return `${n}TH`;
+  }
+
+  function getBattleDayOrdinal(roundNumber = null) {
+    const startD = getSimulatedBattleDate(1);
+    const curD = getSimulatedBattleDate(roundNumber);
+    const startMidnight = Date.UTC(startD.getUTCFullYear(), startD.getUTCMonth(), startD.getUTCDate());
+    const curMidnight = Date.UTC(curD.getUTCFullYear(), curD.getUTCMonth(), curD.getUTCDate());
+    const dayNum = Math.max(1, Math.floor((curMidnight - startMidnight) / 86400000) + 1);
+    return `${getOrdinalSuffix(dayNum)} DAY`;
+  }
+
   function formatSimulatedClock(dateObj) {
     const d = dateObj instanceof Date ? dateObj : getSimulatedBattleDate();
     const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
@@ -97,9 +123,12 @@ window.IronDivision = window.IronDivision || {};
       return;
     }
     if (!ID.state.battle.logs) ID.state.battle.logs = [];
+    const curDate = getSimulatedBattleDate(ID.state.battle.round || 1);
     ID.state.battle.logs.push({
       id: Date.now() + Math.random(),
       round: ID.state.battle.round || 1,
+      clock: formatClockHHMM(curDate),
+      dayLabel: getBattleDayOrdinal(ID.state.battle.round || 1),
       category: category,
       text: text
     });
@@ -609,6 +638,8 @@ window.IronDivision = window.IronDivision || {};
     DEFAULT_SIDE_NAMES,
     getSideName,
     getSimulatedBattleDate,
+    formatClockHHMM,
+    getBattleDayOrdinal,
     formatSimulatedClock,
     getClockTimeOfDay,
     getRoundDurationLabel,

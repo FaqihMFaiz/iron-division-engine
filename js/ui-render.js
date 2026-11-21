@@ -48,6 +48,32 @@ window.IronDivision = window.IronDivision || {};
     tacticsDarkMode: false
   };
 
+  // Self-contained 10-tier Officer Rank Insignia resolver (works even if engine-helpers.js is cached)
+  const FALLBACK_OFFICER_RANKS = [
+    { tier: 0, title: 'First Lieutenant', abbr: '1LT', svg: '<svg width="24" height="18" viewBox="0 0 24 18" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="9.5" y="2" width="5" height="14" fill="#d8dee4" stroke="#6f7882" stroke-width="1"/></svg>' },
+    { tier: 1, title: 'Captain', abbr: 'CPT', svg: '<svg width="24" height="18" viewBox="0 0 24 18" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="4.5" y="2" width="4.5" height="14" fill="#d8dee4" stroke="#6f7882" stroke-width="0.9"/><rect x="15" y="2" width="4.5" height="14" fill="#d8dee4" stroke="#6f7882" stroke-width="0.9"/><line x1="9" y1="6" x2="15" y2="6" stroke="#c5ccd4" stroke-width="1.3"/><line x1="9" y1="12" x2="15" y2="12" stroke="#c5ccd4" stroke-width="1.3"/></svg>' },
+    { tier: 2, title: 'Major', abbr: 'MAJ', svg: '<svg width="24" height="18" viewBox="0 0 24 18" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14 5.5L18 4.5L16 8.5L19 11L15 12L14.5 14.5L12 13.5L9.5 14.5L9 12L5 11L8 8.5L6 4.5L10 5.5L12 2Z" fill="#d4af37" stroke="#7d6418" stroke-width="0.9"/><line x1="12" y1="13.5" x2="12" y2="16.5" stroke="#d4af37" stroke-width="1.5"/></svg>' },
+    { tier: 3, title: 'Lieutenant Colonel', abbr: 'LTC', svg: '<svg width="24" height="18" viewBox="0 0 24 18" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14 5.5L18 4.5L16 8.5L19 11L15 12L14.5 14.5L12 13.5L9.5 14.5L9 12L5 11L8 8.5L6 4.5L10 5.5L12 2Z" fill="#d8dee4" stroke="#6f7882" stroke-width="0.9"/><line x1="12" y1="13.5" x2="12" y2="16.5" stroke="#d8dee4" stroke-width="1.5"/></svg>' },
+    { tier: 4, title: 'Colonel', abbr: 'COL', svg: '<svg width="26" height="18" viewBox="0 0 26 18" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13 3L14.5 5.5L23 4.5L20 9.5L16 9.5L15.5 14.5L13 13L10.5 14.5L10 9.5L6 9.5L3 4.5L11.5 5.5L13 3Z" fill="#d8dee4" stroke="#6f7882" stroke-width="0.9"/></svg>' },
+    { tier: 5, title: 'Brigadier General', abbr: 'BG', svg: '<svg width="24" height="18" viewBox="0 0 24 18" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="12,2 13.7,6.8 18.8,6.8 14.7,9.8 16.2,14.6 12,11.7 7.8,14.6 9.3,9.8 5.2,6.8 10.3,6.8" fill="#e4e9ee" stroke="#76808a" stroke-width="0.8"/></svg>' },
+    { tier: 6, title: 'Major General', abbr: 'MG', svg: '<svg width="28" height="18" viewBox="0 0 28 18" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="8,3 9.3,6.8 13.2,6.8 10,9.1 11.2,13 8,10.7 4.8,13 6,9.1 2.8,6.8 6.7,6.8" fill="#e4e9ee" stroke="#76808a" stroke-width="0.7"/><polygon points="20,3 21.3,6.8 25.2,6.8 22,9.1 23.2,13 20,10.7 16.8,13 18,9.1 14.8,6.8 18.7,6.8" fill="#e4e9ee" stroke="#76808a" stroke-width="0.7"/></svg>' },
+    { tier: 7, title: 'Lieutenant General', abbr: 'LTG', svg: '<svg width="34" height="18" viewBox="0 0 34 18" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="6.5,4 7.6,7.1 10.8,7.1 8.2,9 9.2,12.2 6.5,10.3 3.8,12.2 4.8,9 2.2,7.1 5.4,7.1" fill="#e4e9ee" stroke="#76808a" stroke-width="0.6"/><polygon points="17,4 18.1,7.1 21.3,7.1 18.7,9 19.7,12.2 17,10.3 14.3,12.2 15.3,9 12.7,7.1 15.9,7.1" fill="#e4e9ee" stroke="#76808a" stroke-width="0.6"/><polygon points="27.5,4 28.6,7.1 31.8,7.1 29.2,9 30.2,12.2 27.5,10.3 24.8,12.2 25.8,9 23.2,7.1 26.4,7.1" fill="#e4e9ee" stroke="#76808a" stroke-width="0.6"/></svg>' },
+    { tier: 8, title: 'General', abbr: 'GEN', svg: '<svg width="38" height="18" viewBox="0 0 38 18" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="5.5,4.5 6.4,7.2 9.2,7.2 7,8.8 7.8,11.5 5.5,9.9 3.2,11.5 4,8.8 1.8,7.2 4.6,7.2" fill="#e4e9ee" stroke="#76808a" stroke-width="0.55"/><polygon points="14.5,4.5 15.4,7.2 18.2,7.2 16,8.8 16.8,11.5 14.5,9.9 12.2,11.5 13,8.8 10.8,7.2 13.6,7.2" fill="#e4e9ee" stroke="#76808a" stroke-width="0.55"/><polygon points="23.5,4.5 24.4,7.2 27.2,7.2 25,8.8 25.8,11.5 23.5,9.9 21.2,11.5 22,8.8 19.8,7.2 22.6,7.2" fill="#e4e9ee" stroke="#76808a" stroke-width="0.55"/><polygon points="32.5,4.5 33.4,7.2 36.2,7.2 34,8.8 34.8,11.5 32.5,9.9 30.2,11.5 31,8.8 28.8,7.2 31.6,7.2" fill="#e4e9ee" stroke="#76808a" stroke-width="0.55"/></svg>' },
+    { tier: 9, title: 'General of the Army', abbr: 'GA', svg: '<svg width="26" height="22" viewBox="0 0 26 22" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="13,1.5 13.8,3.9 16.3,3.9 14.3,5.4 15,7.8 13,6.3 11,7.8 11.7,5.4 9.7,3.9 12.2,3.9" fill="#f0d27a" stroke="#8a6d20" stroke-width="0.5"/><polygon points="20.5,6.8 21.3,9.2 23.8,9.2 21.8,10.7 22.5,13.1 20.5,11.6 18.5,13.1 19.2,10.7 17.2,9.2 19.7,9.2" fill="#f0d27a" stroke="#8a6d20" stroke-width="0.5"/><polygon points="17.8,14.5 18.6,16.9 21.1,16.9 19.1,18.4 19.8,20.8 17.8,19.3 15.8,20.8 16.5,18.4 14.5,16.9 17,16.9" fill="#f0d27a" stroke="#8a6d20" stroke-width="0.5"/><polygon points="8.2,14.5 9,16.9 11.5,16.9 9.5,18.4 10.2,20.8 8.2,19.3 6.2,20.8 6.9,18.4 4.9,16.9 7.4,16.9" fill="#f0d27a" stroke="#8a6d20" stroke-width="0.5"/><polygon points="5.5,6.8 6.3,9.2 8.8,9.2 6.8,10.7 7.5,13.1 5.5,11.6 3.5,13.1 4.2,10.7 2.2,9.2 4.7,9.2" fill="#f0d27a" stroke="#8a6d20" stroke-width="0.5"/></svg>' }
+  ];
+
+  function resolveOfficerRank(cmd) {
+    if (ID.Icons && typeof ID.Icons.getOfficerRankInfo === 'function') {
+      return ID.Icons.getOfficerRankInfo(cmd);
+    }
+    if (!cmd || cmd.id === 'cmd_none') {
+      return { tier: -1, total: 0, title: 'Autonomous Staff', abbr: 'HQ', svg: '' };
+    }
+    const total = (Number(cmd.attackLevel) || 0) + (Number(cmd.defenseLevel) || 0) + (Number(cmd.commandLevel) || 0) + (Number(cmd.logisticsLevel) || 0);
+    const tier = Math.max(0, Math.min(FALLBACK_OFFICER_RANKS.length - 1, Math.floor(total / 4)));
+    return { ...FALLBACK_OFFICER_RANKS[tier], total };
+  }
+
   function escapeHtml(str) {
     return String(str ?? '')
       .replace(/&/g, '&amp;')
@@ -273,8 +299,16 @@ window.IronDivision = window.IronDivision || {};
 
     const simClockDate = H.getSimulatedBattleDate ? H.getSimulatedBattleDate(state.battle?.round || 1) : new Date();
     const simClockStr = H.formatSimulatedClock ? H.formatSimulatedClock(simClockDate) : '';
+    const dayOrdinal = H.getBattleDayOrdinal ? H.getBattleDayOrdinal(state.battle?.round || 1) : '1ST DAY';
     const durLabel = H.getRoundDurationLabel ? H.getRoundDurationLabel() : '30 MIN/RD';
     const todPhaseLabel = envFx?.todLabel || (H.getClockTimeOfDay ? H.getClockTimeOfDay(simClockDate).label : 'DAYLIGHT');
+
+    const dayBadge = document.getElementById('bf-clock-day-badge');
+    if (dayBadge) dayBadge.textContent = dayOrdinal;
+    const hdrClock = document.getElementById('hdr-live-clock');
+    if (hdrClock) hdrClock.textContent = `${simClockStr} HRS · ${dayOrdinal} · ${todPhaseLabel}`;
+    const opClock = document.getElementById('op-clock-display');
+    if (opClock) opClock.textContent = `${simClockStr} HRS · ${dayOrdinal} (${todPhaseLabel})`;
 
     const todBadge = document.getElementById('bf-clock-tod-badge');
     if (todBadge) {
@@ -292,7 +326,7 @@ window.IronDivision = window.IronDivision || {};
     if (summaryBar) {
       summaryBar.innerHTML = `
         <div class="flex flex-wrap items-center gap-1.5 font-mono text-[10.5px]">
-          <span class="px-2 py-0.5 bg-[#121613] border border-[#4d4224] text-[#e0be6a] font-bold">CLOCK // ${simClockStr} HRS (${durLabel})</span>
+          <span class="px-2 py-0.5 bg-[#121613] border border-[#4d4224] text-[#e0be6a] font-bold">CLOCK // ${simClockStr} HRS · ${dayOrdinal} (${durLabel})</span>
           <span class="px-2 py-0.5 bg-[#121613] border border-[#2e3730] text-[#c8a24b]">TERR // ${(terr.name || 'Plains').toUpperCase()}: INF ${terr.infAtk >= 0 ? '+' : ''}${terr.infAtk || 0}/${terr.infDef >= 0 ? '+' : ''}${terr.infDef || 0}% | TNK ${terr.tankAtk >= 0 ? '+' : ''}${terr.tankAtk || 0}/${terr.tankDef >= 0 ? '+' : ''}${terr.tankDef || 0}% | DIG ${maxDig} | OUTNUM ${outCap}%</span>
           <span class="px-2 py-0.5 bg-[#121613] border border-[#2e3730] text-[#8ec0e8]">FEAT // ${(feat.name || 'Normal').toUpperCase()}: ATK ×${feat.atkMult || 1} DEF ×${feat.defMult || 1}</span>
           <span class="px-2 py-0.5 bg-[#121613] border border-[#2e3730] text-[#89b884]">METEO // ${(weath.name || 'Sunny').toUpperCase()} · ${todPhaseLabel} · AIR ${airPct}%${state.environment.dynamicWeather ? ' [DYN]' : ''}</span>
@@ -305,7 +339,7 @@ window.IronDivision = window.IronDivision || {};
 
     const collapsedSum = document.getElementById('theatre-collapsed-summary');
     if (collapsedSum) {
-      collapsedSum.textContent = `${simClockStr} HRS (${todPhaseLabel}) · ${(terr.name || 'Plains').toUpperCase()} · ${(weath.name || 'Sunny').toUpperCase()}`;
+      collapsedSum.textContent = `${simClockStr} HRS · ${dayOrdinal} (${todPhaseLabel}) · ${(terr.name || 'Plains').toUpperCase()} · ${(weath.name || 'Sunny').toUpperCase()}`;
     }
   }
 
@@ -540,18 +574,52 @@ window.IronDivision = window.IronDivision || {};
       const depotPct = H.clamp(Math.round((curDepot / Math.max(1, maxDepot)) * 100), 0, 100);
       const cmd = C.getSideCommander ? C.getSideCommander(side) : null;
 
+    // Populate Dedicated Commanding Officer Dossier Box (Insignia + Rank + Stats + Traits)
+    const rankBadgeEl = document.getElementById(`side${side}-cmd-rank-badge`);
+    const dossierEl = document.getElementById(`side${side}-cmd-dossier`);
+    if (rankBadgeEl || dossierEl) {
+      const rankInfo = resolveOfficerRank(cmd);
+      if (rankBadgeEl) {
+        rankBadgeEl.innerHTML = rankInfo.svg
+          ? `<span class="inline-flex items-center justify-center px-1 py-0.5 bg-[#191f1a] border border-[#4a4128]" title="${escapeHtml(rankInfo.title)} (Total Stats: ${rankInfo.total})">${rankInfo.svg}</span><span class="text-[#e0be6a] font-bold uppercase tracking-wider">${escapeHtml(rankInfo.title)}</span>`
+          : `<span class="text-[#7c877b] uppercase">${escapeHtml(rankInfo.title)}</span>`;
+      }
+      if (dossierEl) {
+        if (!cmd || cmd.id === 'cmd_none') {
+          dossierEl.innerHTML = `<div class="text-[#7c877b]">Autonomous HQ staff — no commander stat or trait bonuses active.</div>`;
+        } else {
+          const traitTags = (cmd.traits || []).map(tid => {
+            const ct = C.getCommanderTraitById ? C.getCommanderTraitById(tid) : null;
+            return ct ? `<span class="mil-tag" title="${escapeHtml(ct.desc)}">${escapeHtml(ct.name)}</span>` : '';
+          }).join('');
+          dossierEl.innerHTML = `
+            <div class="grid grid-cols-4 gap-1 text-center">
+              <div class="bg-[#121613] border border-[#29312b] py-1"><span class="block text-[8.5px] text-[#7c877b]">ATK</span><span class="font-bold text-[#c8a24b]">${cmd.attackLevel || 0}</span></div>
+              <div class="bg-[#121613] border border-[#29312b] py-1"><span class="block text-[8.5px] text-[#7c877b]">DEF</span><span class="font-bold text-[#8ec0e8]">${cmd.defenseLevel || 0}</span></div>
+              <div class="bg-[#121613] border border-[#29312b] py-1"><span class="block text-[8.5px] text-[#7c877b]">CMD</span><span class="font-bold text-[#89b884]">${cmd.commandLevel || 0}</span></div>
+              <div class="bg-[#121613] border border-[#29312b] py-1"><span class="block text-[8.5px] text-[#7c877b]">LOG</span><span class="font-bold text-[#c0a8d8]">${cmd.logisticsLevel || 0}</span></div>
+            </div>
+            <div class="flex items-center justify-between gap-1.5 flex-wrap pt-0.5">
+              <span class="text-[9.5px] text-[#9ca69a]">DOCTRINE: <b class="text-[#e7ece4]">${escapeHtml((cmd.personality || 'Balanced').toUpperCase())}</b> · TOTAL: <b class="text-[#e0be6a]">${rankInfo.total}</b></span>
+              ${traitTags ? `<div class="flex flex-wrap gap-1">${traitTags}</div>` : ''}
+            </div>
+          `;
+        }
+      }
+    }
+
       summaryEl.innerHTML = `
         <div>
           <span class="block text-[9px] font-mono uppercase tracking-wider text-[#6e7a6d]">FORMATIONS</span>
-          <span class="font-bold text-sm text-[#e7ece4] font-mono">${activeUnits.length}/${sideObj.units.length}</span>
+          <span class="font-bold text-base sm:text-lg text-[#f0f4ee] leading-tight" style="font-family:'Chakra Petch',sans-serif;">${activeUnits.length}/${sideObj.units.length}</span>
         </div>
         <div>
           <span class="block text-[9px] font-mono uppercase tracking-wider text-[#6e7a6d]">EFF. STRENGTH / AFV</span>
-          <span class="font-bold text-sm text-[#7cb377] font-mono">${totalPers.toLocaleString()} <span class="text-[#c8a24b]">[${totalArmor}]</span></span>
+          <span class="font-bold text-base sm:text-lg text-[#89c983] leading-tight" style="font-family:'Chakra Petch',sans-serif;">${totalPers.toLocaleString()} <span class="text-[#c8a24b]">[${totalArmor}]</span></span>
         </div>
         <div>
           <span class="block text-[9px] font-mono uppercase tracking-wider text-[#6e7a6d]">LOSSES (KIA+WIA)</span>
-          <span class="font-bold text-sm text-[#d46a64] font-mono">${totalDeadWounded.toLocaleString()}</span>
+          <span class="font-bold text-base sm:text-lg text-[#e07973] leading-tight" style="font-family:'Chakra Petch',sans-serif;">${totalDeadWounded.toLocaleString()}</span>
         </div>
         <div class="col-span-3 pt-2 mt-1 border-t border-slate-800 text-left">
           <div class="flex justify-between text-[10px] font-mono uppercase mb-1">
@@ -620,7 +688,7 @@ window.IronDivision = window.IronDivision || {};
           <div class="flex items-start justify-between gap-2">
             <div class="flex items-center gap-1.5 flex-wrap min-w-0">
               <span class="${side === 'A' ? 'text-[#8ec0e8]' : 'text-[#e69894]'} shrink-0" title="${escapeHtml(u.category.toUpperCase())} NATO Symbol">${ID.Icons ? ID.Icons.get(u.category) : ''}</span>
-              <span class="font-bold font-mono text-xs text-[#e7ece4] uppercase tracking-wide truncate">${escapeHtml(u.name)}</span>
+              <span class="mil-dogtag" title="${escapeHtml(u.name)}"><span class="mil-dogtag-text">${escapeHtml(u.name)}</span></span>
               <span class="mil-rank-patch inline-flex items-center justify-center w-[22px] h-[22px] bg-[#1c2017] border border-[#594b27] text-[#d4b054] shrink-0" title="${escapeHtml(u.experience)} Rank Insignia">${ID.Icons && ID.Icons.getRank ? ID.Icons.getRank(u.experience) : escapeHtml(u.experience)}</span>
             </div>
             <button type="button" onclick="removeUnitFromSide('${side}', '${u.instanceId}')" class="text-[#667065] hover:text-[#d46a64] font-mono text-xs px-1 shrink-0" title="Remove unit">[X]</button>
@@ -962,7 +1030,7 @@ window.IronDivision = window.IronDivision || {};
       return `
       <div class="${isNew ? 'log-entry-new ' : ''}${colorMap[item.category] || colorMap.rolls} flex items-start gap-1.5">
         <span class="mil-log-icon shrink-0 mt-0.5">${iconHtml}</span>
-        <div class="min-w-0 flex-1"><span class="text-[#4a5448] mr-1.5 font-bold">[RD-${String(item.round).padStart(2, '0')}]</span>${escapeHtml(stripEmojisForAAR(item.text))}</div>
+        <div class="min-w-0 flex-1"><span class="text-[#4a5448] mr-1.5 font-bold">[RD-${String(item.round).padStart(2, '0')}${item.clock ? ` | ${escapeHtml(item.clock)}` : ''}]</span>${escapeHtml(stripEmojisForAAR(item.text))}</div>
       </div>`;
     }).join('');
 
@@ -971,6 +1039,70 @@ window.IronDivision = window.IronDivision || {};
       const activeIds = new Set(logsToRender.map(l => l.id));
       uiState.renderedLogIds = activeIds;
     }
+
+    const expModal = document.getElementById('log-expand-modal');
+    if (expModal && !expModal.classList.contains('hidden')) {
+      renderExpandedCombatLog();
+    }
+  }
+
+  function openExpandedLogModal() {
+    const modal = document.getElementById('log-expand-modal');
+    if (!modal) return;
+    const mainFilter = document.getElementById('log-filter');
+    const expFilter = document.getElementById('log-expand-filter');
+    if (mainFilter && expFilter) expFilter.value = mainFilter.value;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    renderExpandedCombatLog();
+  }
+
+  function closeExpandedLogModal() {
+    const modal = document.getElementById('log-expand-modal');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+
+  function renderExpandedCombatLog() {
+    const state = ID.state;
+    const container = document.getElementById('log-expand-container');
+    const countEl = document.getElementById('log-expand-count');
+    if (!container || !state || !state.battle) return;
+
+    const filterEl = document.getElementById('log-expand-filter');
+    const searchEl = document.getElementById('log-expand-search');
+    const filterVal = filterEl ? filterEl.value : 'all';
+    const query = (searchEl ? searchEl.value : '').trim().toLowerCase();
+
+    const allLogs = state.battle.logs || [];
+    const filtered = allLogs.filter(item => {
+      if (filterVal !== 'all' && item.category !== filterVal) return false;
+      if (query) {
+        const hay = `[RD-${String(item.round).padStart(2, '0')} ${item.clock || ''} ${item.dayLabel || ''}] ${item.text || ''}`.toLowerCase();
+        return hay.includes(query);
+      }
+      return true;
+    });
+
+    if (countEl) {
+      countEl.textContent = `${filtered.length} / ${allLogs.length} ENTRIES`;
+    }
+
+    if (filtered.length === 0) {
+      container.innerHTML = `<div class="text-[#5c645a] text-center py-12 font-mono text-xs uppercase">NO LOG ENTRIES MATCH CURRENT FILTER</div>`;
+      return;
+    }
+
+    container.innerHTML = filtered.slice().reverse().map(item => {
+      const iconHtml = ID.Icons ? ID.Icons.getForLog(item.category, item.text) : '';
+      const stamp = `[RD-${String(item.round).padStart(2, '0')}${item.clock ? ` | ${escapeHtml(item.clock)}` : ''}${item.dayLabel ? ` · ${escapeHtml(item.dayLabel)}` : ''}]`;
+      return `
+      <div class="${colorMap[item.category] || colorMap.rolls} flex items-start gap-2 py-1">
+        <span class="mil-log-icon shrink-0 mt-0.5">${iconHtml}</span>
+        <div class="min-w-0 flex-1 leading-relaxed"><span class="text-[#4a5448] mr-1.5 font-bold">${stamp}</span>${escapeHtml(stripEmojisForAAR(item.text))}</div>
+      </div>`;
+    }).join('');
   }
 
   /**
@@ -1034,7 +1166,7 @@ window.IronDivision = window.IronDivision || {};
         <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 flex flex-col justify-between gap-2">
           <div>
             <div class="flex items-center justify-between gap-2">
-              <h3 class="font-bold text-sm text-white">${u.name}</h3>
+              <h3 class="mil-dogtag mil-dogtag-lg" title="${escapeHtml(u.name)}"><span class="mil-dogtag-text">${escapeHtml(u.name)}</span></h3>
               <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300">${u.experience}</span>
             </div>
             <div class="text-[11px] font-mono text-slate-400 mt-1">
@@ -1131,12 +1263,19 @@ window.IronDivision = window.IronDivision || {};
 
     listContainer.innerHTML = (state.commanders || []).map(c => {
       const traitNames = (c.traits || []).map(tid => C.getCommanderTraitById ? C.getCommanderTraitById(tid)?.name : tid).filter(Boolean).join(', ');
+      const officerRank = resolveOfficerRank(c);
       return `
         <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 flex flex-col justify-between gap-2">
           <div>
             <div class="flex items-center justify-between gap-2">
-              <span class="font-bold text-sm text-white">★ ${c.name}</span>
-              <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300">${c.personality}</span>
+              <div class="flex items-center gap-2 min-w-0">
+                ${officerRank.svg ? `<span class="inline-flex items-center justify-center px-1.5 py-0.5 bg-[#191f1a] border border-[#4a4128] shrink-0" title="${escapeHtml(officerRank.title)} (Total Stats: ${officerRank.total})">${officerRank.svg}</span>` : ''}
+                <div class="min-w-0">
+                  <span class="font-bold text-sm text-white block truncate">${escapeHtml(c.name)}</span>
+                  <span class="text-[10px] font-mono text-[#c8a24b] uppercase tracking-wider">${escapeHtml(officerRank.title)} · TOTAL ${officerRank.total}</span>
+                </div>
+              </div>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 shrink-0">${c.personality}</span>
             </div>
 
             <div class="grid grid-cols-2 gap-1.5 my-2 p-2 rounded bg-slate-900 text-[10px] font-mono">
@@ -1999,6 +2138,18 @@ window.IronDivision = window.IronDivision || {};
    * Generates a standalone, print-formatted Military After-Action Report (Form DA-774)
    * and triggers the browser Save-as-PDF / Print dialog.
    */
+  function sanitizeForPrintableAAR(text) {
+    return stripEmojisForAAR(text)
+      .replace(/\(Roll[^)]*\)/gi, '')
+      .replace(/\(Avg Speed:[^)]*\)/gi, '')
+      .replace(/\(50\+d50\[[^\]]*\]\)=[^:]*:/gi, ':')
+      .replace(/\(d100\[[^\]]*\]\)[^:]*:/gi, ':')
+      .replace(/\s+in Round \d+/gi, '')
+      .replace(/\[RD-\d+\]/gi, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+  }
+
   function buildPrintableAARHtml(rep) {
     const state = ID.state;
     const isOver = !!(state && state.battle && state.battle.isOver);
@@ -2007,11 +2158,33 @@ window.IronDivision = window.IronDivision || {};
     const sumB = summarizeSideMetrics(rep.sideB);
     const lossA = sumA.dead + sumA.wounded + sumA.captured;
     const lossB = sumB.dead + sumB.wounded + sumB.captured;
-    const exchangeRatio = lossA > 0 ? `1 : ${(lossB / lossA).toFixed(2)}` : (lossB > 0 ? `0 : ${lossB}` : '0 : 0');
     const victoryInfo = classifyVictoryDegree(rep, sumA, sumB, isOver);
+    const sideAName = rep.sideAName || H.getSideName('A');
+    const sideBName = rep.sideBName || H.getSideName('B');
+    const winName = rep.winner === 'B' ? sideBName : sideAName;
+    const loseName = rep.winner === 'B' ? sideAName : sideBName;
+    const atkName = (rep.theatreAttackerSide || 'A') === 'B' ? sideBName : sideAName;
+    const dayOrdinal = H.getBattleDayOrdinal ? H.getBattleDayOrdinal(rep.rounds || state?.battle?.round || 1) : '1ST DAY';
     const chronology = extractAARChronology(state?.battle?.logs || []);
-    const assessments = buildAARAssessment(rep, sumA, sumB, isOver, victoryInfo);
     const salvage = isOver ? (rep.salvage || state?.battle?.salvageReport) : null;
+
+    const printAssessments = [];
+    if (!isOver) {
+      printAssessments.push(`Engagement in the ${rep.terrain} (${rep.feature}) sector remains ongoing as of ${dtg}.`);
+    } else if (rep.winner === 'Draw') {
+      printAssessments.push(`Mutual combat exhaustion reached in the ${rep.terrain} (${rep.feature}) sector; neither force retained operational capacity to hold the objective.`);
+    } else {
+      printAssessments.push(`${victoryInfo.label}: ${winName} secured the ${rep.terrain} (${rep.feature}) sector after neutralizing ${loseName}'s frontline cohesion.`);
+    }
+    printAssessments.push(`Total recorded personnel casualties: ${sideAName} sustained ${lossA.toLocaleString()} casualties (${sumA.dead.toLocaleString()} KIA, ${sumA.wounded.toLocaleString()} WIA, ${sumA.captured.toLocaleString()} POW); ${sideBName} sustained ${lossB.toLocaleString()} casualties (${sumB.dead.toLocaleString()} KIA, ${sumB.wounded.toLocaleString()} WIA, ${sumB.captured.toLocaleString()} POW).`);
+    const totalArmorKoA = sumA.armorUnrec + sumA.armorRec;
+    const totalArmorKoB = sumB.armorUnrec + sumB.armorRec;
+    if (sumA.armorStart > 0 || sumB.armorStart > 0) {
+      printAssessments.push(`Armored vehicle losses: ${sideAName} lost ${totalArmorKoA} vehicles (${sumA.armorUnrec} destroyed, ${sumA.armorRec} disabled); ${sideBName} lost ${totalArmorKoB} vehicles (${sumB.armorUnrec} destroyed, ${sumB.armorRec} disabled).`);
+    }
+    if (isOver && salvage && salvage.abandoned > 0) {
+      printAssessments.push(`Field recovery units under ${winName} secured ${salvage.abandoned} abandoned enemy armored vehicles (${salvage.impressed} restored to service, ${salvage.scuttled} written off).`);
+    }
     const docTitle = `Iron_Division_AAR_${rep.docId || 'REPORT'}_${rep.terrain}`;
 
     const renderForceTable = (heading, cmdName, units, sum) => `
@@ -2208,7 +2381,7 @@ window.IronDivision = window.IronDivision || {};
   </style>
 </head>
 <body>
-  <div class="class-banner">UNCLASSIFIED // IRON DIVISION OPERATIONAL SIMULATION</div>
+  <div class="class-banner">UNCLASSIFIED // IRON DIVISION AFTER-ACTION REPORT</div>
 
   <div class="doc-header">
     <div class="doc-title-row">
@@ -2216,9 +2389,9 @@ window.IronDivision = window.IronDivision || {};
       <div class="doc-form">FORM DA-774 // ${escapeHtml(rep.docId || 'AAR-001')}</div>
     </div>
     <div class="memo-grid">
-      <div><strong>FROM:</strong> HQ COMBINED-ARMS SIMULATION</div>
+      <div><strong>FROM:</strong> HQ COMBINED-ARMS COMMAND</div>
       <div><strong>DTG:</strong> ${dtg}</div>
-      ${rep.simStartClock ? `<div><strong>OP CLOCK:</strong> ${escapeHtml(rep.simStartClock)} - ${escapeHtml(rep.simEndClock || '')} HRS (${escapeHtml(rep.roundDurationLabel || '30 MIN/RD')})</div>` : ''}
+      ${rep.simStartClock ? `<div><strong>OP WINDOW:</strong> ${escapeHtml(rep.simStartClock)} - ${escapeHtml(rep.simEndClock || '')} HRS</div>` : ''}
       <div><strong>TO:</strong> THEATRE OPERATIONS (G-3)</div>
       <div><strong>STATUS:</strong> ${isOver ? 'FINAL DEBRIEF' : 'INTERIM SITREP'}</div>
       <div><strong>SUBJECT:</strong> ${escapeHtml(rep.terrain.toUpperCase())} (${escapeHtml(rep.feature.toUpperCase())}) ENGAGEMENT</div>
@@ -2230,19 +2403,19 @@ window.IronDivision = window.IronDivision || {};
   <div class="kpi-grid">
     <div class="kpi-cell">
       <span class="kpi-label">Operation Outcome</span>
-      <span class="kpi-val">${isOver ? (rep.winner === 'Draw' ? 'MUTUAL EXHAUSTION' : `SIDE ${rep.winner} — ${victoryInfo.shortLabel}`) : 'IN PROGRESS'}</span>
+      <span class="kpi-val">${isOver ? (rep.winner === 'Draw' ? 'MUTUAL EXHAUSTION' : `${escapeHtml(winName.toUpperCase())} — ${victoryInfo.shortLabel}`) : 'IN PROGRESS'}</span>
     </div>
     <div class="kpi-cell">
-      <span class="kpi-label">Rounds / Odds</span>
-      <span class="kpi-val">RD-${String(rep.rounds).padStart(2, '0')}${victoryInfo.oddsRatio !== null ? ` (${victoryInfo.oddsRatio.toFixed(2)}:1)` : ''}</span>
+      <span class="kpi-label">Operational Day</span>
+      <span class="kpi-val">${dayOrdinal}</span>
     </div>
     <div class="kpi-cell">
-      <span class="kpi-label">Winner Cost / Posture</span>
-      <span class="kpi-val">${victoryInfo.costPct !== null ? `${victoryInfo.costPct}% COST` : 'ACTIVE'} | SIDE ${rep.theatreAttackerSide || 'A'} ATK</span>
+      <span class="kpi-label">Theatre Posture</span>
+      <span class="kpi-val">${escapeHtml(atkName.toUpperCase())} ASSAULT</span>
     </div>
     <div class="kpi-cell">
-      <span class="kpi-label">Loss Ratio (A : B)</span>
-      <span class="kpi-val">${exchangeRatio}</span>
+      <span class="kpi-label">Sector Conditions</span>
+      <span class="kpi-val">${escapeHtml(rep.terrain.toUpperCase())} · ${escapeHtml(rep.weather.toUpperCase())}</span>
     </div>
   </div>
 
@@ -2253,7 +2426,7 @@ window.IronDivision = window.IronDivision || {};
   <h2>3. Material Recovery &amp; Battlefield Salvage</h2>
   <div class="box">
     ${isOver && salvage && salvage.abandoned > 0 ? `
-      <div><strong>VICTOR FIELD POSSESSION (SIDE ${rep.winner}):</strong> ${salvage.abandoned} abandoned enemy armored hulls secured on the objective.</div>
+      <div><strong>VICTOR FIELD POSSESSION (${escapeHtml(winName.toUpperCase())}):</strong> ${salvage.abandoned} abandoned enemy armored hulls secured on the objective.</div>
       <ul>
         <li><strong>Repaired &amp; Impressed (Beutepanzers):</strong> ${salvage.impressed} vehicle(s)</li>
         <li><strong>Stripped for Depot Logistics:</strong> +${salvage.supplyScrapped} Supply Points</li>
@@ -2265,14 +2438,14 @@ window.IronDivision = window.IronDivision || {};
   <h2>4. Significant Engagement Chronology</h2>
   <div class="box">
     ${chronology.length > 0
-      ? chronology.map(l => `<div class="chron-item"><strong>[RD-${String(l.round).padStart(2, '0')}]</strong> ${escapeHtml(stripEmojisForAAR(l.text))}</div>`).join('')
+      ? chronology.map(l => `<div class="chron-item"><strong>[${escapeHtml(l.clock || '00:00')} HRS${l.dayLabel ? ` · ${escapeHtml(l.dayLabel)}` : ''}]</strong> ${escapeHtml(sanitizeForPrintableAAR(l.text))}</div>`).join('')
       : '<div>No major milestone events recorded in sitrep log.</div>'}
   </div>
 
   <h2>5. G-3 Operational Assessment &amp; Authentication</h2>
   <div class="box">
     <ul>
-      ${assessments.map(n => `<li>${escapeHtml(stripEmojisForAAR(n))}</li>`).join('')}
+      ${printAssessments.map(n => `<li>${escapeHtml(stripEmojisForAAR(n))}</li>`).join('')}
     </ul>
     <div class="sig-grid">
       <div class="sig-block">
@@ -2465,6 +2638,9 @@ window.IronDivision = window.IronDivision || {};
     renderTacticsGuide,
     stripEmojisForAAR,
     classifyVictoryDegree,
+    openExpandedLogModal,
+    closeExpandedLogModal,
+    renderExpandedCombatLog,
     openBattleSummaryModal,
     closeBattleSummaryModal,
     buildPrintableAARHtml,
@@ -2479,6 +2655,9 @@ window.IronDivision = window.IronDivision || {};
   window.renderCombatLog = renderCombatLog;
   window.renderCombatRound = renderCombatRound;
   window.renderBattlefield = renderBattlefield;
+  window.openExpandedLogModal = openExpandedLogModal;
+  window.closeExpandedLogModal = closeExpandedLogModal;
+  window.renderExpandedCombatLog = renderExpandedCombatLog;
   window.openBattleSummaryModal = openBattleSummaryModal;
   window.closeBattleSummaryModal = closeBattleSummaryModal;
   window.exportAARToPDF = exportAARToPDF;

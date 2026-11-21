@@ -29,57 +29,71 @@
 </head>
 <body class="mil-ui min-h-screen flex flex-col text-slate-200">
 
-  <!-- Top Command Header -->
-  <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-30">
-    <!-- Classification / Telemetry Strip + Preset JSON I/O -->
-    <div class="mil-classification-bar px-4 py-1">
-      <div class="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-2">
-        <span>HQ // OPERATIONAL COMBAT SIMULATOR — DOC-ID-904</span>
-        <div class="flex items-center gap-2">
-          <span class="hidden md:inline text-[#667065]">PRESETS:</span>
-          <button type="button" onclick="exportPresetsJSON()" class="px-2 py-0.5 bg-[#181e19] hover:bg-[#262f28] border border-[#3a453c] text-[#c8a24b] text-[10px] font-mono uppercase">EXPORT JSON</button>
-          <button type="button" onclick="triggerImportPresetsJSON()" class="px-2 py-0.5 bg-[#181e19] hover:bg-[#262f28] border border-[#3a453c] text-[#8ec0e8] text-[10px] font-mono uppercase">IMPORT JSON</button>
-          <input type="file" id="preset-import-input" accept=".json,application/json" onchange="importPresetsJSON(event)" class="hidden">
+  <!-- Top Command Deck Header -->
+  <header class="mil-command-header sticky top-0 z-30">
+    <!-- Tier 1: Symmetrical Command Bar (Live Telemetry | Centered Emblem | Presets & AAR) -->
+    <div class="max-w-[1600px] mx-auto px-4 py-2 grid grid-cols-1 md:grid-cols-3 items-center gap-2 border-b border-[#252d26]">
+      <!-- Left: Live Operational DTG & Theatre Status -->
+      <div class="flex items-center gap-2.5 font-mono text-[11px] justify-center md:justify-start">
+        <span class="px-1.5 py-0.5 bg-[#1b221c] border border-[#3a453c] text-[#c8a24b] font-bold tracking-wider">HQ-904</span>
+        <span id="hdr-live-clock" class="text-[#dde3da] font-semibold tracking-wide">06 JUN 1944 · 06:00 HRS · 1ST DAY</span>
+      </div>
+
+      <!-- Center: Framed Division Crest & Title -->
+      <div class="flex items-center justify-center">
+        <div class="mil-crest-plaque flex items-center gap-3 px-4 py-1.5">
+          <div class="nato-emblem" title="Combined-Arms Division Insignia">
+            <div class="nato-emblem-oval"></div>
+          </div>
+          <div class="leading-tight">
+            <h1 class="text-sm sm:text-base font-extrabold tracking-[0.14em] uppercase text-[#f0f4ee] flex items-center gap-2">
+              IRON DIVISION
+              <span class="text-[9.5px] font-mono font-bold uppercase px-1.5 py-0.5 bg-[#1d2219] text-[#c8a24b] border border-[#615129]">v3.0</span>
+            </h1>
+            <p class="text-[9.5px] font-mono text-[#8b968a] tracking-[0.12em] uppercase hidden sm:block">COMBINED-ARMS TACTICAL COMMAND</p>
+          </div>
         </div>
+      </div>
+
+      <!-- Right: Presets JSON & Quick AAR -->
+      <div class="flex items-center justify-center md:justify-end gap-1.5">
+        <button type="button" onclick="exportPresetsJSON()" class="mil-btn px-2.5 py-1 bg-[#181e19] hover:bg-[#242d26] border border-[#3a453c] text-[#c8a24b] text-[10px] font-mono font-semibold">EXPORT JSON</button>
+        <button type="button" onclick="triggerImportPresetsJSON()" class="mil-btn px-2.5 py-1 bg-[#181e19] hover:bg-[#242d26] border border-[#3a453c] text-[#8ec0e8] text-[10px] font-mono font-semibold">IMPORT JSON</button>
+        <button type="button" onclick="openBattleSummaryModal()" class="mil-btn px-2.5 py-1 bg-[#252218] hover:bg-[#332e1e] border border-[#6e5c2c] text-[#e6c873] text-[10px] font-mono font-bold">AAR</button>
+        <input type="file" id="preset-import-input" accept=".json,application/json" onchange="importPresetsJSON(event)" class="hidden">
       </div>
     </div>
 
-    <div class="max-w-[1600px] mx-auto px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
-      <div class="flex items-center gap-3">
-        <!-- NATO Mechanized / Armored Division Box Insignia -->
-        <div class="nato-emblem" title="Combined-Arms Division Insignia">
-          <div class="nato-emblem-oval"></div>
-        </div>
-        <div>
-          <h1 class="text-sm sm:text-base font-extrabold tracking-widest uppercase text-[#e7ece4] flex items-center gap-2 font-mono">
-            IRON DIVISION <span class="text-[10px] font-mono uppercase px-1.5 py-0.5 bg-[#1f241c] text-[#c8a24b] border border-[#5e4f28]">OPS-ENG v3.0</span>
-          </h1>
-          <p class="text-[11px] font-mono text-[#7c877b] hidden sm:block tracking-wide">DIVISION-LEVEL COMBAT, ARMOR PENETRATION &amp; DEPOT LOGISTICS</p>
-        </div>
-      </div>
-
-      <!-- Command Console Navigation -->
-      <nav class="flex flex-wrap items-center gap-1 bg-slate-950 p-1 border border-slate-800">
-        <button type="button" onclick="switchTab('battlefield')" id="tab-battlefield" class="tab-btn active px-2.5 py-1.5">
-          [01] Battlefield
+    <!-- Tier 2: Full-Width 7-Slot Tactical Navigation Dock -->
+    <div class="bg-[#0c0f0d] border-b border-[#29312b]">
+      <nav class="mil-nav-dock max-w-[1600px] mx-auto px-3 sm:px-4 grid grid-cols-4 sm:grid-cols-7">
+        <button type="button" onclick="switchTab('battlefield')" id="tab-battlefield" class="tab-btn mil-dock-btn active py-2 px-2 flex items-center justify-center gap-1.5">
+          <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="5.5"/><path d="M8 1v3M8 12v3M1 8h3M12 8h3"/></svg>
+          <span>Battlefield</span>
         </button>
-        <button type="button" onclick="switchTab('units')" id="tab-units" class="tab-btn px-2.5 py-1.5">
-          [02] ORBAT
+        <button type="button" onclick="switchTab('units')" id="tab-units" class="tab-btn mil-dock-btn py-2 px-2 flex items-center justify-center gap-1.5">
+          <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3.5" width="12" height="9"/><path d="M2 3.5l12 9M14 3.5l-12 9"/></svg>
+          <span>ORBAT</span>
         </button>
-        <button type="button" onclick="switchTab('traits')" id="tab-traits" class="tab-btn px-2.5 py-1.5">
-          [03] Traits
+        <button type="button" onclick="switchTab('traits')" id="tab-traits" class="tab-btn mil-dock-btn py-2 px-2 flex items-center justify-center gap-1.5">
+          <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2l5 2.5v4c0 3-2.2 4.8-5 5.5-2.8-.7-5-2.5-5-5.5v-4L8 2z"/></svg>
+          <span>Traits</span>
         </button>
-        <button type="button" onclick="switchTab('commanders')" id="tab-commanders" class="tab-btn px-2.5 py-1.5">
-          [04] Command HQ
+        <button type="button" onclick="switchTab('commanders')" id="tab-commanders" class="tab-btn mil-dock-btn py-2 px-2 flex items-center justify-center gap-1.5">
+          <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2l1.8 3.8 4.2.5-3.1 2.8.8 4.1L8 11.2 4.3 13.2l.8-4.1L2 6.3l4.2-.5L8 2z"/></svg>
+          <span>Command HQ</span>
         </button>
-        <button type="button" onclick="switchTab('terrain')" id="tab-terrain" class="tab-btn px-2.5 py-1.5">
-          [05] Terrain
+        <button type="button" onclick="switchTab('terrain')" id="tab-terrain" class="tab-btn mil-dock-btn py-2 px-2 flex items-center justify-center gap-1.5">
+          <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1.5 13l4.5-7 3 4.2 2-2.7 3.5 5.5H1.5z"/></svg>
+          <span>Terrain</span>
         </button>
-        <button type="button" onclick="switchTab('tactics')" id="tab-tactics" class="tab-btn px-2.5 py-1.5">
-          [06] Doctrines
+        <button type="button" onclick="switchTab('tactics')" id="tab-tactics" class="tab-btn mil-dock-btn py-2 px-2 flex items-center justify-center gap-1.5">
+          <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 3h4.5a2 2 0 012 2v8.5a1.5 1.5 0 00-1.5-1.5h-5V3zM13.5 3H9a2 2 0 00-2 2v8.5a1.5 1.5 0 011.5-1.5h5V3z"/></svg>
+          <span>Doctrines</span>
         </button>
-        <button type="button" onclick="switchTab('guide')" id="tab-guide" class="tab-btn px-2.5 py-1.5 text-[#c8a24b]">
-          [FM] Manual
+        <button type="button" onclick="switchTab('guide')" id="tab-guide" class="tab-btn mil-dock-btn py-2 px-2 flex items-center justify-center gap-1.5 text-[#c8a24b]">
+          <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="2" width="10" height="12"/><path d="M5.5 5.5h5M5.5 8.5h5M5.5 11h3"/></svg>
+          <span>FM Manual</span>
         </button>
       </nav>
     </div>
@@ -106,7 +120,7 @@
         </div>
 
         <div id="theatre-controls-body">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
           <!-- Terrain Selector -->
           <div>
             <label class="block text-[10px] font-mono uppercase text-slate-400 mb-1">Base Terrain</label>
@@ -145,24 +159,7 @@
               </label>
             </div>
           </div>
-          <!-- Round Controls -->
-          <div class="flex flex-wrap items-center justify-end gap-1.5">
-            <button type="button" onclick="runSingleRound()" id="btn-next-round" class="mil-btn px-3 py-2 bg-[#c8a24b] hover:bg-[#d8b45c] text-[#0d100d] font-bold text-xs border border-[#e0be6a]">
-              STEP RD
-            </button>
-            <button type="button" onclick="toggleAutoRun()" id="btn-auto-run" class="mil-btn px-3 py-2 bg-[#2d472b] hover:bg-[#385936] text-[#d9ead7] font-semibold text-xs border border-[#4c7548]">
-              AUTO-OPS
-            </button>
-            <button type="button" onclick="resetCurrentBattle()" id="btn-reset-battle" class="mil-btn px-2.5 py-2 bg-[#1c221d] hover:bg-[#272f29] border border-[#3a453c] text-[#c8d1c7] font-medium text-xs" title="Fully reset current battle &amp; restore deployed units">
-              RESET
-            </button>
-            <button type="button" onclick="emptyBattlefield()" id="btn-empty-bf" class="mil-btn px-2.5 py-2 bg-[#331a19] hover:bg-[#472321] border border-[#6b322f] text-[#eab7b4] font-medium text-xs" title="Remove all units from both sides">
-              CLEAR
-            </button>
-            <button type="button" onclick="toggleGMMode()" id="btn-gm-mode" class="mil-btn px-2.5 py-2 bg-[#1c221d] hover:bg-[#272f29] border border-[#3a453c] text-[#c8a24b] font-semibold text-xs" title="Toggle GM Live Controls & 1-Round Undo">
-              GM LIVE
-            </button>
-          </div>
+
         </div>
 
         <!-- Simulated Battle Date, 24-Hour Clock & Round Duration Bar -->
@@ -195,7 +192,8 @@
                 <span class="text-[#c8a24b] font-bold">:</span>
                 <input type="number" id="bf-clock-min" min="0" max="59" value="00" onchange="onEnvironmentChange()" class="w-12 bg-slate-950 border border-slate-700 rounded px-1.5 py-1 text-xs text-white text-center" title="Minute (00-59)">
                 <span class="text-[10px] text-slate-400 ml-0.5">HRS</span>
-                <span id="bf-clock-tod-badge" class="ml-1.5 px-2 py-1 font-mono text-[10.5px] font-bold uppercase border bg-[#2a1f14] border-[#8c6230] text-[#ebb467]" title="Automatic lighting phase derived from 24-hour clock (05-06 Dawn, 07-17 Daylight, 18-19 Dusk, 20-04 Night)">DAWN</span>
+                <span id="bf-clock-day-badge" class="ml-1.5 px-2 py-1 font-mono text-[10.5px] font-bold uppercase border bg-[#121613] border-[#4d4224] text-[#e0be6a]" title="Operational day (advances after 24:00 midnight)">1ST DAY</span>
+                <span id="bf-clock-tod-badge" class="px-2 py-1 font-mono text-[10.5px] font-bold uppercase border bg-[#2a1f14] border-[#8c6230] text-[#ebb467]" title="Automatic lighting phase derived from 24-hour clock (05-06 Dawn, 07-17 Daylight, 18-19 Dusk, 20-04 Night)">DAWN</span>
               </div>
             </div>
           </div>
@@ -245,16 +243,22 @@
               <span id="sideA-role-badge" class="text-[10px] font-mono px-2 py-0.5 bg-[#162533] text-[#8ec0e8] border border-[#355a7a] font-bold uppercase shrink-0">INITIATIVE</span>
             </div>
 
-            <!-- Commander & Tactic Selection -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-3">
-              <div>
-                <label class="block text-[10px] font-mono uppercase text-slate-400 mb-1">Commander</label>
+            <!-- Dedicated Commanding Officer Dossier Box -->
+            <div id="sideA-commander-box" class="bg-slate-950/90 border border-[#2d362e] p-2.5 mb-2.5 space-y-2">
+              <div class="flex items-center justify-between gap-2">
+                <label class="text-[9.5px] font-mono uppercase tracking-[0.12em] text-[#c8a24b] font-bold">COMMANDING OFFICER</label>
+                <div id="sideA-cmd-rank-badge" class="flex items-center gap-1.5 font-mono text-[10px] text-[#dde3da]"></div>
+              </div>
+              <div class="flex items-center gap-2 min-w-0">
                 <select id="sideA-commander" onchange="updateSideConfig('A')" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white"></select>
               </div>
-              <div>
-                <label class="block text-[10px] font-mono uppercase text-slate-400 mb-1">Tactic Selection</label>
-                <select id="sideA-tactic" onchange="updateSideConfig('A')" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white"></select>
-              </div>
+              <div id="sideA-cmd-dossier" class="pt-1.5 border-t border-[#242c25] space-y-1.5 text-[10px] font-mono"></div>
+            </div>
+
+            <!-- Tactic Selection (Full-Width) -->
+            <div class="mb-3">
+              <label class="block text-[10px] font-mono uppercase text-slate-400 mb-1">Tactic Selection</label>
+              <select id="sideA-tactic" onchange="updateSideConfig('A')" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white"></select>
             </div>
 
             <!-- Side A Telemetry Banner -->
@@ -277,39 +281,62 @@
         <div class="lg:col-span-4 space-y-3 flex flex-col">
           <!-- Unified Tactical Telemetry Monitor (OP Status + Y-Axis Rangefinder) -->
           <div class="mil-monitor-frame p-3 space-y-2.5">
-            <!-- Round Telemetry & Force Ratio -->
-            <div class="bg-slate-950 border border-slate-800 p-3">
-              <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-2.5">
+            <!-- Round Telemetry, Primary Command Execution & Force Ratio -->
+            <div class="bg-slate-950 border border-slate-800 p-3.5 space-y-3">
+              <div class="flex items-start justify-between gap-2 border-b border-slate-800 pb-2.5">
                 <div>
-                  <span class="text-[10px] font-mono uppercase tracking-widest text-[#7c877b] block">OP STATUS // CLOCK</span>
-                  <div class="text-base sm:text-lg font-extrabold text-[#c8a24b] font-mono tracking-wider" id="round-counter-display">RD-01 // STANDBY</div>
+                  <span class="text-[9.5px] font-mono uppercase tracking-[0.14em] text-[#7c877b] block">OPERATIONAL STATUS</span>
+                  <div class="text-xl sm:text-2xl font-bold text-[#d4b054] tracking-wider leading-tight" style="font-family:'Chakra Petch',sans-serif;" id="round-counter-display">RD-01 // STANDBY</div>
+                  <div id="op-clock-display" class="text-[10.5px] font-mono text-[#9ca69a] mt-0.5">06 JUN 1944 · 06:00 HRS · 1ST DAY</div>
                 </div>
                 <div class="text-right">
-                  <span class="text-[10px] font-mono uppercase tracking-widest text-[#7c877b] block">INITIATIVE VECTOR</span>
-                  <div class="text-xs font-mono font-semibold text-[#dde3da]" id="phase-indicator">BLUEFOR ATK → OPFOR DEF</div>
+                  <span class="text-[9.5px] font-mono uppercase tracking-[0.14em] text-[#7c877b] block">INITIATIVE VECTOR</span>
+                  <div class="text-xs font-mono font-semibold text-[#e7ece4] mt-0.5" id="phase-indicator">BLUEFOR ATK → OPFOR DEF</div>
+                </div>
+              </div>
+
+              <!-- Focal Primary Command Action Bar -->
+              <div class="space-y-2">
+                <div class="flex items-stretch gap-2">
+                  <button type="button" onclick="runSingleRound()" id="btn-next-round" class="mil-btn mil-cta-primary flex-1 py-2.5 px-4 bg-[#c8a24b] hover:bg-[#d8b45c] text-[#0d100d] font-bold text-sm tracking-[0.12em] border border-[#e6c873] flex items-center justify-center gap-2">
+                    <span>▶ EXECUTE ROUND</span>
+                  </button>
+                  <button type="button" onclick="toggleAutoRun()" id="btn-auto-run" class="mil-btn px-3.5 py-2.5 bg-[#2d472b] hover:bg-[#385936] text-[#d9ead7] font-bold text-xs tracking-wider border border-[#4c7548] shrink-0">
+                    AUTO-OPS
+                  </button>
+                </div>
+                <div class="grid grid-cols-4 gap-1.5">
+                  <button type="button" onclick="toggleGMMode()" id="btn-gm-mode" class="mil-btn py-1.5 px-2 bg-[#1c221d] hover:bg-[#272f29] border border-[#3a453c] text-[#c8a24b] font-semibold text-[10.5px]" title="Toggle GM Live Controls &amp; 1-Round Undo">
+                    GM LIVE
+                  </button>
+                  <button type="button" onclick="openBattleSummaryModal()" id="btn-view-report" class="mil-btn py-1.5 px-2 bg-[#1c221d] hover:bg-[#272f29] border border-[#3a453c] text-[#dde3da] font-semibold text-[10.5px]" title="Open After-Action Report (Form DA-774)">
+                    AAR REPORT
+                  </button>
+                  <button type="button" onclick="resetCurrentBattle()" id="btn-reset-battle" class="mil-btn py-1.5 px-2 bg-[#1c221d] hover:bg-[#272f29] border border-[#3a453c] text-[#c8d1c7] font-medium text-[10.5px]" title="Reset battle &amp; restore deployed units">
+                    RESET
+                  </button>
+                  <button type="button" onclick="emptyBattlefield()" id="btn-empty-bf" class="mil-btn py-1.5 px-2 bg-[#331a19] hover:bg-[#472321] border border-[#6b322f] text-[#eab7b4] font-medium text-[10.5px]" title="Remove all units from both sides">
+                    CLEAR
+                  </button>
                 </div>
               </div>
 
               <!-- Force Ratio Gauge -->
-              <div class="space-y-1.5">
+              <div class="pt-2 border-t border-slate-800 space-y-1.5">
                 <div class="flex justify-between text-[10px] font-mono uppercase">
-                  <span id="ratio-label-a" class="text-[#7db3df]">SIDE A: 0</span>
+                  <span id="ratio-label-a" class="text-[#7db3df] font-semibold">SIDE A: 0</span>
                   <span id="outnumber-bonus-pill" class="text-[#c8a24b] font-bold">PARITY</span>
-                  <span id="ratio-label-b" class="text-[#df8580]">SIDE B: 0</span>
+                  <span id="ratio-label-b" class="text-[#df8580] font-semibold">SIDE B: 0</span>
                 </div>
                 <div class="w-full h-2.5 bar-track flex">
                   <div id="force-ratio-bar-a" class="bg-[#4e8ec4] h-full bar-fill" style="width: 50%"></div>
                   <div id="force-ratio-bar-b" class="bg-[#c2524c] h-full bar-fill" style="width: 50%"></div>
                 </div>
-              </div>
-
-              <div class="mt-3 pt-2.5 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2">
-                <button type="button" onclick="loadDefaultSkirmish()" class="font-mono text-[11px] uppercase tracking-wide text-[#c8a24b] hover:text-[#e6c46d] underline">
-                  LOAD COMBINED-ARMS SCENARIO
-                </button>
-                <button type="button" onclick="openBattleSummaryModal()" id="btn-view-report" class="mil-btn px-2.5 py-1 bg-[#1c221d] hover:bg-[#272f29] text-[11px] text-[#dde3da] border border-[#3a453c]">
-                  AAR // REPORT
-                </button>
+                <div class="flex justify-end pt-1">
+                  <button type="button" onclick="loadDefaultSkirmish()" class="font-mono text-[10px] uppercase tracking-wider text-[#9ca69a] hover:text-[#e6c46d] px-2 py-0.5 bg-[#151a16] border border-[#2c342e]">
+                    LOAD SAN MARINO SCENARIO
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -342,6 +369,7 @@
                   <option value="support">LOGISTICS / FS</option>
                   <option value="error">SYS ERRORS</option>
                 </select>
+                <button type="button" onclick="openExpandedLogModal()" class="paper-sitrep-btn paper-sitrep-btn-muted" title="Open full combat log in larger pop-up">EXPAND</button>
                 <button type="button" onclick="copyCombatLog()" class="paper-sitrep-btn paper-sitrep-btn-primary">COPY</button>
                 <button type="button" onclick="clearCombatLog()" class="paper-sitrep-btn paper-sitrep-btn-muted">CLR</button>
               </div>
@@ -361,16 +389,22 @@
               <span id="sideB-role-badge" class="text-[10px] font-mono px-2 py-0.5 bg-[#301918] text-[#e69894] border border-[#6e3532] font-bold uppercase shrink-0">REACTING</span>
             </div>
 
-            <!-- Commander & Tactic Selection -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-3">
-              <div>
-                <label class="block text-[10px] font-mono uppercase text-slate-400 mb-1">Commander</label>
+            <!-- Dedicated Commanding Officer Dossier Box -->
+            <div id="sideB-commander-box" class="bg-slate-950/90 border border-[#2d362e] p-2.5 mb-2.5 space-y-2">
+              <div class="flex items-center justify-between gap-2">
+                <label class="text-[9.5px] font-mono uppercase tracking-[0.12em] text-[#c8a24b] font-bold">COMMANDING OFFICER</label>
+                <div id="sideB-cmd-rank-badge" class="flex items-center gap-1.5 font-mono text-[10px] text-[#dde3da]"></div>
+              </div>
+              <div class="flex items-center gap-2 min-w-0">
                 <select id="sideB-commander" onchange="updateSideConfig('B')" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white"></select>
               </div>
-              <div>
-                <label class="block text-[10px] font-mono uppercase text-slate-400 mb-1">Tactic Selection</label>
-                <select id="sideB-tactic" onchange="updateSideConfig('B')" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white"></select>
-              </div>
+              <div id="sideB-cmd-dossier" class="pt-1.5 border-t border-[#242c25] space-y-1.5 text-[10px] font-mono"></div>
+            </div>
+
+            <!-- Tactic Selection (Full-Width) -->
+            <div class="mb-3">
+              <label class="block text-[10px] font-mono uppercase text-slate-400 mb-1">Tactic Selection</label>
+              <select id="sideB-tactic" onchange="updateSideConfig('B')" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white"></select>
             </div>
 
             <!-- Side B Telemetry Banner -->
@@ -1089,6 +1123,35 @@
   </main>
 
   <!-- ==================== POST-BATTLE AAR MODAL ==================== -->
+  <!-- Expanded Combat Logs Modal -->
+  <div id="log-expand-modal" onclick="if(event.target===this) closeExpandedLogModal()" class="hidden fixed inset-0 z-50 bg-black/80 items-center justify-center p-3 sm:p-6">
+    <div class="paper-sitrep-panel w-full max-w-5xl h-[85vh] flex flex-col p-4 sm:p-5 shadow-2xl">
+      <div class="paper-sitrep-header flex flex-wrap items-center justify-between gap-2 pb-3 mb-3">
+        <div>
+          <span class="paper-sitrep-kicker">OPERATIONAL LOGBOOK // FORM DA-1594 // COMPLETE RECORD</span>
+          <div class="flex items-center gap-2.5">
+            <h3 class="paper-sitrep-title text-base">SITREP // EXPANDED COMBAT LOG</h3>
+            <span id="log-expand-count" class="font-mono text-[10px] font-bold text-[#4a5448] px-1.5 py-0.5 border border-[#b5ad96] bg-[#efe9d8]">0 / 0 ENTRIES</span>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-1.5">
+          <input type="text" id="log-expand-search" oninput="renderExpandedCombatLog()" placeholder="Search log entries..." class="px-2 py-1 text-[11px] font-mono w-44 bg-[#0b0d0c] text-[#e7ece4] border border-[#3c473e]">
+          <select id="log-expand-filter" onchange="renderExpandedCombatLog()" class="px-2 py-1 text-[11px]">
+            <option value="all">ALL CHANNELS</option>
+            <option value="rolls">INITIATIVE / TACTICS</option>
+            <option value="damage">CASUALTIES / ORG</option>
+            <option value="armor">ARMOR / AP</option>
+            <option value="support">LOGISTICS / FS</option>
+            <option value="error">SYS ERRORS</option>
+          </select>
+          <button type="button" onclick="copyCombatLog()" class="paper-sitrep-btn paper-sitrep-btn-primary">COPY ALL</button>
+          <button type="button" onclick="closeExpandedLogModal()" class="paper-sitrep-btn paper-sitrep-btn-muted">CLOSE [X]</button>
+        </div>
+      </div>
+      <div id="log-expand-container" class="paper-sitrep-sheet flex-1 overflow-y-auto custom-scroll space-y-1 font-mono text-xs sm:text-[12.5px] p-2"></div>
+    </div>
+  </div>
+
   <div id="battle-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
     <div class="tradoc-aar-card max-w-4xl w-full max-h-[90vh] overflow-y-auto custom-scroll p-5 sm:p-6">
       <div class="tradoc-aar-header flex items-start justify-between gap-3">

@@ -24,16 +24,16 @@ window.IronDivision = window.IronDivision || {};
     unitTemplates: H.safeLoadStorage ? H.safeLoadStorage('ttrpg_units_v1', structuredClone(D.DEFAULT_UNIT_TEMPLATES || [])) : structuredClone(D.DEFAULT_UNIT_TEMPLATES || []),
 
     environment: {
-      terrain: 'Urban',
+      terrain: 'Hills',
       feature: 'Normal',
       weather: 'Sunny',
-      timeOfDay: 'Day',
+      timeOfDay: 'DuskDawn',
       todStep: 0,
       dynamicWeather: false,
       cycleTimeOfDay: false,
       battleYear: 1944,
-      battleMonth: 6,
-      battleDay: 6,
+      battleMonth: 9,
+      battleDay: 17,
       battleHour: 6,
       battleMinute: 0,
       roundDurationValue: 30,
@@ -49,8 +49,8 @@ window.IronDivision = window.IronDivision || {};
       winner: null,
       autoInterval: null,
       sideA: {
-        name: H.safeLoadStorage('ttrpg_sideA_name_v1', 'BLUEFOR // SIDE A') || 'BLUEFOR // SIDE A',
-        commanderId: 'cmd_patton',
+        name: H.safeLoadStorage('ttrpg_sideA_name_v1', 'BRITISH INDIAN ARMY') || 'BRITISH INDIAN ARMY',
+        commanderId: 'cmd_holworthy',
         tacticId: 'auto',
         chosenTacticId: 'atk_attack',
         lastChosenTacticId: null,
@@ -65,8 +65,8 @@ window.IronDivision = window.IronDivision || {};
         units: []
       },
       sideB: {
-        name: H.safeLoadStorage('ttrpg_sideB_name_v1', 'OPFOR // SIDE B') || 'OPFOR // SIDE B',
-        commanderId: 'cmd_chuikov',
+        name: H.safeLoadStorage('ttrpg_sideB_name_v1', 'WEHRMACHT') || 'WEHRMACHT',
+        commanderId: 'cmd_hoppe',
         tacticId: 'auto',
         chosenTacticId: 'def_defend',
         lastChosenTacticId: null,
@@ -501,8 +501,46 @@ window.IronDivision = window.IronDivision || {};
     ID.state.battle.history = [];
     ID.state.battle.logs = [];
 
-    const pickA = ['tpl_medium_tank', 'tpl_mechanized', 'tpl_artillery'];
-    const pickB = ['tpl_heavy_inf', 'tpl_anti_tank', 'tpl_heavy_tank'];
+    // Ensure built-in Battle of San Marino templates & commanders exist even if older localStorage was loaded
+    (D.DEFAULT_COMMANDERS || []).forEach(dc => {
+      if (!ID.state.commanders.some(c => c.id === dc.id)) {
+        ID.state.commanders.push(structuredClone(dc));
+      }
+    });
+    (D.DEFAULT_UNIT_TEMPLATES || []).forEach(dt => {
+      if (!ID.state.unitTemplates.some(u => u.id === dt.id)) {
+        ID.state.unitTemplates.push(structuredClone(dt));
+      }
+    });
+
+    // Battle of San Marino (17 September 1944): British Indian Army vs. Wehrmacht
+    ID.state.environment.terrain = 'Hills';
+    ID.state.environment.feature = 'Normal';
+    ID.state.environment.weather = 'Sunny';
+    ID.state.environment.battleYear = 1944;
+    ID.state.environment.battleMonth = 9;
+    ID.state.environment.battleDay = 17;
+    ID.state.environment.battleHour = 6;
+    ID.state.environment.battleMinute = 0;
+    ID.state.environment.roundDurationValue = 30;
+    ID.state.environment.roundDurationUnit = 'minutes';
+    ID.state.environment.theatreAttackerSide = 'A';
+
+    ID.state.battle.sideA.name = 'BRITISH INDIAN ARMY';
+    ID.state.battle.sideA.commanderId = 'cmd_holworthy';
+    ID.state.battle.sideB.name = 'WEHRMACHT';
+    ID.state.battle.sideB.commanderId = 'cmd_hoppe';
+
+    const pickA = [
+      'tpl_ind_hq11', 'tpl_ind_cameron', 'tpl_ind_mahratta',
+      'tpl_ind_rajputana', 'tpl_ind_rajput', 'tpl_ind_ffr',
+      'tpl_ind_punjab', 'tpl_ind_gurkha', 'tpl_ind_yugoslav'
+    ];
+    const pickB = [
+      'tpl_ger_gr992', 'tpl_ger_gr993', 'tpl_ger_gr994',
+      'tpl_ger_ar278', 'tpl_ger_fus278', 'tpl_ger_pzj278',
+      'tpl_ger_eng278', 'tpl_ger_sig278'
+    ];
 
     const createUnit = (ID.Combat && ID.Combat.createCombatUnitInstance) ? ID.Combat.createCombatUnitInstance : (tpl, s) => ({ ...tpl, side: s });
 
