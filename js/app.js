@@ -70,8 +70,10 @@ window.IronDivision = window.IronDivision || {};
       initialSnapshot: null,
       afterActionReport: null,
       salvageReport: null,
+      history: [],
       logs: []
-    }
+    },
+    gmMode: false
   };
 
   // Provide window.state as an accessor for backward compatibility
@@ -425,6 +427,7 @@ window.IronDivision = window.IronDivision || {};
     ID.state.battle.initialSnapshot = null;
     ID.state.battle.afterActionReport = null;
     ID.state.battle.salvageReport = null;
+    ID.state.battle.history = [];
     ID.state.battle.logs = [];
 
     // Reset Supply Depots
@@ -460,6 +463,7 @@ window.IronDivision = window.IronDivision || {};
     ID.state.battle.initialSnapshot = null;
     ID.state.battle.afterActionReport = null;
     ID.state.battle.salvageReport = null;
+    ID.state.battle.history = [];
     ID.state.battle.logs = [];
 
     H.addLog('rolls', `[CLR] Battlefield emptied. Select units from dropdowns to deploy new formations.`);
@@ -481,6 +485,7 @@ window.IronDivision = window.IronDivision || {};
     ID.state.battle.winner = null;
     ID.state.battle.afterActionReport = null;
     ID.state.battle.salvageReport = null;
+    ID.state.battle.history = [];
     ID.state.battle.logs = [];
 
     const pickA = ['tpl_medium_tank', 'tpl_mechanized', 'tpl_artillery'];
@@ -521,7 +526,15 @@ window.IronDivision = window.IronDivision || {};
     const sideObj = side === 'A' ? ID.state.battle.sideA : ID.state.battle.sideB;
     const createUnit = (ID.Combat && ID.Combat.createCombatUnitInstance) ? ID.Combat.createCombatUnitInstance : (t, s) => ({ ...t, side: s });
 
-    sideObj.units.push(createUnit(tpl, side));
+    const newUnit = createUnit(tpl, side);
+    sideObj.units.push(newUnit);
+    if (ID.state.battle.round > 1) {
+      if (ID.state.battle.isOver) {
+        ID.state.battle.isOver = false;
+        ID.state.battle.winner = null;
+      }
+      H.addLog('rolls', `[GM] [Mid-Battle Reinforcement] ${newUnit.name} deployed to Side ${side} at Dist ${newUnit.pos}.`);
+    }
     H.showToast(`Deployed ${tpl.name} to Side ${side}`, 'success');
 
     if (ID.UI) {
@@ -944,6 +957,189 @@ window.IronDivision = window.IronDivision || {};
     }
   }
 
+
+  // --------------------------------------------------------------------------
+  // 7B. GM Live Controls (Mid-Battle Tweaks & 1-Round Undo)
+  // --------------------------------------------------------------------------
+
+  function toggleGMMode() {
+    ID.state.gmMode = !ID.state.gmMode;
+    const btn = document.getElementById('btn-gm-mode');
+    const bar = document.getElementById('gm-controls-bar');
+    if (btn) {
+      btn.textContent = ID.state.gmMode ? 'GM LIVE: ON' : 'GM LIVE';
+      btn.className = ID.state.gmMode
+        ? 'mil-btn px-2.5 py-2 bg-[#7c5b1e] hover:bg-[#966e24] border border-[#c8a24b] text-[#f4f1e6] font-bold text-xs'
+        : 'mil-btn px-2.5 py-2 bg-[#1c221d] hover:bg-[#272f29] border border-[#3a453c] text-[#c8a24b] font-semibold text-xs';
+    }
+    if (bar) {
+      bar.classList.toggle('hidden', !ID.state.gmMode);
+    }
+    H.showToast(ID.state.gmMode ? 'GM Live Controls enabled.' : 'GM Live Controls hidden.', 'info');
+    if (ID.UI) ID.UI.renderCombatRound();
+  }
+
+  function undoLastRound() {
+    stopAutoRun();
+    const hist = ID.state.battle.history;
+    if (!hist || hist.length === 0) {
+      H.showToast('No previous round snapshot available to undo.', 'warn');
+      return;
+    }
+
+    const snap = hist.pop();
+    ID.state.battle.round = snap.round;
+    ID.state.battle.attackerSide = snap.attackerSide;
+    ID.state.battle.isOver = snap.isOver;
+    ID.state.battle.winner = snap.winner;
+    ID.state.battle.sideA = snap.sideA;
+    ID.state.battle.sideB = snap.sideB;
+    ID.state.battle.logs = snap.logs;
+    ID.state.battle.afterActionReport = snap.afterActionReport;
+    ID.state.battle.salvageReport = snap.salvageReport;
+
+    H.showToast(`Reverted battlefield to start of Round ${snap.round}.`, 'success');
+    if (ID.UI) {
+      ID.UI.renderBattlefield(false);
+    }
+  }
+
+  function gmAdjustUnit(side, instanceId, field, delta) {
+    const sideObj = side === 'A' ? ID.state.battle.sideA : ID.state.battle.sideB;
+    const u = sideObj.units.find(x => x.instanceId === instanceId);
+    if (!u) return;
+
+    if (field === 'supply') {
+      u.supply = H.clamp((u.supply || 0) + delta, 0, u.maxSupply);
+      if (u.supply >= u.maxSupply * 0.5) { u.supplyBelow50Triggered = false; u.supplyBelow20Triggered = false; }
+      H.addLog('support', `[GM] Adjusted ${u.name} Supply (${delta >= 0 ? '+' : ''}${delta} -> ${u.supply}/${u.maxSupply}).`);
+    } else if (field === 'org') {
+      u.org = H.clamp((u.org || 0) + delta, 0, u.maxOrg);
+      if (u.org > 0 && u.defeated && u.personnel > 0) { u.defeated = false; u.defeatReason = ''; }
+      H.addLog('support', `[GM] Adjusted ${u.name} Org (${delta >= 0 ? '+' : ''}${delta} -> ${u.org}/${u.maxOrg}).`);
+    } else if (field === 'pos') {
+      const curPos = (u.pos !== undefined && u.pos !== null) ? u.pos : 2;
+      u.pos = H.clamp(curPos + delta, -7, 7);
+      H.addLog('rolls', `[GM] Repositioned ${u.name} on Y-Axis (Dist: ${curPos} -> ${u.pos}).`);
+    } else if (field === 'rally_now') {
+      u.isRallying = false;
+      u.defeated = false;
+      u.defeatReason = '';
+      u.org = Math.max(15, Math.round(u.maxOrg * 0.5));
+      u.pos = H.getUnitStartingPosition ? H.getUnitStartingPosition(u) : 2;
+      H.addLog('rolls', `[GM] Force-rallied ${u.name} back to frontline (Dist ${u.pos}, Org ${u.org}/${u.maxOrg}).`);
+    }
+
+    if (ID.UI) ID.UI.renderCombatRound();
+  }
+
+  function gmAdjustDepot(side, delta) {
+    const sideObj = side === 'A' ? ID.state.battle.sideA : ID.state.battle.sideB;
+    sideObj.supplyDepot = H.clamp((sideObj.supplyDepot || 0) + delta, 0, Math.max(sideObj.maxSupplyDepot || 150, (sideObj.supplyDepot || 0) + delta));
+    H.addLog('support', `[GM] Adjusted Side ${side} Supply Depot (${delta >= 0 ? '+' : ''}${delta} -> ${sideObj.supplyDepot}/${sideObj.maxSupplyDepot}).`);
+    if (ID.UI) ID.UI.renderCombatRound();
+  }
+
+  // --------------------------------------------------------------------------
+  // 7C. Preset JSON Export & Import (Armies, Commanders, Traits, Terrains)
+  // --------------------------------------------------------------------------
+
+  function buildPresetsExportObject() {
+    return {
+      app: 'Iron Division Engine',
+      version: '3.2',
+      exportedAt: new Date().toISOString(),
+      unitTemplates: ID.state.unitTemplates || [],
+      traits: ID.state.traits || [],
+      commanders: ID.state.commanders || [],
+      commanderTraits: ID.state.commanderTraits || [],
+      terrains: ID.state.terrains || {}
+    };
+  }
+
+  function exportPresetsJSON() {
+    const payload = buildPresetsExportObject();
+    const json = JSON.stringify(payload, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    a.href = url;
+    a.download = `iron-division-presets-${stamp}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    H.showToast('Exported Armies, Commanders & Traits preset JSON!', 'success');
+  }
+
+  function triggerImportPresetsJSON() {
+    const input = document.getElementById('preset-import-input');
+    if (input) {
+      input.value = '';
+      input.click();
+    }
+  }
+
+  function applyImportedPresetsObject(data) {
+    if (!data || typeof data !== 'object') {
+      throw new Error('Invalid JSON structure.');
+    }
+    let loadedSections = [];
+
+    if (Array.isArray(data.unitTemplates) && data.unitTemplates.length > 0) {
+      ID.state.unitTemplates = data.unitTemplates;
+      H.safeSaveStorage('ttrpg_units_v1', ID.state.unitTemplates);
+      loadedSections.push(`${data.unitTemplates.length} Units`);
+    }
+    if (Array.isArray(data.traits) && data.traits.length > 0) {
+      ID.state.traits = data.traits;
+      H.safeSaveStorage('ttrpg_traits_v1', ID.state.traits);
+      loadedSections.push(`${data.traits.length} Traits`);
+    }
+    if (Array.isArray(data.commanders) && data.commanders.length > 0) {
+      ID.state.commanders = data.commanders;
+      H.safeSaveStorage('ttrpg_commanders_v1', ID.state.commanders);
+      loadedSections.push(`${data.commanders.length} Commanders`);
+    }
+    if (Array.isArray(data.commanderTraits) && data.commanderTraits.length > 0) {
+      ID.state.commanderTraits = data.commanderTraits;
+      H.safeSaveStorage('ttrpg_cmd_traits_v1', ID.state.commanderTraits);
+      loadedSections.push(`${data.commanderTraits.length} Cmd Traits`);
+    }
+    if (data.terrains && typeof data.terrains === 'object' && Object.keys(data.terrains).length > 0) {
+      ID.state.terrains = data.terrains;
+      H.safeSaveStorage('ttrpg_terrains_v1', ID.state.terrains);
+      loadedSections.push(`${Object.keys(data.terrains).length} Terrains`);
+    }
+
+    if (loadedSections.length === 0) {
+      throw new Error('No recognized preset arrays (unitTemplates, traits, commanders, terrains) found.');
+    }
+
+    if (ID.UI && typeof ID.UI.renderAll === 'function') {
+      ID.UI.renderAll();
+    }
+    return loadedSections;
+  }
+
+  function importPresetsJSON(event) {
+    const file = event && event.target && event.target.files ? event.target.files[0] : null;
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const parsed = JSON.parse(e.target.result);
+        const sections = applyImportedPresetsObject(parsed);
+        H.showToast(`Imported presets: ${sections.join(', ')}!`, 'success');
+      } catch (err) {
+        H.showToast(`Preset import failed: ${err.message}`, 'danger');
+      }
+    };
+    reader.readAsText(file);
+  }
+
   // --------------------------------------------------------------------------
   // 8. Public Controller API
   // --------------------------------------------------------------------------
@@ -984,7 +1180,16 @@ window.IronDivision = window.IronDivision || {};
     resetTraitForm,
     saveTrait,
     loadTerrainIntoForm,
-    saveTerrainConfig
+    saveTerrainConfig,
+    toggleGMMode,
+    undoLastRound,
+    gmAdjustUnit,
+    gmAdjustDepot,
+    buildPresetsExportObject,
+    exportPresetsJSON,
+    triggerImportPresetsJSON,
+    applyImportedPresetsObject,
+    importPresetsJSON
   };
 
   // --------------------------------------------------------------------------
@@ -1044,7 +1249,16 @@ window.IronDivision = window.IronDivision || {};
 
     // Terrain
     loadTerrainIntoForm,
-    saveTerrainConfig
+    saveTerrainConfig,
+
+    // GM Live Controls & Presets JSON
+    toggleGMMode,
+    undoLastRound,
+    gmAdjustUnit,
+    gmAdjustDepot,
+    exportPresetsJSON,
+    triggerImportPresetsJSON,
+    importPresetsJSON
   };
 
   Object.assign(window, globalFacade);

@@ -44,7 +44,8 @@ window.IronDivision = window.IronDivision || {};
       sideB_tplHash: ''
     },
     renderedLogIds: new Set(),
-    tacticsPage: 0
+    tacticsPage: 0,
+    tacticsDarkMode: false
   };
 
   function escapeHtml(str) {
@@ -509,6 +510,19 @@ window.IronDivision = window.IronDivision || {};
             </div>
             ` : `<div class="text-[9.5px] font-mono uppercase text-[#667065] flex items-center">UNARMORED // FOOT ELEMENT</div>`}
           </div>
+
+          ${state.gmMode ? `
+            <div class="pt-1.5 mt-1 border-t border-[#3a453c] flex flex-wrap items-center gap-1 font-mono text-[9.5px]">
+              <span class="text-[#c8a24b] font-bold mr-1">GM:</span>
+              <button type="button" onclick="gmAdjustUnit('${side}', '${u.instanceId}', 'supply', -10)" class="px-1.5 py-0.5 bg-[#1b201c] hover:bg-[#2a332c] border border-[#3a453c] text-[#d4b054]">SUP-10</button>
+              <button type="button" onclick="gmAdjustUnit('${side}', '${u.instanceId}', 'supply', 10)" class="px-1.5 py-0.5 bg-[#1b201c] hover:bg-[#2a332c] border border-[#3a453c] text-[#d4b054]">SUP+10</button>
+              <button type="button" onclick="gmAdjustUnit('${side}', '${u.instanceId}', 'org', -10)" class="px-1.5 py-0.5 bg-[#1b201c] hover:bg-[#2a332c] border border-[#3a453c] text-[#8ec0e8]">ORG-10</button>
+              <button type="button" onclick="gmAdjustUnit('${side}', '${u.instanceId}', 'org', 10)" class="px-1.5 py-0.5 bg-[#1b201c] hover:bg-[#2a332c] border border-[#3a453c] text-[#8ec0e8]">ORG+10</button>
+              <button type="button" onclick="gmAdjustUnit('${side}', '${u.instanceId}', 'pos', -1)" class="px-1.5 py-0.5 bg-[#1b201c] hover:bg-[#2a332c] border border-[#3a453c] text-[#7cb377]" title="Move 1 closer to contact line">DIST-1</button>
+              <button type="button" onclick="gmAdjustUnit('${side}', '${u.instanceId}', 'pos', 1)" class="px-1.5 py-0.5 bg-[#1b201c] hover:bg-[#2a332c] border border-[#3a453c] text-[#7cb377]" title="Move 1 further back">DIST+1</button>
+              ${(u.isRallying || u.defeated) ? `<button type="button" onclick="gmAdjustUnit('${side}', '${u.instanceId}', 'rally_now', 0)" class="ml-auto px-1.5 py-0.5 bg-[#2d472b] hover:bg-[#385936] border border-[#4c7548] text-[#d9ead7] font-bold">RALLY NOW</button>` : ''}
+            </div>
+          ` : ''}
         </div>
       `;
     }).join('');
@@ -1118,6 +1132,55 @@ window.IronDivision = window.IronDivision || {};
     goToTacticsPage((uiState.tacticsPage || 0) + delta);
   }
 
+  function toggleTacticsTheme() {
+    uiState.tacticsDarkMode = !uiState.tacticsDarkMode;
+    renderTacticsGuide();
+  }
+
+  function printCurrentTacticsPage() {
+    const container = document.getElementById('tactics-reference-grid');
+    if (!container) return;
+    const isDark = !!uiState.tacticsDarkMode;
+    const printWin = window.open('', '_blank', 'width=900,height=1050');
+    if (!printWin) {
+      H.showToast('Pop-up blocked — falling back to browser print dialog.', 'warn');
+      window.print();
+      return;
+    }
+
+    const bg = isDark ? '#141815' : '#ffffff';
+    const fg = isDark ? '#e7ece4' : '#141815';
+    const boxBg = isDark ? '#1a201b' : '#f8f6ef';
+    const bdr = isDark ? '#3c473e' : '#333333';
+
+    printWin.document.open();
+    printWin.document.write(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>FM 100-5-TAC // Tactics Manual Page ${String(uiState.tacticsPage || 0).padStart(2, '0')}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    @page { size: A4; margin: 14mm; }
+    body { margin: 0; padding: 14px; background: ${bg}; color: ${fg}; font-family: 'IBM Plex Sans Condensed', sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .tactics-book { border: 2px solid ${bdr}; padding: 0; background: ${bg}; color: ${fg}; }
+    .tactics-book-bar { background: #252e24; color: #f4f1e6; padding: 8px 16px; font-family: 'IBM Plex Mono', monospace; font-size: 10pt; display: flex; justify-content: space-between; }
+    .tactics-book-body { padding: 18px 20px; }
+    .tactics-sec-block { border: 1px solid ${bdr}; background: ${boxBg}; padding: 10px 12px; margin-bottom: 10px; }
+    .tactics-sec-head { font-family: 'Chakra Petch', sans-serif; text-transform: uppercase; border-bottom: 1.5px solid ${bdr}; padding-bottom: 3px; margin: 0 0 6px 0; font-size: 11pt; }
+    .tactics-mod-strip { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; border: 1px solid ${bdr}; background: ${boxBg}; font-family: 'IBM Plex Mono', monospace; font-size: 9pt; margin-bottom: 10px; }
+    .tactics-mod-chip { padding: 2px 6px; border: 1px solid ${bdr}; font-weight: bold; }
+    .tactics-book-footer, button { display: none !important; }
+    .tactics-toc-row { display: flex; justify-content: space-between; border-bottom: 1px dotted ${bdr}; padding: 4px 0; font-family: 'IBM Plex Mono', monospace; font-size: 9.5pt; }
+    .tactics-toc-group-title { font-family: 'Chakra Petch', sans-serif; font-weight: bold; background: #252e24; color: #f4f1e6; padding: 4px 8px; margin-top: 10px; }
+  </style>
+</head>
+<body>${container.innerHTML}</body>
+</html>`);
+    printWin.document.close();
+    setTimeout(() => { printWin.focus(); printWin.print(); }, 200);
+  }
+
   function renderTacticsGuide() {
     const container = document.getElementById('tactics-reference-grid');
     if (!container) return;
@@ -1126,6 +1189,13 @@ window.IronDivision = window.IronDivision || {};
     const totalPages = list.length;
     const page = H.clamp(uiState.tacticsPage || 0, 0, totalPages);
     uiState.tacticsPage = page;
+    const darkCls = uiState.tacticsDarkMode ? 'tactics-book-dark' : '';
+    const themeToggleHtml = `
+      <div class="flex items-center gap-1.5">
+        <button type="button" onclick="toggleTacticsTheme()" class="tactics-bar-btn">${uiState.tacticsDarkMode ? 'MODE: DARK' : 'MODE: PAPER'}</button>
+        <button type="button" onclick="printCurrentTacticsPage()" class="tactics-bar-btn">PRINT PAGE</button>
+      </div>
+    `;
 
     // PAGE 0: CLICKABLE TABLE OF CONTENTS
     if (page === 0) {
@@ -1152,10 +1222,13 @@ window.IronDivision = window.IronDivision || {};
       `;
 
       container.innerHTML = `
-        <article class="tactics-book" aria-label="Tactical Doctrine Field Manual — Table of Contents">
-          <div class="tactics-book-bar">
+        <article class="tactics-book ${darkCls}" aria-label="Tactical Doctrine Field Manual — Table of Contents">
+          <div class="tactics-book-bar items-center">
             <span>FM 100-5-TAC // TACTICAL DOCTRINE COMPENDIUM</span>
-            <span>INDEX // PAGE 00 OF ${String(totalPages).padStart(2, '0')}</span>
+            <div class="flex items-center gap-3">
+              <span>INDEX // PAGE 00 OF ${String(totalPages).padStart(2, '0')}</span>
+              ${themeToggleHtml}
+            </div>
           </div>
 
           <div class="tactics-book-body space-y-5">
@@ -1202,10 +1275,13 @@ window.IronDivision = window.IronDivision || {};
     const scopeLabel = t.urbanOnly ? 'URBAN / FORTIFICATIONS ONLY' : 'ALL THEATRE TERRAINS';
 
     container.innerHTML = `
-      <article class="tactics-book" aria-label="Tactical Doctrine Page ${page}: ${escapeHtml(t.name)}">
-        <div class="tactics-book-bar">
+      <article class="tactics-book ${darkCls}" aria-label="Tactical Doctrine Page ${page}: ${escapeHtml(t.name)}">
+        <div class="tactics-book-bar items-center">
           <span>FM 100-5-TAC // ${roleLabel}</span>
-          <span>PAGE ${String(page).padStart(2, '0')} OF ${String(totalPages).padStart(2, '0')}</span>
+          <div class="flex items-center gap-3">
+            <span>PAGE ${String(page).padStart(2, '0')} OF ${String(totalPages).padStart(2, '0')}</span>
+            ${themeToggleHtml}
+          </div>
         </div>
 
         <div class="tactics-book-body space-y-4">
@@ -2130,6 +2206,8 @@ window.IronDivision = window.IronDivision || {};
     renderTerrainTab,
     goToTacticsPage,
     flipTacticsPage,
+    toggleTacticsTheme,
+    printCurrentTacticsPage,
     renderTacticsGuide,
     stripEmojisForAAR,
     classifyVictoryDegree,
@@ -2152,6 +2230,8 @@ window.IronDivision = window.IronDivision || {};
   window.exportAARToPDF = exportAARToPDF;
   window.goToTacticsPage = goToTacticsPage;
   window.flipTacticsPage = flipTacticsPage;
+  window.toggleTacticsTheme = toggleTacticsTheme;
+  window.printCurrentTacticsPage = printCurrentTacticsPage;
   window.renderAll = renderAll;
 
 })(window.IronDivision);

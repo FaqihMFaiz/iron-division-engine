@@ -105,6 +105,7 @@ window.IronDivision = window.IronDivision || {};
       ralliedPersonnel: 0,
       ralliedOnce: false,
       unbreakableRoundsLeft: null,
+      orgRecoveryBlockedRounds: 0,
       roundTemp: {
         defMalus: 0,
         hardMalus: 0,
@@ -590,6 +591,23 @@ window.IronDivision = window.IronDivision || {};
         };
       }
 
+      // Push round snapshot to GM Undo history stack (max 15 rounds)
+      if (!ID.state.battle.history) ID.state.battle.history = [];
+      ID.state.battle.history.push(structuredClone({
+        round: ID.state.battle.round,
+        attackerSide: ID.state.battle.attackerSide,
+        isOver: ID.state.battle.isOver,
+        winner: ID.state.battle.winner,
+        sideA: ID.state.battle.sideA,
+        sideB: ID.state.battle.sideB,
+        logs: ID.state.battle.logs,
+        afterActionReport: ID.state.battle.afterActionReport,
+        salvageReport: ID.state.battle.salvageReport
+      }));
+      if (ID.state.battle.history.length > 15) {
+        ID.state.battle.history.shift();
+      }
+
       const rd = ID.state.battle.round;
       const atkSide = ID.state.battle.attackerSide;
       const defSide = atkSide === 'A' ? 'B' : 'A';
@@ -611,6 +629,8 @@ window.IronDivision = window.IronDivision || {};
       H.addLog('rolls', `================================================`);
       H.addLog('rolls', `[OP] ROUND ${rd} BEGINS — Side ${atkSide} Attacks | Side ${defSide} Defends`);
 
+      atkState.breakthroughTriggeredThisRound = false;
+      defState.breakthroughTriggeredThisRound = false;
       [...ID.state.battle.sideA.units, ...ID.state.battle.sideB.units].forEach(u => {
         u.roundTemp.defMalus = 0;
         u.roundTemp.hardMalus = 0;
@@ -619,6 +639,8 @@ window.IronDivision = window.IronDivision || {};
         u.roundTemp.fortifiedOrgReductionUsed = false;
         u.roundTemp.inCover = false;
         u.roundTemp.coverDenied = false;
+        u.roundTemp.lostTenPctPrevRound = !!u.roundTemp.lostTenPctLastRound;
+        u.roundTemp.lostTenPctLastRound = false;
       });
 
       // 1. Tactics Selection
@@ -1044,6 +1066,12 @@ window.IronDivision = window.IronDivision || {};
 
         const manpowerRatio = u.personnel / Math.max(1, u.maxPersonnel);
         if (manpowerRatio >= 0.75) orgDelta += 1;
+
+        if (u.orgRecoveryBlockedRounds > 0) {
+          u.orgRecoveryBlockedRounds--;
+          if (orgDelta > 0) orgDelta = 0;
+          H.addLog('support', `[HOLD] [Blitz Disrupted] ${u.name} cannot recover Organization this round due to Blitz shock!`);
+        }
 
         let fatigueLoss = 0;
         if (!isUncontestedFrontline) {
@@ -1730,6 +1758,20 @@ window.IronDivision = window.IronDivision || {};
         if (orgGain > 0) attacker.org = Math.min(attacker.maxOrg, attacker.org + orgGain);
       }
 
+      // Wire atk_blitz: blocks target Org recovery next round on hit
+      if (atkTactic.deniesEnemyOrgRec && !defender.isMonster && !defender.isZombie) {
+        defender.orgRecoveryBlockedRounds = Math.max(defender.orgRecoveryBlockedRounds || 0, 1);
+        H.addLog('damage', `[SHK] [Blitz Disruption] ${attacker.name} disrupts ${defender.name}'s command net — Org recovery blocked next round!`);
+      }
+
+      // Wire atk_breakthrough: +10% Attack next round if target loses >=10% personnel in 1 round
+      const atkSideStateRef = atkSide === 'A' ? ID.state.battle.sideA : ID.state.battle.sideB;
+      if (atkTactic.id === 'atk_breakthrough' && inflictedRatio >= 0.10 && !atkSideStateRef.breakthroughTriggeredThisRound) {
+        atkSideStateRef.breakthroughTriggeredThisRound = true;
+        atkSideStateRef.nextRoundAtkMod = (atkSideStateRef.nextRoundAtkMod || 0) + 10;
+        H.addLog('rolls', `[BRK] [Breakthrough Exploitation] ${attacker.name} inflicted >=10% losses on ${defender.name} — Side ${atkSide} gains +10% Attack next round!`);
+      }
+
       const hasRaiders = atkTraits.some(t => t.id === 'supply_raiders');
       const stealTrait = atkTraits.find(t => t.supplySteal > 0);
 
@@ -2065,7 +2107,7 @@ window.IronDivision = window.IronDivision || {};
           else if (unit.category === 'infantry' && hasArmorAlly) tacAtk = 20;
           else tacAtk = 0;
         }
-        if (myTactic.id === 'def_backhand_blow' && opponent.roundTemp.lostTenPctLastRound) {
+        if (myTactic.id === 'def_backhand_blow' && (opponent.roundTemp.lostTenPctPrevRound || opponent.roundTemp.lostTenPctLastRound)) {
           tacAtk += 10;
         }
         if (myTactic.id === 'def_guerrilla' && (opponent.supply / Math.max(1, opponent.maxSupply)) < 0.50) {

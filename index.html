@@ -31,11 +31,16 @@
 
   <!-- Top Command Header -->
   <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-30">
-    <!-- Classification / Telemetry Strip -->
+    <!-- Classification / Telemetry Strip + Preset JSON I/O -->
     <div class="mil-classification-bar px-4 py-1">
       <div class="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-2">
         <span>HQ // OPERATIONAL COMBAT SIMULATOR — DOC-ID-904</span>
-        <span class="hidden sm:inline">THEATRE: COMBINED ARMS | RESOLUTION: POLYHEDRAL DICE ENGINE</span>
+        <div class="flex items-center gap-2">
+          <span class="hidden md:inline text-[#667065]">PRESETS:</span>
+          <button type="button" onclick="exportPresetsJSON()" class="px-2 py-0.5 bg-[#181e19] hover:bg-[#262f28] border border-[#3a453c] text-[#c8a24b] text-[10px] font-mono uppercase">EXPORT JSON</button>
+          <button type="button" onclick="triggerImportPresetsJSON()" class="px-2 py-0.5 bg-[#181e19] hover:bg-[#262f28] border border-[#3a453c] text-[#8ec0e8] text-[10px] font-mono uppercase">IMPORT JSON</button>
+          <input type="file" id="preset-import-input" accept=".json,application/json" onchange="importPresetsJSON(event)" class="hidden">
+        </div>
       </div>
     </div>
 
@@ -137,7 +142,21 @@
             <button type="button" onclick="emptyBattlefield()" id="btn-empty-bf" class="mil-btn px-2.5 py-2 bg-[#331a19] hover:bg-[#472321] border border-[#6b322f] text-[#eab7b4] font-medium text-xs" title="Remove all units from both sides">
               CLEAR
             </button>
+            <button type="button" onclick="toggleGMMode()" id="btn-gm-mode" class="mil-btn px-2.5 py-2 bg-[#1c221d] hover:bg-[#272f29] border border-[#3a453c] text-[#c8a24b] font-semibold text-xs" title="Toggle GM Live Controls & 1-Round Undo">
+              GM LIVE
+            </button>
           </div>
+        </div>
+
+        <!-- Collapsible GM Live Command Bar -->
+        <div id="gm-controls-bar" class="hidden mt-2.5 pt-2.5 border-t border-[#4d4224] bg-[#1b1912] px-3 py-2 flex flex-wrap items-center justify-between gap-2 font-mono text-[11px]">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-[#c8a24b] font-bold uppercase tracking-wider">GM LIVE MODE //</span>
+            <button type="button" onclick="undoLastRound()" class="mil-btn px-2.5 py-1 bg-[#262f25] hover:bg-[#364435] border border-[#5e6e5c] text-[#e7ece4] text-[10.5px] font-bold">◄ UNDO 1 ROUND</button>
+            <button type="button" onclick="gmAdjustDepot('A', 50)" class="mil-btn px-2 py-1 bg-[#1b2936] hover:bg-[#24394d] border border-[#3f6a91] text-[#8ec0e8] text-[10.5px]">+50 DEPOT A</button>
+            <button type="button" onclick="gmAdjustDepot('B', 50)" class="mil-btn px-2 py-1 bg-[#331b1a] hover:bg-[#4a2624] border border-[#8a3c38] text-[#e69894] text-[10.5px]">+50 DEPOT B</button>
+          </div>
+          <span class="text-[10px] text-[#9ca69a]">Adjust Supply / Org / Dist directly on unit cards or deploy mid-battle reinforcements.</span>
         </div>
 
         <!-- Environmental Modifiers Status Bar -->
