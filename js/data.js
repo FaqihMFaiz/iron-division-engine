@@ -34,14 +34,14 @@ window.IronDivision = window.IronDivision || {};
   // 3. Base Terrains
   // --------------------------------------------------------------------------
   const DEFAULT_TERRAINS = {
-    Plains:   { name: 'Plains',   infAtk: 0,   infDef: 0,  avAtk: 10,  avDef: 0,   tankAtk: 15,  tankDef: 5,   artAtk: 5,   artDef: 0,  vigMod: 5,   supplyDrain: 0, isUrban: false, openTerrain: true },
-    Forest:   { name: 'Forest',   infAtk: -5,  infDef: 15, avAtk: -15, avDef: -5,  tankAtk: -25, tankDef: -10, artAtk: -10, artDef: 5,  vigMod: -10, supplyDrain: 1, isUrban: false, openTerrain: false },
-    Hills:    { name: 'Hills',    infAtk: -10, infDef: 20, avAtk: -15, avDef: 5,   tankAtk: -20, tankDef: -5,  artAtk: 10,  artDef: 15, vigMod: 10,  supplyDrain: 1, isUrban: false, openTerrain: false },
-    Mountain: { name: 'Mountain', infAtk: -20, infDef: 35, avAtk: -35, avDef: -15, tankAtk: -50, tankDef: -25, artAtk: 15,  artDef: 20, vigMod: 15,  supplyDrain: 2, isUrban: false, openTerrain: false },
-    Jungle:   { name: 'Jungle',   infAtk: -15, infDef: 25, avAtk: -30, avDef: -15, tankAtk: -45, tankDef: -25, artAtk: -20, artDef: 0,  vigMod: -20, supplyDrain: 2, isUrban: false, openTerrain: false },
-    Marsh:    { name: 'Marsh',    infAtk: -20, infDef: 15, avAtk: -35, avDef: -20, tankAtk: -50, tankDef: -30, artAtk: -15, artDef: -10,vigMod: -5,  supplyDrain: 2, isUrban: false, openTerrain: false },
-    Desert:   { name: 'Desert',   infAtk: -10, infDef: -10,avAtk: 10,  avDef: 5,   tankAtk: 15,  tankDef: 5,   artAtk: 5,   artDef: -5, vigMod: 10,  supplyDrain: 2, isUrban: false, openTerrain: true },
-    Urban:    { name: 'Urban',    infAtk: -5,  infDef: 30, avAtk: -20, avDef: -10, tankAtk: -35, tankDef: -20, artAtk: -5,  artDef: 15, vigMod: -15, supplyDrain: 1, isUrban: true,  openTerrain: false }
+    Plains:   { name: 'Plains',   infAtk: 0,   infDef: 0,  avAtk: 10,  avDef: 0,   tankAtk: 15,  tankDef: 5,   artAtk: 5,   artDef: 0,  vigMod: 5,   supplyDrain: 0, maxEntrench: 4, outnumberCap: 100, isUrban: false, openTerrain: true },
+    Forest:   { name: 'Forest',   infAtk: -5,  infDef: 15, avAtk: -15, avDef: -5,  tankAtk: -25, tankDef: -10, artAtk: -10, artDef: 5,  vigMod: -10, supplyDrain: 1, maxEntrench: 5, outnumberCap: 60,  isUrban: false, openTerrain: false },
+    Hills:    { name: 'Hills',    infAtk: -10, infDef: 20, avAtk: -15, avDef: 5,   tankAtk: -20, tankDef: -5,  artAtk: 10,  artDef: 15, vigMod: 10,  supplyDrain: 1, maxEntrench: 5, outnumberCap: 70,  isUrban: false, openTerrain: false },
+    Mountain: { name: 'Mountain', infAtk: -20, infDef: 35, avAtk: -35, avDef: -15, tankAtk: -50, tankDef: -25, artAtk: 15,  artDef: 20, vigMod: 15,  supplyDrain: 2, maxEntrench: 6, outnumberCap: 35,  isUrban: false, openTerrain: false },
+    Jungle:   { name: 'Jungle',   infAtk: -15, infDef: 25, avAtk: -30, avDef: -15, tankAtk: -45, tankDef: -25, artAtk: -20, artDef: 0,  vigMod: -20, supplyDrain: 2, maxEntrench: 5, outnumberCap: 45,  isUrban: false, openTerrain: false },
+    Marsh:    { name: 'Marsh',    infAtk: -20, infDef: 15, avAtk: -35, avDef: -20, tankAtk: -50, tankDef: -30, artAtk: -15, artDef: -10,vigMod: -5,  supplyDrain: 2, maxEntrench: 3, outnumberCap: 50,  isUrban: false, openTerrain: false },
+    Desert:   { name: 'Desert',   infAtk: -10, infDef: -10,avAtk: 10,  avDef: 5,   tankAtk: 15,  tankDef: 5,   artAtk: 5,   artDef: -5, vigMod: 10,  supplyDrain: 2, maxEntrench: 3, outnumberCap: 100, isUrban: false, openTerrain: true },
+    Urban:    { name: 'Urban',    infAtk: -5,  infDef: 30, avAtk: -20, avDef: -10, tankAtk: -35, tankDef: -20, artAtk: -5,  artDef: 15, vigMod: -15, supplyDrain: 1, maxEntrench: 6, outnumberCap: 40,  isUrban: true,  openTerrain: false }
   };
 
   // --------------------------------------------------------------------------
@@ -66,8 +66,59 @@ window.IronDivision = window.IronDivision || {};
     LightRain: { id: 'LightRain', name: 'Light Rain',    atkMod: -5,  defMod: 5,  vigMod: -10, airMod: -20, supplyAdd: 1, tankMod: -5,  desc: '-5% Attack, +5% Defense, -10 Vigilance, +1 Supply drain.' },
     HeavyRain: { id: 'HeavyRain', name: 'Heavy Rain',    atkMod: -15, defMod: 10, vigMod: -20, airMod: -50, supplyAdd: 2, tankMod: -20, desc: '-15% Attack, -20% Tank mobility, -20 Vigilance, +2 Supply drain.' },
     Foggy:     { id: 'Foggy',     name: 'Foggy',         atkMod: -10, defMod: 10, vigMod: -30, airMod: -60, supplyAdd: 0, artMod: -20,  desc: '-30 Vigilance, -20% Artillery, -60% Air Support.' },
-    Snowy:     { id: 'Snowy',     name: 'Snowy / Frost', atkMod: -15, defMod: 15, vigMod: -15, airMod: -30, supplyAdd: 2, tankMod: -15, desc: '-15% Attack, +15% Defense, +2 Supply drain, -15% Tank attack.' },
+    Snowy:     { id: 'Snowy',     name: 'Snowy / Frost', atkMod: -15, defMod: 15, vigMod: -15, airMod: -30, supplyAdd: 2, tankMod: -15, desc: '-15% Attack, +15% Defense, +2 Supply drain, -15% Tank attack, -30% Air Support.' },
     HeatWaves: { id: 'HeatWaves', name: 'Heat Waves',    atkMod: -10, defMod: -5, vigMod: -10, airMod: -10, supplyAdd: 2, infMod: -10,  desc: '-10% Attack, -5% Defense, +2 Supply drain, -10% Infantry stamina.' }
+  };
+
+  // --------------------------------------------------------------------------
+  // 5b. Time-of-Day, Compound Hazards & Dynamic Weather Transitions
+  // --------------------------------------------------------------------------
+  const TIME_OF_DAY_TYPES = {
+    Day:      { id: 'Day',      name: 'Daylight',    atkMod: 0,   defMod: 0,  vigMod: 0,   airMod: 0,   visCap: null, ambushBonus: 0,  desc: 'Full daylight visibility and unobstructed air/artillery observation.' },
+    DuskDawn: { id: 'DuskDawn', name: 'Dusk / Dawn', atkMod: -5,  defMod: 5,  vigMod: -10, airMod: -15, visCap: 6,    ambushBonus: 5,  desc: '-10 Vigilance, -5% Attack, +5% Defense, -15% Air Support, +5 Ambush/Infiltration Vig.' },
+    Night:    { id: 'Night',    name: 'Night',       atkMod: -15, defMod: 10, vigMod: -25, airMod: -40, visCap: 4,    ambushBonus: 15, desc: '-25 Vigilance, -15% Attack, +10% Defense, -40% Air Support, Vis Cap 4, +15 Ambush/Infiltration Vig.' }
+  };
+
+  const COMPOUND_HAZARDS = {
+    mud_rasputitsa: {
+      id: 'mud_rasputitsa',
+      name: 'Mud / Rasputitsa',
+      shortLabel: 'MUD / RASPUTITSA',
+      trigger: 'Heavy Rain on Plains/Forest/Hills/Marsh/Road, or Light Rain on Marsh',
+      desc: '-1 to -2 Armored/Mech mobility, +2 extra Supply drain, -15 Vehicle Recovery & Retreat.'
+    },
+    zero_visibility: {
+      id: 'zero_visibility',
+      name: 'Zero Visibility',
+      shortLabel: 'ZERO VISIBILITY',
+      trigger: 'Foggy weather, or Night in Urban/Forest/Jungle',
+      desc: 'Caps direct spotting/engagement range (3 in close terrain, 4 in open) and -15 Vigilance without Recon/Concealment.'
+    },
+    deep_freeze: {
+      id: 'deep_freeze',
+      name: 'Deep Freeze / Frostbite',
+      shortLabel: 'DEEP FREEZE',
+      trigger: 'Snowy / Frost on Mountain, Hills, or Plains',
+      desc: '+3% DOW mortality, +1 extra Supply drain, and 15% cold-weather AFV breakdown risk below 30% Supply.'
+    },
+    heatstroke_dust: {
+      id: 'heatstroke_dust',
+      name: 'Heatstroke & Dust',
+      shortLabel: 'HEATSTROKE / DUST',
+      trigger: 'Heat Waves in Desert terrain',
+      desc: '+2 extra Infantry Supply drain, -2 Infantry Org/rd heat attrition in combat, -15 Vigilance optics penalty for Armor/Artillery.'
+    }
+  };
+
+  const WEATHER_TRANSITIONS = {
+    Sunny:     ['Sunny', 'Overcast', 'Windy', 'HeatWaves'],
+    Overcast:  ['Sunny', 'Overcast', 'Windy', 'LightRain', 'Foggy', 'Snowy'],
+    Windy:     ['Sunny', 'Overcast', 'Windy', 'LightRain', 'HeatWaves'],
+    LightRain: ['Overcast', 'LightRain', 'HeavyRain', 'Foggy'],
+    HeavyRain: ['Overcast', 'LightRain', 'HeavyRain', 'Windy'],
+    Foggy:     ['Overcast', 'Foggy', 'LightRain', 'Sunny'],
+    Snowy:     ['Overcast', 'Snowy', 'Windy', 'Foggy'],
+    HeatWaves: ['Sunny', 'Windy', 'HeatWaves']
   };
 
   // --------------------------------------------------------------------------
@@ -679,6 +730,9 @@ window.IronDivision = window.IronDivision || {};
     DEFAULT_TERRAINS,
     TERRAIN_FEATURES,
     WEATHER_TYPES,
+    TIME_OF_DAY_TYPES,
+    COMPOUND_HAZARDS,
+    WEATHER_TRANSITIONS,
     DEFAULT_TRAITS,
     DEFAULT_COMMANDER_TRAITS,
     DEFAULT_COMMANDERS,
@@ -697,5 +751,8 @@ window.IronDivision = window.IronDivision || {};
   window.DEFAULT_TERRAINS = DEFAULT_TERRAINS;
   window.TERRAIN_FEATURES = TERRAIN_FEATURES;
   window.WEATHER_TYPES = WEATHER_TYPES;
+  window.TIME_OF_DAY_TYPES = TIME_OF_DAY_TYPES;
+  window.COMPOUND_HAZARDS = COMPOUND_HAZARDS;
+  window.WEATHER_TRANSITIONS = WEATHER_TRANSITIONS;
 
 })(window.IronDivision);

@@ -95,21 +95,38 @@
     <section id="view-battlefield" class="space-y-4">
       <!-- Theatre Controls Bar -->
       <div class="mil-monitor-frame p-3 sm:p-3.5">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-2.5 items-end">
           <!-- Terrain Selector -->
           <div>
-            <label class="block text-[11px] font-mono uppercase text-slate-400 mb-1">Base Terrain</label>
-            <select id="bf-terrain" onchange="onEnvironmentChange()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-amber-500"></select>
+            <label class="block text-[10px] font-mono uppercase text-slate-400 mb-1">Base Terrain</label>
+            <select id="bf-terrain" onchange="onEnvironmentChange()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-2 text-xs text-white focus:outline-none focus:border-amber-500"></select>
           </div>
           <!-- Terrain Feature Selector -->
           <div>
-            <label class="block text-[11px] font-mono uppercase text-slate-400 mb-1">Terrain Feature (Multiplicative)</label>
-            <select id="bf-feature" onchange="onEnvironmentChange()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-amber-500"></select>
+            <label class="block text-[10px] font-mono uppercase text-slate-400 mb-1">Terrain Feature</label>
+            <select id="bf-feature" onchange="onEnvironmentChange()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-2 text-xs text-white focus:outline-none focus:border-amber-500"></select>
           </div>
           <!-- Weather Selector -->
           <div>
-            <label class="block text-[11px] font-mono uppercase text-slate-400 mb-1">Weather Condition</label>
-            <select id="bf-weather" onchange="onEnvironmentChange()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-amber-500"></select>
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-[10px] font-mono uppercase text-slate-400">Weather</label>
+              <label class="flex items-center gap-1 text-[9.5px] font-mono text-amber-400 cursor-pointer" title="Roll dynamic weather shifts every 3 rounds">
+                <input type="checkbox" id="bf-dynamic-weather" onchange="onEnvironmentChange()" class="accent-amber-500">
+                <span>DYN</span>
+              </label>
+            </div>
+            <select id="bf-weather" onchange="onEnvironmentChange()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-2 text-xs text-white focus:outline-none focus:border-amber-500"></select>
+          </div>
+          <!-- Time of Day Selector -->
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-[10px] font-mono uppercase text-slate-400">Time of Day</label>
+              <label class="flex items-center gap-1 text-[9.5px] font-mono text-sky-400 cursor-pointer" title="Advance Day/Dusk/Night cycle every 3 rounds">
+                <input type="checkbox" id="bf-cycle-time" onchange="onEnvironmentChange()" class="accent-sky-400">
+                <span>CYCLE</span>
+              </label>
+            </div>
+            <select id="bf-timeofday" onchange="onEnvironmentChange()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-2 text-xs text-white focus:outline-none focus:border-amber-500"></select>
           </div>
           <!-- Theatre Role & Opening Surprise -->
           <div class="grid grid-cols-2 gap-1.5">
@@ -906,6 +923,14 @@
                 <label class="block text-slate-400 mb-1 font-mono uppercase">Extra Supply Drain</label>
                 <input type="number" id="terr-supply" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
               </div>
+              <div>
+                <label class="block text-slate-400 mb-1 font-mono uppercase">Max Entrenchment</label>
+                <input type="number" id="terr-max-entrench" min="1" max="8" value="4" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+              </div>
+              <div>
+                <label class="block text-slate-400 mb-1 font-mono uppercase">Max Outnumber %</label>
+                <input type="number" id="terr-outnumber-cap" min="20" max="100" step="5" value="100" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+              </div>
               <div class="col-span-2">
                 <label class="flex items-center gap-2 mt-1">
                   <input type="checkbox" id="terr-urban-flag" class="accent-amber-500">
@@ -932,6 +957,7 @@
                     <th class="py-2 px-2">Tank Atk/Def</th>
                     <th class="py-2 px-2">Art Atk/Def</th>
                     <th class="py-2 px-2">Vig / Supply</th>
+                    <th class="py-2 px-2">Dig-In / Outnum</th>
                   </tr>
                 </thead>
                 <tbody id="terrain-matrix-tbody" class="divide-y divide-slate-800/60"></tbody>
@@ -947,6 +973,17 @@
             <div class="mil-monitor-frame p-4">
               <h3 class="font-bold text-sm text-sky-400 mb-2">Weather Matrix</h3>
               <div id="weather-matrix-list" class="space-y-2 text-xs"></div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+            <div class="mil-monitor-frame p-4">
+              <h3 class="font-bold text-sm text-emerald-400 mb-2">Time-of-Day Cycle</h3>
+              <div id="timeofday-matrix-list" class="space-y-2 text-xs"></div>
+            </div>
+            <div class="mil-monitor-frame p-4">
+              <h3 class="font-bold text-sm text-rose-400 mb-2">Compound Hazards (Terrain × Weather)</h3>
+              <div id="hazards-matrix-list" class="space-y-2 text-xs"></div>
             </div>
           </div>
         </div>

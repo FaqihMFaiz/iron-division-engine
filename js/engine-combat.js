@@ -450,7 +450,8 @@ window.IronDivision = window.IronDivision || {};
     if (enemyTotal <= 0 || myTotal <= enemyTotal) return 0;
     const ratioAdvantage = (myTotal - enemyTotal) / enemyTotal;
     const steps = Math.floor((ratioAdvantage + 0.0001) / 0.5);
-    return Math.min(100, steps * 20);
+    const cap = H.getActiveEnvironmentEffects ? H.getActiveEnvironmentEffects().outnumberCap : 100;
+    return Math.min(cap, steps * 20);
   }
 
   function getOrgRemainingMalusPct(u) {
@@ -548,7 +549,8 @@ window.IronDivision = window.IronDivision || {};
     const combinedMult = (1 + basePct / 100) * featMult;
     const totalTerrainPct = Math.round((combinedMult - 1) * 100);
 
-    let weatherPct = role === 'attack' ? weath.atkMod : weath.defMod;
+    const tod = D.TIME_OF_DAY_TYPES?.[ID.state.environment.timeOfDay] || D.TIME_OF_DAY_TYPES?.Day || { atkMod: 0, defMod: 0 };
+    let weatherPct = (role === 'attack' ? weath.atkMod : weath.defMod) + (role === 'attack' ? (tod.atkMod || 0) : (tod.defMod || 0));
     if (u.category === 'tank' && weath.tankMod) weatherPct += weath.tankMod;
     if (u.category === 'artillery' && weath.artMod) weatherPct += weath.artMod;
     if (u.category === 'infantry' && weath.infMod) weatherPct += weath.infMod;
@@ -598,6 +600,7 @@ window.IronDivision = window.IronDivision || {};
         attackerSide: ID.state.battle.attackerSide,
         isOver: ID.state.battle.isOver,
         winner: ID.state.battle.winner,
+        environment: ID.state.environment,
         sideA: ID.state.battle.sideA,
         sideB: ID.state.battle.sideB,
         logs: ID.state.battle.logs,
@@ -609,6 +612,41 @@ window.IronDivision = window.IronDivision || {};
       }
 
       const rd = ID.state.battle.round;
+
+      // 0. Dynamic Weather & Time-of-Day Progression (every 3 rounds after Round 1)
+      if (rd > 1 && (rd - 1) % 3 === 0) {
+        if (ID.state.environment.cycleTimeOfDay) {
+          const cycle = ['Day', 'DuskDawn', 'Night', 'DuskDawn'];
+          const curIdx = typeof ID.state.environment.todStep === 'number' ? ID.state.environment.todStep : Math.max(0, cycle.indexOf(ID.state.environment.timeOfDay || 'Day'));
+          const nextIdx = (curIdx + 1) % cycle.length;
+          ID.state.environment.todStep = nextIdx;
+          const prevTod = D.TIME_OF_DAY_TYPES?.[ID.state.environment.timeOfDay]?.name || ID.state.environment.timeOfDay || 'Daylight';
+          ID.state.environment.timeOfDay = cycle[nextIdx];
+          const newTod = D.TIME_OF_DAY_TYPES?.[ID.state.environment.timeOfDay]?.name || ID.state.environment.timeOfDay;
+          H.addLog('support', `[ENV] [Time Shift] Battlefield lighting shifts from ${prevTod} -> ${newTod}!`);
+        }
+
+        if (ID.state.environment.dynamicWeather && Math.random() < 0.45) {
+          const curW = ID.state.environment.weather || 'Sunny';
+          const terrK = ID.state.environment.terrain || 'Plains';
+          let candidates = (D.WEATHER_TRANSITIONS?.[curW] || ['Sunny', 'Overcast']).filter(w => w !== curW);
+          if (terrK === 'Desert') {
+            candidates = candidates.filter(w => !['Snowy', 'HeavyRain', 'Foggy'].includes(w));
+            if (candidates.length === 0) candidates = ['Sunny', 'Windy', 'HeatWaves'].filter(w => w !== curW);
+          } else if (terrK === 'Jungle') {
+            candidates = candidates.filter(w => w !== 'Snowy');
+          } else if (terrK === 'Mountain') {
+            candidates = candidates.filter(w => w !== 'HeatWaves');
+          }
+          if (candidates.length > 0) {
+            const nextW = candidates[Math.floor(Math.random() * candidates.length)];
+            const prevName = D.WEATHER_TYPES?.[curW]?.name || curW;
+            const nextName = D.WEATHER_TYPES?.[nextW]?.name || nextW;
+            ID.state.environment.weather = nextW;
+            H.addLog('support', `[WTH] [Weather Shift] Theatre weather shifts from ${prevName} -> ${nextName}!`);
+          }
+        }
+      }
       const atkSide = ID.state.battle.attackerSide;
       const defSide = atkSide === 'A' ? 'B' : 'A';
       const atkState = atkSide === 'A' ? ID.state.battle.sideA : ID.state.battle.sideB;
@@ -998,7 +1036,9 @@ window.IronDivision = window.IronDivision || {};
 
       if (!u.isMonster && !u.isZombie) {
         if (!isUncontestedFrontline && !isPreContact) {
-          let drain = sideRollD3 + (terr.supplyDrain || 0) + (feat.supplyAdd || 0) + (weath.supplyAdd || 0) + (chosenTactic.supplyAdd || 0);
+          const envFx = H.getActiveEnvironmentEffects ? H.getActiveEnvironmentEffects() : { extraSupplyDrain: 0, hasHeatstroke: false, hasDeepFreeze: false };
+          let drain = sideRollD3 + (terr.supplyDrain || 0) + (feat.supplyAdd || 0) + (weath.supplyAdd || 0) + (chosenTactic.supplyAdd || 0) + (envFx.extraSupplyDrain || 0);
+          if (envFx.hasHeatstroke && u.category === 'infantry') drain += 2;
           if (chosenTactic.id === 'urb_atk_armour_supported' && u.maxArmor > 0) drain += 1;
           const supplyCut = getCommanderUnitBonus(side, u, 'supplyDrainReduction');
           if (supplyCut > 0) {
@@ -1019,6 +1059,18 @@ window.IronDivision = window.IronDivision || {};
 
           const netDrain = Math.max(0, drain - actualRegenDrawn);
           u.supply = H.clamp(u.supply - netDrain, 0, u.maxSupply);
+
+          // Compound Hazard: Heatstroke & Dust (Infantry Org attrition)
+          if (envFx.hasHeatstroke && u.category === 'infantry') {
+            u.org = Math.max(0, u.org - 2);
+            H.addLog('support', `[WTH] [Heatstroke] ${u.name} suffers -2 Org from extreme desert heat.`);
+          }
+          // Compound Hazard: Deep Freeze (Cold-weather AFV breakdown below 30% supply)
+          if (envFx.hasDeepFreeze && u.armor > 0 && (u.supply / Math.max(1, u.maxSupply)) < 0.30 && Math.random() < 0.15) {
+            u.armor = Math.max(0, u.armor - 1);
+            u.recoverableArmor = (u.recoverableArmor || 0) + 1;
+            H.addLog('support', `[WTH] [Deep Freeze Breakdown] ${u.name} loses 1 AFV to frozen mechanics (recoverable, ${u.armor}/${u.maxArmor} operational).`);
+          }
 
           const supRatio = u.supply / Math.max(1, u.maxSupply);
           if (u.supply <= 0) {
@@ -1138,8 +1190,10 @@ window.IronDivision = window.IronDivision || {};
         else if (supRatio < 0.50) dowRate += 2;
         if (u.supply <= 0) dowRate += 5;
 
+        const dowEnvFx = H.getActiveEnvironmentEffects ? H.getActiveEnvironmentEffects() : { extraDowRate: 0 };
         if (ID.state.environment.weather === 'Snowy') dowRate += 2;
         if (ID.state.environment.weather === 'HeatWaves' || ID.state.environment.terrain === 'Marsh') dowRate += 1;
+        if (dowEnvFx.extraDowRate) dowRate += dowEnvFx.extraDowRate;
 
         if (u.traits.includes('first_aid_kit')) dowRate -= 4;
         if (u.traits.includes('field_medic')) dowRate -= 3;
@@ -1220,7 +1274,18 @@ window.IronDivision = window.IronDivision || {};
     const feat = D.TERRAIN_FEATURES[ID.state.environment.feature] || D.TERRAIN_FEATURES.Normal;
     const weath = D.WEATHER_TYPES[ID.state.environment.weather] || D.WEATHER_TYPES.Sunny;
 
-    let mod = (terr.vigMod || 0) + (feat.vigAdd || 0) + (weath.vigMod || 0) + (tactic.vigMod || 0) + (sideState.activeRoundVigMod || 0);
+    const envFx = H.getActiveEnvironmentEffects ? H.getActiveEnvironmentEffects() : { tod: { vigMod: 0, ambushBonus: 0 }, hasZeroVis: false, hasHeatstroke: false };
+    let mod = (terr.vigMod || 0) + (feat.vigAdd || 0) + (weath.vigMod || 0) + (envFx.tod?.vigMod || 0) + (tactic.vigMod || 0) + (sideState.activeRoundVigMod || 0);
+
+    if (envFx.tod?.ambushBonus && ['def_ambush', 'urb_def_ambush', 'atk_infiltration', 'urb_atk_mouse_holing'].includes(tactic.id)) {
+      mod += envFx.tod.ambushBonus;
+    }
+    if (envFx.hasZeroVis && !units.some(u => u.traits && (u.traits.includes('recon_support') || u.traits.includes('concealment_specialist')))) {
+      mod -= 15;
+    }
+    if (envFx.hasHeatstroke && units.some(u => u.category === 'tank' || u.category === 'artillery')) {
+      mod -= 15;
+    }
 
     if (cmd && cmd.traits) {
       const cmdTraits = cmd.traits.map(getCommanderTraitById).filter(Boolean);
@@ -1380,8 +1445,22 @@ window.IronDivision = window.IronDivision || {};
         H.addLog('support', `[FS-ART] [${fireSourceLabel}] ${u.name} -> ${target.name} (Roll d12=${d12}, Cost ${cost} Sup, CD ${u.supportCooldowns.heavy_artillery}): Def -${defRed}, Hardness -${hardRed}, Cas: ${cas}, Armor Dis: ${armDis}`);
       }
 
-      // Air Support & AA Interception
+      // Air Support & AA Interception (now weather & time-of-day aware via airMod)
       if (u.traits.includes('air_support') && u.supportCooldowns.air_support <= 0 && !firingState.airstrikeDisabled) {
+        const airEnvFx = H.getActiveEnvironmentEffects ? H.getActiveEnvironmentEffects() : { effectiveAirMod: 0, airEfficiency: 1.0 };
+        const airEff = airEnvFx.airEfficiency;
+        const airEffPct = Math.round(airEff * 100);
+
+        // Severe weather / visibility grounding check when effectiveAirMod <= -50%
+        if (airEnvFx.effectiveAirMod <= -50) {
+          const abortChance = Math.min(75, Math.abs(airEnvFx.effectiveAirMod));
+          if (H.rollDie(100) <= abortChance) {
+            u.supportCooldowns.air_support = 1;
+            H.addLog('support', `[FS-AIR] [Air Support Grounded] ${u.name}'s strike wing aborted due to severe weather/visibility (${airEnvFx.effectiveAirMod}% Air Mod, ${abortChance}% abort risk; 0 Supply spent, 1-rd hold).`);
+            continue;
+          }
+        }
+
         const cost = 5 + H.rollDie(4);
         if (!u.isMonster && !u.isZombie) u.supply = Math.max(0, u.supply - cost);
         u.supportCooldowns.air_support = 2 + H.rollDie(2);
@@ -1415,8 +1494,8 @@ window.IronDivision = window.IronDivision || {};
 
         if (!shotDownAll) {
           const d20 = H.rollDie(20);
-          const rawDefRed = 6 + d20;
-          const rawHardRed = 4 + H.rollDie(10);
+          const rawDefRed = Math.round((6 + d20) * airEff);
+          const rawHardRed = Math.round((4 + H.rollDie(10)) * airEff);
           const defRed = Math.max(0, rawDefRed - aaReduction);
           const hardRed = Math.max(0, rawHardRed - Math.floor(aaReduction / 2));
           target.roundTemp.defMalus += defRed;
@@ -1434,11 +1513,12 @@ window.IronDivision = window.IronDivision || {};
             cas = 6 + H.rollDie(20);
             if (target.maxArmor > 0) armDis = 2 + H.rollDie(5);
           }
-          cas = Math.max(0, cas - aaReduction);
+          cas = Math.max(0, Math.round(cas * airEff) - aaReduction);
+          armDis = Math.max(0, Math.round(armDis * airEff));
           if (cas > 0 || armDis > 0) {
             applySupportCasualtiesAndArmor(target, cas, armDis, 'Airstrike');
           }
-          H.addLog('support', `[FS-AIR] [Air Support] ${u.name} -> ${target.name} (Roll d20=${d20}, AA Red: -${aaReduction}): Def -${defRed}, Hardness -${hardRed}, Cas: ${cas}, Armor Dis: ${armDis}`);
+          H.addLog('support', `[FS-AIR] [Air Support] ${u.name} -> ${target.name} (Roll d20=${d20}, Air Eff: ${airEffPct}%, AA Red: -${aaReduction}): Def -${defRed}, Hardness -${hardRed}, Cas: ${cas}, Armor Dis: ${armDis}`);
         }
       }
     }

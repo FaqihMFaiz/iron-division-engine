@@ -135,10 +135,14 @@ window.IronDivision = window.IronDivision || {};
 
     const isMotorizedOrArmor = u.category === 'tank' || u.category === 'armored_vehicle';
 
+    const envFx = getActiveEnvironmentEffects();
     if (isMotorizedOrArmor) {
       if (terr === 'Plains' || terr === 'Desert' || feat === 'Road') terrainMod = +1;
       else if (terr === 'Forest' || terr === 'Hills') terrainMod = -1;
       else if (terr === 'Mountain' || terr === 'Jungle' || terr === 'Marsh' || terr === 'Urban') terrainMod = -2;
+      if (envFx.hasMud) {
+        terrainMod -= (terr === 'Marsh' || terr === 'Plains') ? 2 : 1;
+      }
     } else {
       if (terr === 'Mountain' || terr === 'Jungle' || terr === 'Forest') terrainMod = +1;
     }
@@ -169,18 +173,92 @@ window.IronDivision = window.IronDivision || {};
     return p.length > 0 ? ` (${p.join(', ')})` : '';
   }
 
-  function getUnitMaxEntrenchmentCap(unit) {
+  function getActiveEnvironmentEffects() {
+    const D = ID.Data || {};
     const env = ID.state?.environment || {};
-    const terr = env.terrain;
-    const feat = env.feature;
-    let cap = 3;
+    const terrKey = env.terrain || 'Plains';
+    const featKey = env.feature || 'Normal';
+    const weathKey = env.weather || 'Sunny';
+    const todKey = env.timeOfDay || 'Day';
 
-    if (terr === 'Plains' || terr === 'Desert') cap = 2;
-    else if (terr === 'Forest' || terr === 'Jungle' || terr === 'Marsh') cap = 3;
-    else if (terr === 'Hills' || terr === 'Mountain') cap = 4;
-    else if (terr === 'Urban') cap = 5;
+    const terr = (ID.state?.terrains && ID.state.terrains[terrKey]) || D.DEFAULT_TERRAINS?.[terrKey] || D.DEFAULT_TERRAINS?.Plains || {};
+    const feat = D.TERRAIN_FEATURES?.[featKey] || D.TERRAIN_FEATURES?.Normal || {};
+    const weath = D.WEATHER_TYPES?.[weathKey] || D.WEATHER_TYPES?.Sunny || {};
+    const tod = D.TIME_OF_DAY_TYPES?.[todKey] || D.TIME_OF_DAY_TYPES?.Day || { id: 'Day', name: 'Daylight', atkMod: 0, defMod: 0, vigMod: 0, airMod: 0, visCap: null, ambushBonus: 0 };
 
-    if (feat === 'Fort') cap = 5;
+    const hazards = [];
+    const closeTerrain = ['Urban', 'Forest', 'Jungle'].includes(terrKey) || !!terr.isUrban;
+
+    const hasMud = (weathKey === 'HeavyRain' && (['Plains', 'Forest', 'Hills', 'Marsh'].includes(terrKey) || featKey === 'Road')) ||
+                   (weathKey === 'LightRain' && terrKey === 'Marsh');
+    if (hasMud && D.COMPOUND_HAZARDS?.mud_rasputitsa) {
+      hazards.push(D.COMPOUND_HAZARDS.mud_rasputitsa);
+    }
+
+    const hasZeroVis = (weathKey === 'Foggy') || (todKey === 'Night' && closeTerrain);
+    if (hasZeroVis && D.COMPOUND_HAZARDS?.zero_visibility) {
+      hazards.push(D.COMPOUND_HAZARDS.zero_visibility);
+    }
+
+    const hasDeepFreeze = (weathKey === 'Snowy' && ['Mountain', 'Hills', 'Plains'].includes(terrKey));
+    if (hasDeepFreeze && D.COMPOUND_HAZARDS?.deep_freeze) {
+      hazards.push(D.COMPOUND_HAZARDS.deep_freeze);
+    }
+
+    const hasHeatstroke = (weathKey === 'HeatWaves' && terrKey === 'Desert');
+    if (hasHeatstroke && D.COMPOUND_HAZARDS?.heatstroke_dust) {
+      hazards.push(D.COMPOUND_HAZARDS.heatstroke_dust);
+    }
+
+    const effectiveAirMod = clamp((weath.airMod || 0) + (tod.airMod || 0), -90, 20);
+    const airEfficiency = Math.max(0.10, 1 + effectiveAirMod / 100);
+
+    let visCap = (tod.visCap !== undefined && tod.visCap !== null) ? tod.visCap : null;
+    if (hasZeroVis) {
+      const hazardCap = closeTerrain ? 3 : 4;
+      visCap = visCap === null ? hazardCap : Math.min(visCap, hazardCap);
+    }
+
+    const baseEntrench = (terr.maxEntrench !== undefined && terr.maxEntrench !== null)
+      ? Number(terr.maxEntrench)
+      : (terrKey === 'Urban' || terrKey === 'Mountain' ? 6 : (terrKey === 'Marsh' || terrKey === 'Desert' ? 3 : 4));
+    const maxEntrenchBase = clamp(baseEntrench + (feat.fortified ? 2 : 0), 1, 8);
+
+    const baseOutnum = (terr.outnumberCap !== undefined && terr.outnumberCap !== null)
+      ? Number(terr.outnumberCap)
+      : 100;
+    const outnumberCap = Math.max(25, baseOutnum - (feat.fortified ? 15 : 0) - ((feat.isRiver || feat.isAmphib) ? 15 : 0));
+
+    const extraSupplyDrain = (hasMud ? 2 : 0) + (hasDeepFreeze ? 1 : 0);
+    const extraDowRate = hasDeepFreeze ? 3 : 0;
+
+    return {
+      terrKey,
+      featKey,
+      weathKey,
+      todKey,
+      terr,
+      feat,
+      weath,
+      tod,
+      hazards,
+      hasMud,
+      hasZeroVis,
+      hasDeepFreeze,
+      hasHeatstroke,
+      effectiveAirMod,
+      airEfficiency,
+      visCap,
+      maxEntrenchBase,
+      outnumberCap,
+      extraSupplyDrain,
+      extraDowRate
+    };
+  }
+
+  function getUnitMaxEntrenchmentCap(unit) {
+    const envFx = getActiveEnvironmentEffects();
+    let cap = envFx.maxEntrenchBase;
     if (unit && unit.traits && unit.traits.includes('fortification_engineer')) cap += 1;
     return cap;
   }
@@ -219,6 +297,12 @@ window.IronDivision = window.IronDivision || {};
 
     if (feat === 'Fort') { retreatMod -= 10; vehicleRecMod += 10; triageMod += 10; }
     if (feat === 'LargeRiver') { retreatMod -= 20; vehicleRecMod -= 20; triageMod -= 5; }
+
+    const envFx = getActiveEnvironmentEffects();
+    if (envFx.hasMud && isVehicle) {
+      retreatMod -= 15;
+      vehicleRecMod -= 15;
+    }
 
     return { retreatMod, vehicleRecMod, triageMod };
   }
@@ -263,10 +347,21 @@ window.IronDivision = window.IronDivision || {};
   function getUnitEngagementRange(u) {
     if (!u) return 2;
     if (u.isZombie || (u.traits && u.traits.includes('zombie_unit'))) return 1;
-    if (u.category === 'artillery') return 6;
-    if (u.category === 'tank') return 3;
-    if (u.category === 'infantry' || u.category === 'armored_vehicle') return 2;
-    return 2;
+    let baseRange = 2;
+    if (u.category === 'artillery') baseRange = 6;
+    else if (u.category === 'tank') baseRange = 3;
+    else if (u.category === 'infantry' || u.category === 'armored_vehicle') baseRange = 2;
+
+    const envFx = getActiveEnvironmentEffects();
+    if (envFx.visCap !== null) {
+      if (u.category === 'artillery') {
+        const sideUnits = u.side === 'A' ? (ID.state?.battle?.sideA?.units || []) : (ID.state?.battle?.sideB?.units || []);
+        const hasSpotter = sideUnits.some(su => !su.isRouted && su.personnel > 0 && su.traits && su.traits.includes('recon_support'));
+        return hasSpotter ? baseRange : Math.min(baseRange, envFx.visCap + 1);
+      }
+      return Math.min(baseRange, envFx.visCap);
+    }
+    return baseRange;
   }
 
   function getTotalDistance(unitA, unitB) {
@@ -457,6 +552,7 @@ window.IronDivision = window.IronDivision || {};
     getUnitMobilityClass,
     getUnitEffectiveSpeed,
     formatTacticModifiers,
+    getActiveEnvironmentEffects,
     getUnitMaxEntrenchmentCap,
     getTerrainOperationalMods,
     getBaseTerrainDistance,

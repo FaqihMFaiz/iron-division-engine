@@ -27,6 +27,10 @@ window.IronDivision = window.IronDivision || {};
       terrain: 'Urban',
       feature: 'Normal',
       weather: 'Sunny',
+      timeOfDay: 'Day',
+      todStep: 0,
+      dynamicWeather: false,
+      cycleTimeOfDay: false,
       theatreAttackerSide: 'A',
       unexpectedInitiative: false
     },
@@ -924,6 +928,10 @@ window.IronDivision = window.IronDivision || {};
     document.getElementById('terr-art-def').value = t.artDef;
     document.getElementById('terr-vig').value = t.vigMod;
     document.getElementById('terr-supply').value = t.supplyDrain;
+    const entEl = document.getElementById('terr-max-entrench');
+    if (entEl) entEl.value = (t.maxEntrench !== undefined && t.maxEntrench !== null) ? t.maxEntrench : 4;
+    const outEl = document.getElementById('terr-outnumber-cap');
+    if (outEl) outEl.value = (t.outnumberCap !== undefined && t.outnumberCap !== null) ? t.outnumberCap : 100;
     document.getElementById('terr-urban-flag').checked = !!t.isUrban;
   }
 
@@ -943,6 +951,8 @@ window.IronDivision = window.IronDivision || {};
       artDef: Number(document.getElementById('terr-art-def').value) || 0,
       vigMod: Number(document.getElementById('terr-vig').value) || 0,
       supplyDrain: Number(document.getElementById('terr-supply').value) || 0,
+      maxEntrench: H.clamp(Number(document.getElementById('terr-max-entrench')?.value) || 4, 1, 8),
+      outnumberCap: H.clamp(Number(document.getElementById('terr-outnumber-cap')?.value) || 100, 20, 100),
       isUrban: document.getElementById('terr-urban-flag').checked,
       openTerrain: !document.getElementById('terr-urban-flag').checked
     };
@@ -992,6 +1002,9 @@ window.IronDivision = window.IronDivision || {};
     ID.state.battle.attackerSide = snap.attackerSide;
     ID.state.battle.isOver = snap.isOver;
     ID.state.battle.winner = snap.winner;
+    if (snap.environment) {
+      ID.state.environment = structuredClone(snap.environment);
+    }
     ID.state.battle.sideA = snap.sideA;
     ID.state.battle.sideB = snap.sideB;
     ID.state.battle.logs = snap.logs;

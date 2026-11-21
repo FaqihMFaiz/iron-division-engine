@@ -137,6 +137,9 @@ window.IronDivision = window.IronDivision || {};
     const tSel = document.getElementById('bf-terrain');
     const fSel = document.getElementById('bf-feature');
     const wSel = document.getElementById('bf-weather');
+    const todSel = document.getElementById('bf-timeofday');
+    const dynChk = document.getElementById('bf-dynamic-weather');
+    const cycChk = document.getElementById('bf-cycle-time');
     const thSel = document.getElementById('bf-theatre-atk');
     const uChk = document.getElementById('bf-unexpected');
 
@@ -152,6 +155,14 @@ window.IronDivision = window.IronDivision || {};
       }
     }
     if (wSel && wSel.value) state.environment.weather = wSel.value;
+    if (todSel && todSel.value) {
+      state.environment.timeOfDay = todSel.value;
+      const cycle = ['Day', 'DuskDawn', 'Night', 'DuskDawn'];
+      const idx = cycle.indexOf(todSel.value);
+      if (idx >= 0) state.environment.todStep = idx;
+    }
+    if (dynChk) state.environment.dynamicWeather = dynChk.checked;
+    if (cycChk) state.environment.cycleTimeOfDay = cycChk.checked;
     if (uChk) state.environment.unexpectedInitiative = uChk.checked;
 
     if (state.battle.round === 1 && !state.battle.initialSnapshot) {
@@ -217,17 +228,45 @@ window.IronDivision = window.IronDivision || {};
     }
     wSel.value = state.environment.weather;
 
-    const terr = state.terrains[state.environment.terrain] || D.DEFAULT_TERRAINS?.Plains || {};
-    const feat = D.TERRAIN_FEATURES?.[state.environment.feature] || D.TERRAIN_FEATURES?.Normal || {};
-    const weath = D.WEATHER_TYPES?.[state.environment.weather] || D.WEATHER_TYPES?.Sunny || {};
+    const todSel = document.getElementById('bf-timeofday');
+    if (todSel) {
+      if (todSel.children.length === 0) {
+        todSel.innerHTML = Object.keys(D.TIME_OF_DAY_TYPES || {}).map(k => {
+          const td = D.TIME_OF_DAY_TYPES[k];
+          return `<option value="${k}">${td.name}</option>`;
+        }).join('');
+      }
+      todSel.value = state.environment.timeOfDay || 'Day';
+    }
+    const dynChk = document.getElementById('bf-dynamic-weather');
+    if (dynChk) dynChk.checked = !!state.environment.dynamicWeather;
+    const cycChk = document.getElementById('bf-cycle-time');
+    if (cycChk) cycChk.checked = !!state.environment.cycleTimeOfDay;
+
+    const envFx = H.getActiveEnvironmentEffects ? H.getActiveEnvironmentEffects() : null;
+    const terr = envFx ? envFx.terr : (state.terrains[state.environment.terrain] || D.DEFAULT_TERRAINS?.Plains || {});
+    const feat = envFx ? envFx.feat : (D.TERRAIN_FEATURES?.[state.environment.feature] || D.TERRAIN_FEATURES?.Normal || {});
+    const weath = envFx ? envFx.weath : (D.WEATHER_TYPES?.[state.environment.weather] || D.WEATHER_TYPES?.Sunny || {});
+    const tod = envFx ? envFx.tod : (D.TIME_OF_DAY_TYPES?.[state.environment.timeOfDay] || D.TIME_OF_DAY_TYPES?.Day || { name: 'Daylight' });
+    const airPct = envFx ? Math.round(envFx.airEfficiency * 100) : 100;
+    const maxDig = envFx ? envFx.maxEntrenchBase : (terr.maxEntrench || 4);
+    const outCap = envFx ? envFx.outnumberCap : (terr.outnumberCap || 100);
+    const visBadge = (envFx && envFx.visCap !== null)
+      ? `<span class="px-2 py-0.5 bg-[#1b1824] border border-[#5b4d82] text-[#c7b8f5]">VIS CAP // ${envFx.visCap}</span>`
+      : '';
+    const hazardBadges = (envFx && envFx.hazards && envFx.hazards.length > 0)
+      ? envFx.hazards.map(hz => `<span class="px-2 py-0.5 bg-[#331a19] border border-[#8a3c38] text-[#f2a6a2] font-bold" title="${escapeHtml(hz.desc)}">HAZARD // ${hz.shortLabel}</span>`).join('')
+      : '';
 
     const summaryBar = document.getElementById('env-summary-bar');
     if (summaryBar) {
       summaryBar.innerHTML = `
-        <div class="flex flex-wrap items-center gap-2 font-mono text-[11px]">
-          <span class="px-2 py-0.5 bg-[#121613] border border-[#2e3730] text-[#c8a24b]">TERR // ${(terr.name || 'Plains').toUpperCase()}: INF ${terr.infAtk >= 0 ? '+' : ''}${terr.infAtk || 0}/${terr.infDef >= 0 ? '+' : ''}${terr.infDef || 0}% | TNK ${terr.tankAtk >= 0 ? '+' : ''}${terr.tankAtk || 0}/${terr.tankDef >= 0 ? '+' : ''}${terr.tankDef || 0}% | SUP +${terr.supplyDrain || 0}</span>
+        <div class="flex flex-wrap items-center gap-1.5 font-mono text-[10.5px]">
+          <span class="px-2 py-0.5 bg-[#121613] border border-[#2e3730] text-[#c8a24b]">TERR // ${(terr.name || 'Plains').toUpperCase()}: INF ${terr.infAtk >= 0 ? '+' : ''}${terr.infAtk || 0}/${terr.infDef >= 0 ? '+' : ''}${terr.infDef || 0}% | TNK ${terr.tankAtk >= 0 ? '+' : ''}${terr.tankAtk || 0}/${terr.tankDef >= 0 ? '+' : ''}${terr.tankDef || 0}% | DIG ${maxDig} | OUTNUM ${outCap}%</span>
           <span class="px-2 py-0.5 bg-[#121613] border border-[#2e3730] text-[#8ec0e8]">FEAT // ${(feat.name || 'Normal').toUpperCase()}: ATK ×${feat.atkMult || 1} DEF ×${feat.defMult || 1}</span>
-          <span class="px-2 py-0.5 bg-[#121613] border border-[#2e3730] text-[#89b884]">METEO // ${(weath.name || 'Sunny').toUpperCase()}</span>
+          <span class="px-2 py-0.5 bg-[#121613] border border-[#2e3730] text-[#89b884]">METEO // ${(weath.name || 'Sunny').toUpperCase()} · ${(tod.name || 'Daylight').toUpperCase()} · AIR ${airPct}%${state.environment.dynamicWeather ? ' [DYN]' : ''}${state.environment.cycleTimeOfDay ? ' [CYC]' : ''}</span>
+          ${visBadge}
+          ${hazardBadges}
         </div>
         <div class="font-mono text-[10px] uppercase tracking-wider text-[#c8a24b]">THEATRE LOCK: SIDE ${state.environment.theatreAttackerSide || 'A'} ASSAULT / SIDE ${(state.environment.theatreAttackerSide || 'A') === 'A' ? 'B' : 'A'} ENTRENCHED</div>
       `;
@@ -962,6 +1001,7 @@ window.IronDivision = window.IronDivision || {};
             <td class="py-2 px-2 font-mono">${t.tankAtk}% / ${t.tankDef}%</td>
             <td class="py-2 px-2 font-mono">${t.artAtk}% / ${t.artDef}%</td>
             <td class="py-2 px-2 font-mono">Vig ${t.vigMod >= 0 ? '+' : ''}${t.vigMod} | Sup +${t.supplyDrain}</td>
+            <td class="py-2 px-2 font-mono text-amber-300">Dig ${t.maxEntrench ?? 4} | Cap ${t.outnumberCap ?? 100}%</td>
           </tr>
         `;
       }).join('');
@@ -981,8 +1021,29 @@ window.IronDivision = window.IronDivision || {};
     if (weathList) {
       weathList.innerHTML = Object.values(D.WEATHER_TYPES || {}).map(w => `
         <div class="p-2 rounded bg-slate-950 border border-slate-800">
-          <div class="font-semibold text-white">${w.name}</div>
+          <div class="font-semibold text-white">${w.name} <span class="font-mono text-[10px] text-sky-400">(Air ${w.airMod || 0}%)</span></div>
           <div class="text-slate-400 text-[11px]">${w.desc}</div>
+        </div>
+      `).join('');
+    }
+
+    const todList = document.getElementById('timeofday-matrix-list');
+    if (todList) {
+      todList.innerHTML = Object.values(D.TIME_OF_DAY_TYPES || {}).map(td => `
+        <div class="p-2 rounded bg-slate-950 border border-slate-800">
+          <div class="font-semibold text-white">${td.name} <span class="font-mono text-[10px] text-emerald-400">(Air ${td.airMod || 0}%${td.visCap ? ' | Vis ' + td.visCap : ''})</span></div>
+          <div class="text-slate-400 text-[11px]">${td.desc}</div>
+        </div>
+      `).join('');
+    }
+
+    const hazList = document.getElementById('hazards-matrix-list');
+    if (hazList) {
+      hazList.innerHTML = Object.values(D.COMPOUND_HAZARDS || {}).map(hz => `
+        <div class="p-2 rounded bg-slate-950 border border-slate-800">
+          <div class="font-semibold text-rose-300">${hz.name}</div>
+          <div class="text-amber-400/90 font-mono text-[10px] mb-0.5">${hz.trigger}</div>
+          <div class="text-slate-400 text-[11px]">${hz.desc}</div>
         </div>
       `).join('');
     }
