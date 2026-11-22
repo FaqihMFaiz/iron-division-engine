@@ -17,6 +17,9 @@ window.IronDivision = window.IronDivision || {};
   let observer = null;
   let isApplying = false;
   let origRenderGuide = null;
+  let origBuildPrintableAAR = null;
+  let origExportAARToPDF = null;
+  let origWelcomeHtml = null;
 
   // Lossless English backups for DOM nodes & data.js objects
   const originalTextMap = new WeakMap();
@@ -423,6 +426,10 @@ window.IronDivision = window.IronDivision || {};
     '7-Slot Command Navigation Dock': 'Bilah Navigasi 7 Ruang Kerja',
     'Switch across all 7 workspaces from this dock: Battlefield, ORBAT (custom unit designer), Traits, Command HQ (custom generals), Terrain (color-coded modifier matrix), Doctrines (25-page tactic manual), and FM Manual (Drill Sergeant & Technical manuals).': 'Dari atas sini Komandan bisa pindah-pindah ke 7 tab: Medan Tempur, ORBAT (bikin unit), Sifat & Modul, Markas Komando (bikin jenderal), Medan & Cuaca, Doktrin Taktik, sama Buku Saku.',
     'TIP: Every custom unit, trait, general, and terrain auto-saves in your browser.': 'CATATAN, NDAN: Semua unit, sifat, jenderal, dan medan bikinan Ndan otomatis kesimpen di browser.',
+
+    'Switch Language (EN / ID)': 'Ganti Bahasa (EN / ID), Ndan!',
+    'Click the EN / ID button in the top-right header anytime to switch the entire interface, combat logs, unit traits, Field Manuals, and printable After-Action Report between English (Form DA-774) and Bahasa Indonesia (TNI AD format).': 'Klik tombol EN / ID di pojok kanan atas kapan saja, Komandan, buat ganti seluruh tampilan, log tempur, sifat unit, Buku Saku Ajudan, sampai Laporan Akhir versi TNI AD (LPT) antara Bahasa Inggris dan Bahasa Indonesia!',
+    'TIP: Your language choice is automatically saved in your browser for future sessions.': 'CATATAN, NDAN: Pilihan bahasa Komandan otomatis kesimpen di browser buat sesi berikutnya.',
 
     'Form DA-774 After-Action Report & JSON Backup': 'Laporan AAR Form DA-774 & Cadangan JSON',
     'Click AAR anytime for an interim SITREP or post-battle debrief complete with per-unit kills, depot logistics, weather trail, and printable A4 Form DA-774 PDF export. Use EXPORT / IMPORT JSON next to it to save or share your custom armies, and click UI TOUR anytime to replay this guide.': 'Klik AAR kapan aja buat lihat laporan lengkap — termasuk korban per unit, sisa depot, riwayat cuaca, sampai ekspor PDF A4 Form DA-774! Di sebelahnya ada EKSPOR / IMPOR JSON buat simpan pasukan, dan TUR UI kalau mau ulang panduan ini.',
@@ -921,10 +928,279 @@ window.IronDivision = window.IronDivision || {};
     if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'CODE' || tag === 'TEXTAREA' || tag === 'INPUT') {
       return true;
     }
-    if (node.parentElement.closest('#combat-log-container, #log-expand-container, .mil-dogtag-text, .mil-cmd-plate-text, #view-guide')) {
+    if (node.parentElement.closest('.mil-dogtag-text, .mil-cmd-plate-text, #view-guide, #welcome-modal')) {
       return true;
     }
     return false;
+  }
+
+  // --------------------------------------------------------------------------
+  // 4B. Combat Log Translator (Natural Indonesian Sitrep)
+  // --------------------------------------------------------------------------
+  const LOG_REPLACEMENTS = [
+    [/Current battle fully reset to Round 1\. All deployed formations restored to 100% strength\./g, 'Pertempuran diulang penuh ke Ronde 1. Seluruh satuan kembali 100% siap tempur.'],
+    [/Loaded Battle of Arracourt \(18 SEP 1944, Lorraine\):/g, 'Memuat Pertempuran Arracourt (18 SEP 1944, Lorraine):'],
+    [/ROUND (\d+) BEGINS — (.+?) Attacks \| (.+?) Defends/g, 'RONDE $1 DIMULAI — $2 Menyerang | $3 Bertahan'],
+    [/Tactics Selected —/g, 'Taktik Dipilih —'],
+    [/\(Attacker\):/g, '(Penyerang):'],
+    [/\(Defender\):/g, '(Bertahan):'],
+    [/Approach March\] No units in engagement range yet — combat ammunition burn paused \(0 base drain\) \| Depot:/g, 'Gerak Mendekat] Belum ada unit dalam jarak tembak — pemakaian amunisi dijeda (0 dasar) | Depot:'],
+    [/Base operational drain/g, 'Konsumsi operasional dasar'],
+    [/Depot Stockpile:/g, 'Stok Depot:'],
+    [/\[Entrenching\] (.+?) digs in deeper \(Entrenchment Lvl (\d+\/\d+)\)\./g, '[Gali Parit] $1 memperdalam parit (Parit Lvl $2).'],
+    [/Net Organization ([+-]?\d+) \(Regen ([+-]?\d+), Fatigue (-?\d+) -> (\d+\/\d+)\)/g, 'Organisasi Bersih $1 (Regen $2, Lelah $3 -> $4)'],
+    [/Fatigue Paused \(Out of Range\)/g, 'Lelah Dijeda (Luar Jarak)'],
+    [/\[Brigade Resupply\] (.+?) Depot distributes \+(\d+) supply across (\d+) frontline units?/g, '[Pasok Brigade] Depot $1 menyalurkan +$2 logistik ke $3 unit garis depan'],
+    [/\[Depot Refit\] (.+?) draws \+(\d+) supply from Depot/g, '[Isi Ulang Depot] $1 menarik +$2 logistik dari Depot'],
+    [/\[Weather Shift\] Theatre weather shifts from (.+?) -> ([^(!]+?)!/g, '[Perubahan Cuaca] Cuaca teater bergeser dari $1 ke $2!'],
+    [/\[Vigilance\]/g, '[Pengintaian]'],
+    [/\[Mortar Plunging Fire\]/g, '[Tembakan Mortir]'],
+    [/\[Mortar Shells on Armor\]/g, '[Mortir ke Baja]'],
+    [/\[Mortar Optics Hit!\]/g, '[Optik Terkena Mortir!]'],
+    [/\[MORTAR TRACK BLOWN!\]/g, '[RANTAI RANPUR PUTUS!]'],
+    [/\[Inherent Battery Barrage\]/g, '[Salvo Baterai Artileri]'],
+    [/\[Off-Map Artillery Support\]/g, '[Bantuan Tembakan Artileri]'],
+    [/\[Air Support\]/g, '[Dukungan Udara]'],
+    [/\[Field Repair Crew\] (.+?) mechanics pinned by recent anti-armor fire — mid-battle field repair delayed/g, '[Kru Perbaikan] Montir $1 tiarap karena tembakan anti-baja ronde lalu — perbaikan ditunda'],
+    [/\[Field Repair Crew\] (.+?) restores (\d+) armor in-field \((\d+) active, (\d+) awaiting post-battle recovery\)/g, '[Kru Perbaikan] $1 memperbaiki $2 ranpur di lapangan ($3 aktif, $4 menunggu evakuasi)'],
+    [/\[Overwatch\]/g, '[Tembakan Penghadang]'],
+    [/\[Main Attack Damage\]/g, '[Kerusakan Serangan Utama]'],
+    [/\[Return Fire Damage\]/g, '[Kerusakan Tembakan Balasan]'],
+    [/\[Grazing Fire\]/g, '[Tembakan Menyerempet]'],
+    [/\[ARMOR HELD ×0\.5, Explosive Negated\]/g, '[BAJA MENAHAN ×0,5, Ledak Batal]'],
+    [/Heavy Armor Deflected \(Cap -1\)/g, 'Baja Berat Memantul (Maks -1 Org)'],
+    [/Clash Deflected \(Max 2\)/g, 'Bentrokan Memantul (Maks 2)'],
+    [/(\d+) vehicles knocked out! Recovery/g, '$1 ranpur dilumpuhkan! Pemulihan'],
+    [/(\d+) Recoverable, (\d+) Destroyed \((\d+\/\d+) active\) \| Crew Casualties: (\d+) downed, -(\d+) Org shock!/g, '$1 Bisa Dievakuasi, $2 Hancur ($3 aktif) | Korban Awak: $4 jatuh, -$5 syok Org!'],
+    [/\[Casualty Recovery\]/g, '[Evakuasi Korban]'],
+    [/(\d+) KIA \(Dead\), (\d+) WIA \(Wounded\) \((\d+\/\d+) active\)/g, '$1 Gugur (KIA), $2 Luka (WIA) ($3 aktif)'],
+    [/\[Died of Wounds\] (.+?): (\d+) wounded succumbed to injuries \(WIA -> KIA, Rate: ([^)]+)\)/g, '[Gugur Karena Luka] $1: $2 prajurit luka gugur (WIA -> KIA, Laju: $3)'],
+    [/\[Supply Stolen\] (.+?) steals (\d+) Supply from (.+?)!/g, '[Rampas Logistik] $1 merampas $2 Logistik dari $3!'],
+    [/\[Rout & Scatter\]/g, '[Mundur & Kocar-Kacir]'],
+    [/\[Rallied to the Line\]/g, '[Kembali ke Garis Depan]'],
+    [/PASSED Rally Check/g, 'LOLOS Konsolidasi (Rally)'],
+    [/FAILED Rally Check/g, 'GAGAL Konsolidasi (Rally)'],
+    [/\[Unscreened Artillery Withdrawal\] (.+?) limbers up and withdraws from the sector after losing all frontline screening forces!/g, '[Penarikan Artileri Tanpa Pengawal] $1 berkemas dan mundur dari sektor setelah semua pengawal garis depan gugur!'],
+    [/has 0 combat-ready vehicles remaining and withdraws from the sector!/g, 'kehabisan ranpur siap tempur (0) dan mundur dari sektor!'],
+    [/BATTLE OVER — (.+?) achieves victory over (.+?)!/g, 'PERTEMPURAN SELESAI — $1 meraih kemenangan atas $2!'],
+    [/\[Recovery Tractors\]/g, '[Traktor Evakuasi]'],
+    [/\[FIELD SALVAGE\]/g, '[SALVASE MEDAN]'],
+    [/captured hulls impressed/g, 'ranpur rampasan dioperasikan kembali'],
+    [/scuttled\/burned/g, 'dihancurkan/dibakar'],
+    [/personnel downed!/g, 'personel jatuh!'],
+    [/advances to Dist/g, 'maju ke Jarak']
+  ];
+
+  function translateCombatLogText(raw) {
+    if (!raw || typeof raw !== 'string') return raw;
+    let out = raw;
+    for (const [re, rep] of LOG_REPLACEMENTS) {
+      out = out.replace(re, rep);
+    }
+    return out;
+  }
+
+  // --------------------------------------------------------------------------
+  // 4C. Full Welcome Briefing Pop-up Localization (Subordinate -> Komandan)
+  // --------------------------------------------------------------------------
+  function applyWelcomeModalLanguage(lang) {
+    const modal = document.getElementById('welcome-modal');
+    if (!modal) return;
+    const panel = modal.querySelector('.paper-sitrep-panel');
+    if (!panel) return;
+    if (origWelcomeHtml === null) {
+      origWelcomeHtml = panel.innerHTML;
+    }
+    if (lang !== 'id') {
+      panel.innerHTML = origWelcomeHtml;
+      return;
+    }
+    panel.innerHTML = `
+      <div class="paper-sitrep-header pb-3 border-b-2 border-[#1a1e1a] flex items-start justify-between gap-3">
+        <div>
+          <span class="paper-sitrep-kicker">MARKAS DIVISI BESI // FORMULIR ORIENTASI AWAL</span>
+          <h2 class="paper-sitrep-title text-lg sm:text-xl mt-0.5">LAPORAN ORIENTASI KOMANDAN</h2>
+        </div>
+        <span class="font-mono text-[10px] font-bold uppercase px-2 py-0.5 border border-[#8a3c38] text-[#8a3c38] bg-[#f8eceb] shrink-0">BACA DULU, NDAN</span>
+      </div>
+
+      <div class="space-y-3 text-xs sm:text-[13px] leading-relaxed text-[#222822] font-sans">
+        <p>
+          <strong>Selamat datang, Komandan!</strong> <strong>Iron Division</strong> adalah simulator pertempuran operasional gabungan senjata untuk TTRPG dan wargaming historis. Beda dari game arcade yang cuma adu bar darah, di sini kita menghitung <strong>kekompakan satuan (Organisasi)</strong>, <strong>penetrasi vs. ketebalan baja</strong>, <strong>jarak tembak realistis</strong>, <strong>Depot Logistik bersama</strong>, <strong>cuaca dinamis &amp; jam 24 jam</strong>, sampai cetak PDF <strong>Laporan Pelaksanaan Tugas versi TNI AD</strong>.
+        </p>
+
+        <div class="p-3 bg-[#dfd7c2] border-l-4 border-[#9c7a26] font-mono text-[11.5px] space-y-1.5 text-[#1c211d]">
+          <div class="font-bold uppercase tracking-wider text-[#6e5210]">SARAN DARI AJUDAN LAPANGAN (KOPKA "BESI"):</div>
+          <p class="leading-snug">
+            Baru pertama kali pegang komando di sini, Ndan? Klik <strong>MULAI TUR UI</strong> buat keliling cepat seluruh tombol layar, atau buka <strong>Buku Saku</strong> biar langsung paham semua aturan tempur tanpa bahasa kaku!
+          </p>
+        </div>
+
+        <ul class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 font-mono text-[11px] text-[#2c332c]">
+          <li class="px-2 py-1 bg-[#e4dcc8] border border-[#b3a990]"><strong>OPERASI UTAMA:</strong> Pertempuran Arracourt (18 SEP 1944)</li>
+          <li class="px-2 py-1 bg-[#e4dcc8] border border-[#b3a990]"><strong>RAKIT SENDIRI:</strong> ORBAT, Sifat, Jenderal &amp; Medan</li>
+          <li class="px-2 py-1 bg-[#e4dcc8] border border-[#b3a990]"><strong>MODE GM:</strong> Ubah Langsung &amp; Batal 1 Ronde</li>
+          <li class="px-2 py-1 bg-[#e4dcc8] border border-[#b3a990]"><strong>EKSPOR:</strong> Cadangan JSON &amp; PDF Laporan TNI AD</li>
+        </ul>
+      </div>
+
+      <div class="pt-3 border-t border-[#b3a990] flex flex-wrap items-center justify-between gap-3">
+        <label class="flex items-center gap-2 font-mono text-[11px] text-[#3a423a] cursor-pointer">
+          <input type="checkbox" id="welcome-dont-show" checked class="accent-[#c8a24b]">
+          <span>Jangan tampilkan lagi pas masuk berikutnya, Ndan</span>
+        </label>
+        <div class="flex flex-wrap items-center gap-2">
+          <button type="button" onclick="closeWelcomeModal(false)" class="paper-sitrep-btn paper-sitrep-btn-muted px-3 py-1.5">
+            LANGSUNG KE MEDAN TEMPUR
+          </button>
+          <button type="button" onclick="closeWelcomeModal(false); startUITutorial();" class="mil-btn px-3.5 py-1.5 bg-[#2d472b] hover:bg-[#385936] border border-[#4c7548] text-[#d9ead7] font-bold text-xs tracking-wider">
+            MULAI TUR UI
+          </button>
+          <button type="button" onclick="closeWelcomeModal(true)" class="mil-btn px-4 py-1.5 bg-[#c8a24b] hover:bg-[#d8b45c] border border-[#8a6d20] text-[#0d100d] font-bold text-xs tracking-wider">
+            BACA BUKU SAKU
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  // --------------------------------------------------------------------------
+  // 4D. Indonesian Army (TNI AD) Printable A4 AAR (MINU TNI AD // LPT)
+  // --------------------------------------------------------------------------
+  function buildTniAdPrintableAARHtml(rep) {
+    if (!origBuildPrintableAAR) return '';
+    let html = origBuildPrintableAAR(rep);
+    const idRepl = [
+      [/UNCLASSIFIED \/\/ IRON DIVISION AFTER-ACTION REPORT/g, 'TERBATAS // TENTARA NASIONAL INDONESIA ANGKATAN DARAT'],
+      [/UNCLASSIFIED \/\/ END OF AFTER-ACTION REPORT/g, 'TERBATAS // AKHIR LAPORAN PELAKSANAAN TUGAS (TNI AD)'],
+      [/AFTER-ACTION REPORT \(AAR\)/g, 'LAPORAN PELAKSANAAN TUGAS (LPT / AAR)'],
+      [/FORM DA-774 \/\//g, 'MINU TNI AD // LAP-OPS //'],
+      [/PAGE " counter\(page\) " OF " counter\(pages\)/g, 'HALAMAN " counter(page) " DARI " counter(pages)'],
+      [/<strong>FROM:<\/strong> HQ COMBINED-ARMS COMMAND/g, '<strong>DARI:</strong> KOMANDO GABUNGAN SENJATA (KOGAB)'],
+      [/<strong>TO:<\/strong> THEATRE OPERATIONS \(G-3\)/g, '<strong>KEPADA:</strong> ASISTEN OPERASI (ASOPS / SOPS TNI AD)'],
+      [/<strong>DTG:<\/strong>/g, '<strong>WAKTU (TW):</strong>'],
+      [/<strong>OP WINDOW:<\/strong>/g, '<strong>PERIODE OPS:</strong>'],
+      [/<strong>STATUS:<\/strong> FINAL DEBRIEF/g, '<strong>STATUS:</strong> LAPORAN AKHIR OPERASI'],
+      [/<strong>STATUS:<\/strong> INTERIM SITREP/g, '<strong>STATUS:</strong> LAPORAN SITUASI SEMENTARA (LAPSIT)'],
+      [/<strong>SUBJECT:<\/strong>/g, '<strong>PERIHAL:</strong>'],
+      [/ENGAGEMENT<\/div>/g, 'OPERASI SEKTOR</div>'],
+      [/<strong>METEO:<\/strong>/g, '<strong>CUACA (METEO):</strong>'],
+      [/<h2>1\. Operational Executive Summary<\/h2>/g, '<h2>1. Ringkasan Eksekutif Operasi</h2>'],
+      [/<span class="kpi-label">Operation Outcome<\/span>/g, '<span class="kpi-label">Hasil Operasi</span>'],
+      [/<span class="kpi-label">Operational Day<\/span>/g, '<span class="kpi-label">Hari Operasi</span>'],
+      [/<span class="kpi-label">Theatre Posture<\/span>/g, '<span class="kpi-label">Postur Teater</span>'],
+      [/<span class="kpi-label">Sector Conditions<\/span>/g, '<span class="kpi-label">Kondisi Sektor</span>'],
+      [/(\d+)(?:ST|ND|RD|TH) DAY/g, 'HARI KE-$1'],
+      [/ASSAULT<\/span>/g, 'MENYERANG</span>'],
+      [/<th>Force Comparison Metric<\/th>/g, '<th>Indikator Perbandingan Kekuatan</th>'],
+      [/<strong>Personnel Attrition \(KIA \+ WIA \+ POW\)<\/strong>/g, '<strong>Kerugian Personel (Gugur + Luka + Tawanan)</strong>'],
+      [/<strong>KIA : WIA Ratio<\/strong>/g, '<strong>Rasio Gugur (KIA) : Luka (WIA)</strong>'],
+      [/<strong>AFV Losses \(Disabled \/ Destroyed KO\)<\/strong>/g, '<strong>Kerugian Ranpur (Lumpuh / Hancur Total)</strong>'],
+      [/<strong>Formations Intact \/ Deployed<\/strong>/g, '<strong>Satuan Siap Tempur / Dikerahkan</strong>'],
+      [/<strong>Theatre Depot Logistics \(Rem \/ Start\)<\/strong>/g, '<strong>Logistik Depot Teater (Sisa / Awal)</strong>'],
+      [/<strong>Formations Reaching Critical Supply<\/strong>/g, '<strong>Satuan Mencapai Logistik Kritis</strong>'],
+      [/expended\)/g, 'terpakai)'],
+      [/<h2>2\. Order of Battle &amp; Casualty Ledger<\/h2>/g, '<h2>2. Susunan Tempur (ORBAT) &amp; Daftar Korban</h2>'],
+      [/COMMANDING OFFICER:/g, 'KOMANDAN SATUAN:'],
+      [/FORMATIONS ACTIVE:/g, 'SATUAN AKTIF:'],
+      [/<th>Unit Designation<\/th>/g, '<th>Nama Satuan</th>'],
+      [/<th>Class \/ Exp<\/th>/g, '<th>Klasifikasi / Exp</th>'],
+      [/<th>Final Status<\/th>/g, '<th>Status Akhir</th>'],
+      [/<th class="num">Start<\/th>/g, '<th class="num">Awal</th>'],
+      [/<th class="num">Rem<\/th>/g, '<th class="num">Sisa</th>'],
+      [/<th class="num">KIA<\/th>/g, '<th class="num">Gugur</th>'],
+      [/<th class="num">WIA<\/th>/g, '<th class="num">Luka</th>'],
+      [/<th class="num">POW<\/th>/g, '<th class="num">Twn</th>'],
+      [/<th class="num">ESC<\/th>/g, '<th class="num">Lolos</th>'],
+      [/<th class="num">AFV \(Start \| Act\/Rec\/Tow\/KO\)<\/th>/g, '<th class="num">Ranpur (Awal | Akt/Rsk/Trk/Hnc)</th>'],
+      [/<th class="num">Inflicted \(Cas\/AFV\)<\/th>/g, '<th class="num">Hasil (Pers/Ranpur)</th>'],
+      [/<strong>FORCE TOTALS<\/strong>/g, '<strong>JUMLAH TOTAL SATUAN</strong>'],
+      [/<td>OPERATIONAL<\/td>/g, '<td>SIAP TEMPUR</td>'],
+      [/<td>DISMOUNTED \(OP\)<\/td>/g, '<td>TURUN KENDARAAN (AKTIF)</td>'],
+      [/<td>REAR RALLY<\/td>/g, '<td>KONSOLIDASI BELAKANG</td>'],
+      [/<td>WITHDRAWN \(0 AFV\)<\/td>/g, '<td>MUNDUR (0 RANPUR)</td>'],
+      [/<td>WITHDRAWN \(UNSCREENED\)<\/td>/g, '<td>MUNDUR (TANPA PENGAWAL)</td>'],
+      [/<td>ROUTED<\/td>/g, '<td>KOCAR-KACIR</td>'],
+      [/<td>DISPERSED<\/td>/g, '<td>TERCERAI-BERAI</td>'],
+      [/<td>SHATTERED<\/td>/g, '<td>HANCUR MORAL</td>'],
+      [/<td>WIPED OUT<\/td>/g, '<td>GUGUR SEMUA</td>'],
+      [/<td>OUT OF ACTION<\/td>/g, '<td>NONAKTIF</td>'],
+      [/HEROIC VICTORY/g, 'KEMENANGAN HEROIK'],
+      [/DECISIVE VICTORY/g, 'KEMENANGAN TELAK'],
+      [/CLOSE VICTORY/g, 'KEMENANGAN TIPIS'],
+      [/PYRRHIC VICTORY/g, 'KEMENANGAN MAHAL'],
+      [/MUTUAL EXHAUSTION/g, 'KELELAHAN BERSAMA (SERI)'],
+      [/<h2>3\. Material Recovery &amp; Battlefield Salvage<\/h2>/g, '<h2>3. Pemulihan Materiil &amp; Rampasan Medan</h2>'],
+      [/VICTOR FIELD POSSESSION/g, 'PENGUASAAN MEDAN OLEH PEMENANG'],
+      [/abandoned enemy armored hulls secured on the objective\./g, 'unit ranpur musuh yang ditinggalkan berhasil diamankan di sasaran.'],
+      [/Captured &amp; Impressed into Service:/g, 'Dirampas &amp; Dioperasikan Kembali:'],
+      [/Stripped for Depot Spares &amp; Munitions:/g, 'Dilucuti untuk Suku Cadang &amp; Munisi Depot:'],
+      [/Scuttled \/ Destroyed Write-Offs:/g, 'Dihancurkan / Rusak Total:'],
+      [/vehicle\(s\)/g, 'unit ranpur'],
+      [/No abandoned enemy armored vehicles were claimed during this reporting period\./g, 'Tidak ada ranpur musuh yang ditinggalkan untuk disalvase pada periode laporan ini.'],
+      [/<h2>4\. Significant Engagement Chronology<\/h2>/g, '<h2>4. Kronologi Penting Pertempuran</h2>'],
+      [/No major milestone events recorded in sitrep log\./g, 'Belum ada peristiwa penting yang tercatat pada log operasi.'],
+      [/<h2>5\. G-3 Operational Assessment &amp; Authentication<\/h2>/g, '<h2>5. Evaluasi Staf Operasi (SOPS) &amp; Pengesahan</h2>'],
+      [/Total recorded personnel casualties:/g, 'Total kerugian personel tercatat:'],
+      [/sustained ([\d,]+) casualties \(([\d,]+) KIA, ([\d,]+) WIA, ([\d,]+) POW\)/g, 'menderita $1 korban ($2 Gugur, $3 Luka, $4 Tawanan)'],
+      [/Armored vehicle losses:/g, 'Kerugian kendaraan tempur:'],
+      [/lost (\d+) vehicles \((\d+) destroyed, (\d+) disabled\)/g, 'kehilangan $1 ranpur ($2 hancur total, $3 lumpuh)'],
+      [/Notable Formation \(([^)]+)\):/g, 'Satuan Menonjol ($1):'],
+      [/Anti-Armor Citation \(([^)]+)\):/g, 'Penghargaan Anti-Ranpur ($1):'],
+      [/Field Maintenance:/g, 'Pemeliharaan Lapangan (Peralatan):'],
+      [/Fire Support Impact:/g, 'Kontribusi Bantuan Tembakan:'],
+      [/Air Interdiction:/g, 'Dukungan Udara:'],
+      [/Logistics Expenditure:/g, 'Pengeluaran Logistik Depot:'],
+      [/inflicted the highest enemy personnel losses \(([\d,]+) casualties\)\./g, 'menimbulkan korban personel musuh tertinggi ($1 korban).'],
+      [/led anti-armor engagements with (\d+) enemy vehicles knocked out \((\d+) destroyed\)\./g, 'memimpin pertempuran anti-baja dengan melumpuhkan $1 ranpur musuh ($2 hancur total).'],
+      [/organic recovery crews restored (\d+) disabled armored vehicles back to operational status during the engagement\./g, 'kru perbaikan organiknya memulihkan $1 ranpur lumpuh kembali siap tempur di tengah operasi.'],
+      [/indirect fire accounted for (\d+)% of opposing combat casualties \(([\d,]+)\)/g, 'tembakan tidak langsung (artileri/mortir) menyumbang $1% korban tempur musuh ($2 korban)'],
+      [/indirect fire accounted for (\d+)% \(([\d,]+)\)/g, 'tembakan tidak langsung menyumbang $1% ($2 korban)'],
+      [/expended (\d+)% of theatre depot stocks/g, 'menghabiskan $1% stok depot teater'],
+      [/expended (\d+)%/g, 'menghabiskan $1%'],
+      [/remaining/g, 'tersisa'],
+      [/formation\(s\) hit critical supply/g, 'satuan menyentuh logistik kritis'],
+      [/depot critical at/g, 'depot kritis pukul'],
+      [/<strong>PREPARING OFFICER \(G-3 OPS\)<\/strong><br>\s*IRON DIVISION COMMAND STAFF/g, '<strong>PERWIRA PENYUSUN (PABAN OPS / SOPS TNI AD)</strong><br>STAF OPERASI KOMANDO DIVISI BESI'],
+      [/<strong>REVIEWING COMMANDER<\/strong>/g, '<strong>PANGLIMA / KOMANDAN PENINJAU</strong>']
+    ];
+    for (const [re, rep] of idRepl) {
+      html = html.replace(re, rep);
+    }
+    html = html.replace(/<div class="chron-item">([\s\S]*?)<\/div>/g, function(m, inner) {
+      return '<div class="chron-item">' + translateCombatLogText(inner) + '</div>';
+    });
+    return html;
+  }
+
+  function hookPrintableAAR() {
+    if (origBuildPrintableAAR || !ID.UI || typeof ID.UI.buildPrintableAARHtml !== 'function') return;
+    origBuildPrintableAAR = ID.UI.buildPrintableAARHtml;
+    const wrappedBuild = (rep) => (currentLang === 'id') ? buildTniAdPrintableAARHtml(rep) : origBuildPrintableAAR(rep);
+    ID.UI.buildPrintableAARHtml = wrappedBuild;
+    window.buildPrintableAARHtml = wrappedBuild;
+
+    if (typeof ID.UI.exportAARToPDF === 'function' && !origExportAARToPDF) {
+      origExportAARToPDF = ID.UI.exportAARToPDF;
+      const wrappedExport = () => {
+        if (currentLang !== 'id') return origExportAARToPDF();
+        const rep = ID.UI.getActiveAARData ? ID.UI.getActiveAARData() : (ID.state?.battle?.afterActionReport || null);
+        if (!rep) return;
+        const htmlDoc = buildTniAdPrintableAARHtml(rep);
+        const win = window.open('', '_blank', 'width=980,height=820');
+        if (!win) {
+          if (ID.Helpers && ID.Helpers.showToast) ID.Helpers.showToast('Izinkan pop-up browser untuk mencetak Laporan TNI AD (PDF).', 'error');
+          return;
+        }
+        win.document.open();
+        win.document.write(htmlDoc);
+        win.document.close();
+        win.focus();
+        setTimeout(() => { try { win.print(); } catch (_) {} }, 350);
+      };
+      ID.UI.exportAARToPDF = wrappedExport;
+      window.exportAARToPDF = wrappedExport;
+    }
   }
 
   function applyLanguageToSubtree(root, lang) {
@@ -939,7 +1215,8 @@ window.IronDivision = window.IronDivision || {};
           originalTextMap.set(node, node.nodeValue);
         }
         const orig = originalTextMap.get(node);
-        const targetVal = (lang === 'id') ? translateText(orig) : orig;
+        const inCombatLog = !!(node.parentElement && node.parentElement.closest('#combat-log-container, #log-expand-container'));
+        const targetVal = (lang === 'id') ? (inCombatLog ? translateCombatLogText(orig) : translateText(orig)) : orig;
         if (node.nodeValue !== targetVal) {
           node.nodeValue = targetVal;
         }
@@ -1044,7 +1321,9 @@ window.IronDivision = window.IronDivision || {};
     }
 
     hookManualRenderer();
+    hookPrintableAAR();
     applyDataLocalization(currentLang);
+    applyWelcomeModalLanguage(currentLang);
     updateToggleButton();
 
     // Re-render dynamic views so updated data.js names/descriptions & manuals appear immediately
@@ -1077,6 +1356,7 @@ window.IronDivision = window.IronDivision || {};
     } catch (_) {}
 
     hookManualRenderer();
+    hookPrintableAAR();
     injectLanguageToggleButton();
     startObserver();
     setLanguage(saved);
@@ -1093,6 +1373,8 @@ window.IronDivision = window.IronDivision || {};
     toggleLanguage,
     getLanguage: () => currentLang,
     translateText,
+    translateCombatLogText,
+    buildTniAdPrintableAARHtml,
     renderIndonesianManuals,
     EXACT_MAP
   };

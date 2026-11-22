@@ -3425,6 +3425,13 @@ window.IronDivision = window.IronDivision || {};
     },
     {
       tab: 'battlefield',
+      selector: '#btn-lang-toggle',
+      title: 'Switch Language (EN / ID)',
+      body: 'Click the EN / ID button in the top-right header anytime to switch the entire interface, combat logs, unit traits, Field Manuals, and printable After-Action Report between English (Form DA-774) and Bahasa Indonesia (TNI AD format).',
+      tip: 'TIP: Your language choice is automatically saved in your browser for future sessions.'
+    },
+    {
+      tab: 'battlefield',
       selector: '#btn-header-aar',
       title: 'Form DA-774 After-Action Report & JSON Backup',
       body: 'Click AAR anytime for an interim SITREP or post-battle debrief complete with per-unit kills, depot logistics, weather trail, and printable A4 Form DA-774 PDF export. Use EXPORT / IMPORT JSON next to it to save or share your custom armies, and click UI TOUR anytime to replay this guide.',
