@@ -19,6 +19,7 @@ window.IronDivision = window.IronDivision || {};
   let origRenderGuide = null;
   let origBuildPrintableAAR = null;
   let origExportAARToPDF = null;
+  let origOpenBattleModal = null;
   let origWelcomeHtml = null;
 
   // Lossless English backups for DOM nodes & data.js objects
@@ -940,55 +941,109 @@ window.IronDivision = window.IronDivision || {};
   const LOG_REPLACEMENTS = [
     [/Current battle fully reset to Round 1\. All deployed formations restored to 100% strength\./g, 'Pertempuran diulang penuh ke Ronde 1. Seluruh satuan kembali 100% siap tempur.'],
     [/Loaded Battle of Arracourt \(18 SEP 1944, Lorraine\):/g, 'Memuat Pertempuran Arracourt (18 SEP 1944, Lorraine):'],
+    [/Loaded Battle of San Marino \(17 SEP 1944\):/g, 'Memuat Pertempuran San Marino (17 SEP 1944):'],
     [/ROUND (\d+) BEGINS — (.+?) Attacks \| (.+?) Defends/g, 'RONDE $1 DIMULAI — $2 Menyerang | $3 Bertahan'],
     [/Tactics Selected —/g, 'Taktik Dipilih —'],
     [/\(Attacker\):/g, '(Penyerang):'],
     [/\(Defender\):/g, '(Bertahan):'],
+    [/Blocks Org Rec/g, 'Blokir Regen Org'],
     [/Approach March\] No units in engagement range yet — combat ammunition burn paused \(0 base drain\) \| Depot:/g, 'Gerak Mendekat] Belum ada unit dalam jarak tembak — pemakaian amunisi dijeda (0 dasar) | Depot:'],
+    [/Supply\] Base operational drain/g, 'Logistik] Konsumsi operasional dasar'],
     [/Base operational drain/g, 'Konsumsi operasional dasar'],
     [/Depot Stockpile:/g, 'Stok Depot:'],
     [/\[Entrenching\] (.+?) digs in deeper \(Entrenchment Lvl (\d+\/\d+)\)\./g, '[Gali Parit] $1 memperdalam parit (Parit Lvl $2).'],
-    [/Net Organization ([+-]?\d+) \(Regen ([+-]?\d+), Fatigue (-?\d+) -> (\d+\/\d+)\)/g, 'Organisasi Bersih $1 (Regen $2, Lelah $3 -> $4)'],
+    [/Net Organization ([+-]?\d+) \(Regen ([+-]?\d+), (?:Combat )?Fatigue (-?\d+) -> (\d+\/\d+)\)/g, 'Organisasi Bersih $1 (Regen $2, Lelah $3 -> $4)'],
+    [/Net Organization ([+-]?\d+) \(Regen ([+-]?\d+), Fatigue Paused \(Out of Range\) -> (\d+\/\d+)\)/g, 'Organisasi Bersih $1 (Regen $2, Lelah Dijeda [Luar Jarak] -> $3)'],
     [/Fatigue Paused \(Out of Range\)/g, 'Lelah Dijeda (Luar Jarak)'],
+    [/Combat Fatigue/g, 'Kelelahan Tempur'],
     [/\[Brigade Resupply\] (.+?) Depot distributes \+(\d+) supply across (\d+) frontline units?/g, '[Pasok Brigade] Depot $1 menyalurkan +$2 logistik ke $3 unit garis depan'],
     [/\[Depot Refit\] (.+?) draws \+(\d+) supply from Depot/g, '[Isi Ulang Depot] $1 menarik +$2 logistik dari Depot'],
+    [/\[Depot Exhausted\] (.+?)'s Supply Depot is empty — frontline units cannot draw brigade resupply!/g, '[Depot Kosong] Depot Logistik $1 habis — unit garis depan tidak bisa menarik pasokan brigade!'],
+    [/Supply dropped below 50%! One-time ([^ ]+) Org damage & -10% malus!/g, 'Logistik turun di bawah 50%! Penalti sekali jalan $1 Org & malus -10%!'],
+    [/Supply dropped below 20%! One-time ([^ ]+) Org damage & -20% malus!/g, 'Logistik turun di bawah 20%! Penalti sekali jalan $1 Org & malus -20%!'],
     [/\[Weather Shift\] Theatre weather shifts from (.+?) -> ([^(!]+?)!/g, '[Perubahan Cuaca] Cuaca teater bergeser dari $1 ke $2!'],
-    [/\[Vigilance\]/g, '[Pengintaian]'],
-    [/\[Mortar Plunging Fire\]/g, '[Tembakan Mortir]'],
-    [/\[Mortar Shells on Armor\]/g, '[Mortir ke Baja]'],
-    [/\[Mortar Optics Hit!\]/g, '[Optik Terkena Mortir!]'],
-    [/\[MORTAR TRACK BLOWN!\]/g, '[RANTAI RANPUR PUTUS!]'],
+    [/\[Vigilance\/Recon Roll\] Side ([AB]): (.+?) vs Side ([AB]): (.+?) -> Side ([AB]) wins by (\d+) \(\+(\d+) flat Stat Boost!\)/g, '[Pengintaian] Pihak $1: $2 vs Pihak $3: $4 -> Pihak $5 unggul $6 (+$7 Bonus Stat!)'],
+    [/\[Vigilance\/Recon Roll\]/g, '[Pengintaian]'],
+    [/\[Initiative Locked\] Side ([AB]) has not yet closed into frontline engagement range — Side ([AB]) remains in the Attacking Phase while Side ([AB]) holds in the Defending Phase!/g, '[Inisiatif Terkunci] Pihak $1 belum masuk jarak tembak — Pihak $2 tetap menyerang sementara Pihak $3 bertahan!'],
+    [/\[Advancing on Y-Axis\] (.+?) \(Max Range (≤\d+)\) has no enemy in range and moves (\d+) distance forward \(Dist: (\d+ -> \d+) \| Closest Enemy Total Dist: (\d+)\)\./g, '[Maju Sumbu-Y] $1 (Jarak Maks $2) belum ada musuh dalam jangkauan dan maju $3 langkah (Jarak: $4 | Musuh Terdekat: $5).'],
+    [/\[Mortar Plunging Fire\] (.+?) -> (.+?) \(Infantry\): Def (-\d+), Entrenchment DENIED, (\d+) casualties, (-\d+) Org suppression shock!/g, '[Tembakan Mortir] $1 -> $2 (Infanteri): Per $3, Parit GAGAL, $4 korban, $5 syok supresi Org!'],
+    [/\[Mortar Shells on Armor\] (.+?) -> (.+?): Shrapnel bounces off armor plate\. 0 Hardness reduction\. Def (-\d+) \(Buttoned up\)\./g, '[Mortir ke Baja] $1 -> $2: Pecahan memantul dari pelat baja. 0 pengurangan Baja. Per $3 (Palka ditutup).'],
+    [/\[Mortar Optics Hit!\] (.+?) -> (.+?): Periscopes shattered! Def (-\d+), -15 Vigilance next round\./g, '[Optik Terkena Mortir!] $1 -> $2: Periskop pecah! Per $3, -15 Pengintaian ronde depan.'],
+    [/\[MORTAR TRACK BLOWN!\] (.+?) lands direct shell on (.+?)'s suspension! 1 vehicle immobilized, -2 Mobility Class!/g, '[RANTAI RANPUR PUTUS!] $1 menghantam suspensi $2! 1 ranpur lumpuh, -2 Kelas Mobilitas!'],
     [/\[Inherent Battery Barrage\]/g, '[Salvo Baterai Artileri]'],
-    [/\[Off-Map Artillery Support\]/g, '[Bantuan Tembakan Artileri]'],
+    [/\[Off-Map Artillery Support\]/g, '[Bantuan Artileri Jarak Jauh]'],
+    [/\[Air Support Grounded\] (.+?)'s strike wing aborted due to severe weather\/visibility \(([^)]+)\)\./g, '[Udara Batal Terbang] Sayap serang $1 dibatalkan akibat cuaca/jarak pandang buruk ($2).'],
     [/\[Air Support\]/g, '[Dukungan Udara]'],
-    [/\[Field Repair Crew\] (.+?) mechanics pinned by recent anti-armor fire — mid-battle field repair delayed/g, '[Kru Perbaikan] Montir $1 tiarap karena tembakan anti-baja ronde lalu — perbaikan ditunda'],
-    [/\[Field Repair Crew\] (.+?) restores (\d+) armor in-field \((\d+) active, (\d+) awaiting post-battle recovery\)/g, '[Kru Perbaikan] $1 memperbaiki $2 ranpur di lapangan ($3 aktif, $4 menunggu evakuasi)'],
-    [/\[Overwatch\]/g, '[Tembakan Penghadang]'],
+    [/\[AA Gun\] (.+?) reduces airstrike by ([^.]+)\./g, '[Meriam Hanud] $1 mengurangi serangan udara sebesar $2.'],
+    [/\[AA Gun CRITICAL (\d+)!\]/g, '[Meriam Hanud KRITIS $1!]'],
+    [/\[Field Repair Crew\] (.+?) mechanics pinned by recent anti-armor fire — mid-battle field repair delayed \((\d+) awaiting recovery\)\./g, '[Kru Perbaikan] Montir $1 tiarap akibat tembakan anti-baja ronde lalu — perbaikan ditunda ($2 menunggu evakuasi).'],
+    [/\[Field Repair Crew\] (.+?) \(([^)]+)\) restores (\d+) armor in-field \((\d+) active, (\d+) awaiting post-battle recovery\)\./g, '[Kru Perbaikan] $1 ($2) memperbaiki $3 ranpur di lapangan ($4 aktif, $5 menunggu evakuasi).'],
+    [/\[Defensive Overwatch\] (.+?) \(Range (≤\d+)\) opens uncontested overwatch fire on advancing (.+?) at Total Dist (\d+)!/g, '[Tembakan Penghadang] $1 (Jarak $2) melepaskan tembakan penghadang ke $3 yang maju di Jarak Total $4!'],
+    [/\[Overwatch Volley Damage\]/g, '[Kerusakan Tembakan Penghadang]'],
+    [/\[Overwatch Armor Hit\]/g, '[Hantaman Baja Penghadang]'],
+    [/\[Main Attack Armor Hit\]/g, '[Hantaman Baja Serangan Utama]'],
+    [/\[Return Fire Armor Hit\]/g, '[Hantaman Baja Tembakan Balasan]'],
+    [/\[Heavy Artillery Barrage Armor Hit\]/g, '[Hantaman Baja Artileri Berat]'],
+    [/\[Airstrike Armor Hit\]/g, '[Hantaman Baja Serangan Udara]'],
+    [/\[Mortar Mobility Hit Armor Hit\]/g, '[Hantaman Mobilitas Mortir]'],
     [/\[Main Attack Damage\]/g, '[Kerusakan Serangan Utama]'],
     [/\[Return Fire Damage\]/g, '[Kerusakan Tembakan Balasan]'],
-    [/\[Grazing Fire\]/g, '[Tembakan Menyerempet]'],
+    [/\[Return Fire Piercing Check\]/g, '[Uji Penetrasi Tembakan Balasan]'],
+    [/\[Piercing Check\]/g, '[Uji Penetrasi Baja]'],
+    [/-> PIERCED! \(Diff: ([+-]?\d+)\)/g, '-> TEMBUS! (Selisih: $1)'],
+    [/-> ARMOR HELD \(Unpierced — Soft\/Close-Assault Chip Active\)/g, '-> BAJA MENAHAN (Tidak Tembus — Kerusakan Ringan Aktif)'],
     [/\[ARMOR HELD ×0\.5, Explosive Negated\]/g, '[BAJA MENAHAN ×0,5, Ledak Batal]'],
     [/Heavy Armor Deflected \(Cap -1\)/g, 'Baja Berat Memantul (Maks -1 Org)'],
     [/Clash Deflected \(Max 2\)/g, 'Bentrokan Memantul (Maks 2)'],
+    [/Fleet Cap (\d+)/g, 'Batas Armada $1'],
+    [/Support Strike/g, 'Serangan Bantuan'],
+    [/Mortar Track Hit/g, 'Hantaman Rantai Mortir'],
     [/(\d+) vehicles knocked out! Recovery/g, '$1 ranpur dilumpuhkan! Pemulihan'],
     [/(\d+) Recoverable, (\d+) Destroyed \((\d+\/\d+) active\) \| Crew Casualties: (\d+) downed, -(\d+) Org shock!/g, '$1 Bisa Dievakuasi, $2 Hancur ($3 aktif) | Korban Awak: $4 jatuh, -$5 syok Org!'],
+    [/\[Return Fire Clash\] (.+?) RetAtk: (.+?) VS (.+?) Breakthrough\/Def: ([\d.]+)/g, '[Bentrokan Balasan] $1 SerBalik: $2 VS $3 Terobosan/Per: $4'],
+    [/\[Return Fire Hit!\] (.+?) \(RetAtk ([\d.]+) > Breakthrough ([\d.]+)\) strikes back at (.+?)!/g, '[Tembakan Balasan Kena!] $1 (SerBalik $2 > Terobosan $3) membalas telak ke $4!'],
+    [/\[No Return Fire\] (.+?) failed Return Fire Vigilance \(([^)]+)\)\./g, '[Tanpa Tembakan Balasan] $1 gagal Pengintaian Balasan ($2).'],
+    [/\[Out of Return-Fire Range\] (.+?) \(Max Range (≤\d+)\) cannot return fire against (.+?) firing from Total Distance (\d+)!/g, '[Di Luar Jarak Balas] $1 (Jarak Maks $2) tidak bisa membalas $3 yang menembak dari Jarak Total $4!'],
+    [/\[Grazing Return Fire\] (.+?)'s Breakthrough \(([\d.]+)\) holds vs (.+?) \(([\d.]+)\), but takes (\d+) suppressing casualties \(Pressure (\d+%) \((\d+) base - (\d+) fortified mitigation\)\)!/g, '[Tembakan Balasan Menyerempet] Terobosan $1 ($2) bertahan lawan $3 ($4), tapi menderita $5 korban supresi (Tekanan $6, dasar $7 - $8 mitigasi parit)!'],
+    [/\[Grazing Fire\] (.+?) repels breakthrough \(([\d.]+) vs ([\d.]+)\), but suffers (\d+) grazing casualties \(Pressure (\d+%) \((\d+) base - (\d+) fortified mitigation\)\)!/g, '[Tembakan Menyerempet] $1 menahan terobosan ($2 vs $3), tapi menderita $4 korban serempetan (Tekanan $5, dasar $6 - $7 mitigasi parit)!'],
+    [/\[COMPLETELY IMMUNE\] (.+?) holds the line \(([\d.]+) vs ([\d.]+)\): Attack \(([\d.]+)\) was absorbed by defense \(([\d.]+)\) \[Pressure (\d+%) < 40% threshold\] \(0 casualties\)!/g, '[TERTAHAN SEPENUHNYA] $1 menahan garis ($2 vs $3): Serangan ($4) diredam pertahanan ($5) [Tekanan $6 < ambang 40%] (0 korban)!'],
+    [/\[BREAKTHROUGH IMMUNE\] (.+?)'s Breakthrough \(([\d.]+)\) deflects (.+?)'s Return Fire \(([\d.]+)\): Attack \(([\d.]+)\) was absorbed by defense \(([\d.]+)\) \[Pressure (\d+%) < 40% threshold\] \(0 casualties\)!/g, '[TEROBOSAN KEBAL] Terobosan $1 ($2) memantulkan tembakan balasan $3 ($4) [Tekanan $7 < ambang 40%] (0 korban)!'],
+    [/\[Cover & Dispersion\] (.+?) makes Cover Save: (.+?) -> DUG-IN \/ IN DEFILADE \(Half soft damage, explosive negated\)/g, '[Perlindungan Medan] $1 lolos Uji Berlindung: $2 -> BERLINDUNG DI PARIT (Kerusakan lunak separuh, ledak batal)'],
+    [/\[Cover & Dispersion\] (.+?) makes Cover Save: (.+?) -> CAUGHT IN OPEN \(Exposed to full fire & suppression shock!\)/g, '[Perlindungan Medan] $1 gagal Uji Berlindung: $2 -> TERBUKA DI MEDAN (Kena tembakan penuh & syok supresi!)'],
+    [/\[Caught in Open Shock\] (.+?) pinned without defilade, taking (-\d+) Org shock!/g, '[Syok Medan Terbuka] $1 terjepit tanpa perlindungan, terkena $2 syok Org!'],
+    [/\[Org Damage\] (.+?) loses (-\d+) Organization \(([^)]+(?:\([^)]*\)[^)]*)*)\) -> (\d+\/\d+) Org remaining\./g, '[Kerusakan Org] $1 kehilangan $2 Organisasi ($3) -> sisa $4 Org.'],
+    [/combat shock/g, 'syok tempur'],
+    [/Intact Ranks Shield/g, 'Perisai Barisan Utuh'],
+    [/cum\. loss/g, 'korban kumulatif'],
+    [/\[Shock Malus\] (.+?) suffers (-\d+) Org at end of round\./g, '[Malus Syok] $1 kehilangan $2 Org di akhir ronde.'],
+    [/\[Decisive Breakthrough\] (.+?) gains \+(\d+) Org for smashing (.+?)!/g, '[Terobosan Menentukan] $1 meraih +$2 Org karena menghantam $3!'],
+    [/\[Breakthrough Exploitation\] (.+?) inflicted >=10% losses on (.+?) — (.+?) gains \+10% Attack next round!/g, '[Eksploitasi Terobosan] $1 memberi >=10% korban ke $2 — $3 mendapat +10% Serangan ronde depan!'],
+    [/\[Delay Tactic\] Successful defense imposes -10% Attack on (.+?) next round\./g, '[Taktik Ulur Waktu] Pertahanan berhasil memberi -10% Serangan ke $1 ronde depan.'],
     [/\[Casualty Recovery\]/g, '[Evakuasi Korban]'],
     [/(\d+) KIA \(Dead\), (\d+) WIA \(Wounded\) \((\d+\/\d+) active\)/g, '$1 Gugur (KIA), $2 Luka (WIA) ($3 aktif)'],
     [/\[Died of Wounds\] (.+?): (\d+) wounded succumbed to injuries \(WIA -> KIA, Rate: ([^)]+)\)/g, '[Gugur Karena Luka] $1: $2 prajurit luka gugur (WIA -> KIA, Laju: $3)'],
     [/\[Supply Stolen\] (.+?) steals (\d+) Supply from (.+?)!/g, '[Rampas Logistik] $1 merampas $2 Logistik dari $3!'],
-    [/\[Rout & Scatter\]/g, '[Mundur & Kocar-Kacir]'],
+    [/\[Rout & Scatter\] (.+?) broke \(([^)]+)\)! (\d+) troops scattered and escaped the battlefield; (\d+) disciplined soldiers fall back to regroup \((\d+) rds to rally\)\./g, '[Mundur & Kocar-Kacir] $1 pecah ($2)! $3 prajurit tercerai-berai lolos dari medan; $4 prajurit mundur teratur untuk konsolidasi ($5 ronde).'],
+    [/All combat-ready transports disabled/g, 'Seluruh kendaraan angkut lumpuh'],
+    [/reached 0 Organization! Cohesion broke and the unit is permanently routed!/g, 'mencapai 0 Organisasi! Kohesi hancur dan satuan kocar-kacir permanen!'],
+    [/Cohesion broke/g, 'Kohesi satuan pecah'],
+    [/\[Armor Tactical Fallback\] (.+?) withdraws to the rear with its (\d+) active combat vehicles to reorganize\./g, '[Mundur Taktis Lapis Baja] $1 mundur ke belakang bersama $2 ranpur aktif untuk konsolidasi.'],
+    [/\[Rally Staging Area\] (.+?) reorganizes in the rear: (\+\d+) Org \(([^)]+)\)\./g, '[Area Konsolidasi] $1 menata ulang barisan di belakang: $2 Org ($3).'],
     [/\[Rallied to the Line\]/g, '[Kembali ke Garis Depan]'],
-    [/PASSED Rally Check/g, 'LOLOS Konsolidasi (Rally)'],
-    [/FAILED Rally Check/g, 'GAGAL Konsolidasi (Rally)'],
+    [/PASSED Rally Check/g, 'LOLOS Konsolidasi'],
+    [/FAILED Rally Check/g, 'GAGAL Konsolidasi'],
+    [/Reformed as infantry with (\d+) personnel, Org: (\d+\/\d+)\./g, 'Terbentuk ulang sebagai infanteri dengan $1 personel, Org: $2.'],
+    [/Intact column returned with (\d+) personnel, (\d+) active vehicles, Org: (\d+\/\d+)\./g, 'Kolom utuh kembali dengan $1 personel, $2 ranpur aktif, Org: $3.'],
+    [/Returned to the line with (\d+) personnel, Org: (\d+\/\d+)\./g, 'Kembali ke garis depan dengan $1 personel, Org: $2.'],
     [/\[Unscreened Artillery Withdrawal\] (.+?) limbers up and withdraws from the sector after losing all frontline screening forces!/g, '[Penarikan Artileri Tanpa Pengawal] $1 berkemas dan mundur dari sektor setelah semua pengawal garis depan gugur!'],
     [/has 0 combat-ready vehicles remaining and withdraws from the sector!/g, 'kehabisan ranpur siap tempur (0) dan mundur dari sektor!'],
+    [/BATTLE OVER — (.+?) achieves victory over (.+?) in Round (\d+)!/g, 'PERTEMPURAN SELESAI — $1 meraih kemenangan atas $2 pada Ronde $3!'],
     [/BATTLE OVER — (.+?) achieves victory over (.+?)!/g, 'PERTEMPURAN SELESAI — $1 meraih kemenangan atas $2!'],
-    [/\[Recovery Tractors\]/g, '[Traktor Evakuasi]'],
-    [/\[FIELD SALVAGE\]/g, '[SALVASE MEDAN]'],
-    [/captured hulls impressed/g, 'ranpur rampasan dioperasikan kembali'],
-    [/scuttled\/burned/g, 'dihancurkan/dibakar'],
-    [/personnel downed!/g, 'personel jatuh!'],
-    [/advances to Dist/g, 'maju ke Jarak']
+    [/\[Retreat Success\] (.+?): Ret (\d+) vs Pur (\d+) -> (\d+%) \((\d+)\) escaped, (\d+) captured\./g, '[Mundur Berhasil] $1: Mundur $2 vs Kejar $3 -> $4 ($5) lolos, $6 tertawan.'],
+    [/\[Pursuit Catch\] (.+?): Pur (\d+) > Ret (\d+) -> (\d+%) \((\d+)\) captured, (\d+) escaped\./g, '[Tertangkap Pengejaran] $1: Kejar $2 > Mundur $3 -> $4 ($5) tertawan, $6 lolos.'],
+    [/\[Recovery Tractors\] (.+?) \((\d+%) retreat\) towed (\d+) repairable hulls back to depot \((\d+) left on field\)\./g, '[Traktor Evakuasi] $1 ($2 mundur) menarik $3 ranpur rusak ke depot ($4 tertinggal di medan).'],
+    [/\[FIELD SALVAGE\] (.+?) \(Roll (\d+)\) secured (\d+) abandoned hulls: (\d+) captured hulls impressed, (\d+) stripped \(\+(\d+) Supply\), (\d+) scuttled\/burned\./g, '[SALVASE MEDAN] $1 (Lemparan $2) mengamankan $3 ranpur musuh: $4 dioperasikan kembali, $5 dilucuti (+$6 Logistik), $7 dihancurkan/dibakar.'],
+    [/personnel downed!/g, 'personel jatuh!']
   ];
 
   function translateCombatLogText(raw) {
@@ -1173,12 +1228,119 @@ window.IronDivision = window.IronDivision || {};
     return html;
   }
 
+  function translateImmediateAARModal() {
+    const titleEl = document.getElementById('modal-winner-title');
+    const bodyEl = document.getElementById('modal-report-body');
+    if (titleEl && titleEl.textContent) {
+      titleEl.textContent = titleEl.textContent
+        .replace(/LIVE OPERATIONAL SITREP/g, 'LAPORAN SITUASI SEMENTARA (LAPSIT)')
+        .replace(/\(IN PROGRESS\)/g, '(BERLANGSUNG)')
+        .replace(/MUTUAL EXHAUSTION — DRAW/g, 'KELELAHAN BERSAMA — SERI')
+        .replace(/HEROIC VICTORY/g, 'KEMENANGAN HEROIK')
+        .replace(/DECISIVE VICTORY/g, 'KEMENANGAN TELAK')
+        .replace(/CLOSE VICTORY/g, 'KEMENANGAN TIPIS')
+        .replace(/PYRRHIC VICTORY/g, 'KEMENANGAN MAHAL');
+    }
+    if (!bodyEl) return;
+    let h = bodyEl.innerHTML;
+    const modalRepl = [
+      [/UNCLASSIFIED \/\/ SIMULATION OPS/g, 'TERBATAS // STAF OPERASI TNI AD (SOPS)'],
+      [/DOC-REF:/g, 'NO. LAP:'],
+      [/DTG:/g, 'TW:'],
+      [/OP WINDOW:/g, 'PERIODE OPS:'],
+      [/1\. OUTCOME \/ DEGREE/g, '1. HASIL / TINGKAT'],
+      [/2\. DURATION \/ RATIO/g, '2. DURASI / RASIO'],
+      [/3\. SECTOR \/ FEATURE/g, '3. SEKTOR / FITUR'],
+      [/4\. METEO \/ POSTURE/g, '4. CUACA / POSTUR'],
+      [/IN PROGRESS/g, 'BERLANGSUNG'],
+      [/HEROIC VICTORY/g, 'KEMENANGAN HEROIK'],
+      [/DECISIVE VICTORY/g, 'KEMENANGAN TELAK'],
+      [/CLOSE VICTORY/g, 'KEMENANGAN TIPIS'],
+      [/PYRRHIC VICTORY/g, 'KEMENANGAN MAHAL'],
+      [/SIDE A —/g, 'PIHAK A —'],
+      [/SIDE B —/g, 'PIHAK B —'],
+      [/SIDE A ATK/g, 'PIHAK A MENYERANG'],
+      [/SIDE B ATK/g, 'PIHAK B MENYERANG'],
+      [/EXCH /g, 'RASIO '],
+      [/SECTION 2A \/\//g, 'BAGIAN 2A //'],
+      [/SECTION 2B \/\//g, 'BAGIAN 2B //'],
+      [/COMMANDING OFFICER:/g, 'KOMANDAN SATUAN:'],
+      [/<th>Formation<\/th>/g, '<th>Satuan</th>'],
+      [/<th>Status<\/th>/g, '<th>Status</th>'],
+      [/<th class="text-right">Strength<\/th>/g, '<th class="text-right">Kekuatan</th>'],
+      [/<th class="text-right">KIA \/ WIA<\/th>/g, '<th class="text-right">Gugur / Luka</th>'],
+      [/<th class="text-right">POW \/ ESC<\/th>/g, '<th class="text-right">Twn / Lolos</th>'],
+      [/<th class="text-right">AFV \(Start \| Act\/Rec\/Tow\/KO\)<\/th>/g, '<th class="text-right">Ranpur (Awal | Akt/Rsk/Trk/Hnc)</th>'],
+      [/<th class="text-right">Inflicted \(Cas\/AFV\)<\/th>/g, '<th class="text-right">Hasil (Pers/Ranpur)</th>'],
+      [/TOTALS \((\d+\/\d+) ACTIVE\)/g, 'TOTAL ($1 AKTIF)'],
+      [/SECTION 5 \/\/ G-3 OPERATIONAL ASSESSMENT/g, 'BAGIAN 5 // EVALUASI STAF OPERASI (SOPS TNI AD)'],
+      [/>OPERATIONAL</g, '>SIAP TEMPUR<'],
+      [/DISMOUNTED \(OP\)/g, 'TURUN KENDARAAN (AKTIF)'],
+      [/REAR RALLY/g, 'KONSOLIDASI BELAKANG'],
+      [/WITHDRAWN \(0 AFV\)/g, 'MUNDUR (0 RANPUR)'],
+      [/WITHDRAWN \(UNSCREENED\)/g, 'MUNDUR (TANPA PENGAWAL)'],
+      [/ROUTED/g, 'KOCAR-KACIR'],
+      [/DISPERSED/g, 'TERCERAI-BERAI'],
+      [/SHATTERED/g, 'HANCUR MORAL'],
+      [/WIPED OUT/g, 'GUGUR SEMUA'],
+      [/OUT OF ACTION/g, 'NONAKTIF'],
+      [/SECTION 3 \/\/ BATTLEFIELD SALVAGE &amp; CAPTURED MATERIAL/g, 'BAGIAN 3 // SALVASE MEDAN &amp; RAMPASAN MATERIIL'],
+      [/field recovery units secured <b>(\d+)<\/b> abandoned enemy combat hulls:/g, 'tim evakuasi lapangan mengamankan <b>$1</b> ranpur musuh yang ditinggalkan:'],
+      [/CAPTURED &amp; IMPRESSED:/g, 'DIRAMPAS &amp; DIPAKAI LAGI:'],
+      [/STRIPPED FOR DEPOT:/g, 'DILUCUTI UNTUK DEPOT:'],
+      [/SCUTTLED \/ WRITE-OFF:/g, 'DIHANCURKAN / RUSAK TOTAL:'],
+      [/SECTION 4 \/\/ SIGNIFICANT ENGAGEMENT CHRONOLOGY/g, 'BAGIAN 4 // KRONOLOGI PENTING PERTEMPURAN'],
+      [/Engagement remains active at Round (\d+); telemetry reflects live frontline status\./g, 'Pertempuran masih berlangsung pada Ronde $1; data menampilkan kondisi garis depan terkini.'],
+      [/Classification:/g, 'Klasifikasi:'],
+      [/secured the ([^ ]+) \(([^)]+)\) sector in Round (\d+) after neutralizing ([^'<]+?)(?:'s|&#39;s) frontline cohesion\./g, 'menguasai sektor $1 ($2) pada Ronde $3 setelah melumpuhkan kohesi garis depan $4.'],
+      [/Personnel attrition stands at (\d+%) for (.+?) \(([\d,]+) total losses\) versus (\d+%) for (.+?) \(([\d,]+) total losses\)\./g, 'Kerugian personel mencapai $1 untuk $2 ($3 total korban) berbanding $4 untuk $5 ($6 total korban).'],
+      [/Armored vehicle losses:/g, 'Kerugian ranpur:'],
+      [/knocked out \((\d+) total write-offs\)/g, 'lumpuh ($1 hancur total)'],
+      [/Notable Formation \(([^)]+)\):/g, 'Satuan Menonjol ($1):'],
+      [/Anti-Armor Citation \(([^)]+)\):/g, 'Penghargaan Anti-Ranpur ($1):'],
+      [/Field Maintenance:/g, 'Pemeliharaan Lapangan:'],
+      [/Fire Support Impact:/g, 'Kontribusi Bantuan Tembakan:'],
+      [/Air Interdiction:/g, 'Dukungan Udara:'],
+      [/Logistics Expenditure:/g, 'Pengeluaran Logistik Depot:'],
+      [/inflicted the highest enemy personnel losses \(([\d,]+) casualties\)\./g, 'menimbulkan korban personel musuh tertinggi ($1 korban).'],
+      [/led anti-armor engagements with (\d+) enemy vehicles knocked out \((\d+) destroyed\)\./g, 'memimpin pertempuran anti-baja dengan melumpuhkan $1 ranpur musuh ($2 hancur total).'],
+      [/organic recovery crews restored (\d+) disabled armored vehicles back to operational status during the engagement\./g, 'kru perbaikan organiknya memulihkan $1 ranpur lumpuh kembali siap tempur.'],
+      [/indirect fire accounted for (\d+%) of opposing combat casualties \(([\d,]+)\)/g, 'tembakan tidak langsung menyumbang $1 korban musuh ($2 korban)'],
+      [/indirect fire accounted for (\d+%) \(([\d,]+)\)/g, 'tembakan tidak langsung menyumbang $1 ($2 korban)'],
+      [/expended (\d+%) of theatre depot stocks/g, 'menghabiskan $1 stok depot teater'],
+      [/expended (\d+%)/g, 'menghabiskan $1'],
+      [/remaining/g, 'tersisa'],
+      [/formation\(s\) hit critical supply/g, 'satuan menyentuh logistik kritis'],
+      [/depot critical at/g, 'depot kritis pukul'],
+      [/Field recovery teams secured (\d+) abandoned enemy hulls \((\d+) impressed into service, \+(\d+) depot supply stripped\)\./g, 'Tim evakuasi mengamankan $1 ranpur musuh ($2 dioperasikan kembali, +$3 logistik depot hasil lucutan).']
+    ];
+    for (const [re, rep] of modalRepl) {
+      h = h.replace(re, rep);
+    }
+    h = h.replace(/<div class="border-l-2 border-\[#2f3b2e\] pl-2">([\s\S]*?)<\/div>/g, function(m, inner) {
+      return '<div class="border-l-2 border-[#2f3b2e] pl-2">' + translateCombatLogText(inner) + '</div>';
+    });
+    bodyEl.innerHTML = h;
+  }
+
   function hookPrintableAAR() {
     if (origBuildPrintableAAR || !ID.UI || typeof ID.UI.buildPrintableAARHtml !== 'function') return;
     origBuildPrintableAAR = ID.UI.buildPrintableAARHtml;
     const wrappedBuild = (rep) => (currentLang === 'id') ? buildTniAdPrintableAARHtml(rep) : origBuildPrintableAAR(rep);
     ID.UI.buildPrintableAARHtml = wrappedBuild;
     window.buildPrintableAARHtml = wrappedBuild;
+
+    if (typeof ID.UI.openBattleSummaryModal === 'function' && !origOpenBattleModal) {
+      origOpenBattleModal = ID.UI.openBattleSummaryModal;
+      const wrappedOpenModal = () => {
+        origOpenBattleModal();
+        if (currentLang === 'id') {
+          translateImmediateAARModal();
+        }
+      };
+      ID.UI.openBattleSummaryModal = wrappedOpenModal;
+      window.openBattleSummaryModal = wrappedOpenModal;
+    }
 
     if (typeof ID.UI.exportAARToPDF === 'function' && !origExportAARToPDF) {
       origExportAARToPDF = ID.UI.exportAARToPDF;
