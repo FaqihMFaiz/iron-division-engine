@@ -32,7 +32,7 @@
   <!-- Top Command Deck Header -->
   <header class="mil-command-header sticky top-0 z-30">
     <!-- Tier 1: Symmetrical Command Bar (Live Telemetry | Centered Emblem | Presets & AAR) -->
-    <div class="max-w-[1600px] mx-auto px-4 py-2 grid grid-cols-1 md:grid-cols-3 items-center gap-2 border-b border-[#252d26]">
+    <div class="max-w-full mx-auto px-4 py-2 grid grid-cols-1 md:grid-cols-3 items-center gap-2 border-b border-[#252d26]">
       <!-- Left: Live Operational DTG & Theatre Status -->
       <div class="flex items-center gap-2.5 font-mono text-[11px] justify-center md:justify-start">
         <span class="px-1.5 py-0.5 bg-[#1b221c] border border-[#3a453c] text-[#c8a24b] font-bold tracking-wider">HQ-904</span>
@@ -67,7 +67,7 @@
 
     <!-- Tier 2: Full-Width 7-Slot Tactical Navigation Dock -->
     <div class="bg-[#0c0f0d] border-b border-[#29312b]">
-      <nav class="mil-nav-dock max-w-[1600px] mx-auto px-3 sm:px-4 grid grid-cols-4 sm:grid-cols-7">
+      <nav class="mil-nav-dock max-w-full mx-auto px-3 sm:px-4 grid grid-cols-4 sm:grid-cols-7">
         <button type="button" onclick="switchTab('battlefield')" id="tab-battlefield" class="tab-btn mil-dock-btn active py-2 px-2 flex items-center justify-center gap-1.5">
           <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="5.5"/><path d="M8 1v3M8 12v3M1 8h3M12 8h3"/></svg>
           <span>Battlefield</span>
@@ -104,7 +104,7 @@
   <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
   <!-- Main Application Workspace -->
-  <main class="flex-1 max-w-[1600px] w-full mx-auto p-3 sm:p-4">
+  <main class="flex-1 max-w-full w-full mx-auto p-3 sm:p-4">
 
     <!-- ==================== TAB 1: BATTLEFIELD ==================== -->
     <section id="view-battlefield" class="space-y-5">
@@ -124,18 +124,18 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
           <!-- Terrain Selector -->
           <div>
-            <label class="block text-[10px] font-mono uppercase text-slate-400 mb-1">Base Terrain</label>
+            <label class="mil-data-label block font-mono mb-1">Base terrain</label>
             <select id="bf-terrain" onchange="onEnvironmentChange()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-2 text-xs text-white focus:outline-none focus:border-amber-500"></select>
           </div>
           <!-- Terrain Feature Selector -->
           <div>
-            <label class="block text-[10px] font-mono uppercase text-slate-400 mb-1">Terrain Feature</label>
+            <label class="mil-data-label block font-mono mb-1">Terrain feature</label>
             <select id="bf-feature" onchange="onEnvironmentChange()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-2 text-xs text-white focus:outline-none focus:border-amber-500"></select>
           </div>
           <!-- Weather Selector -->
           <div>
             <div class="flex items-center justify-between mb-1">
-              <label class="text-[10px] font-mono uppercase text-slate-400">Weather</label>
+              <label class="mil-data-label font-mono">Weather</label>
               <label class="flex items-center gap-1 text-[9.5px] font-mono text-amber-400 cursor-pointer" title="Roll dynamic weather shifts every 3 rounds">
                 <input type="checkbox" id="bf-dynamic-weather" onchange="onEnvironmentChange()" class="accent-amber-500">
                 <span>DYN</span>
@@ -146,14 +146,14 @@
           <!-- Theatre Role & Opening Surprise -->
           <div class="grid grid-cols-2 gap-1.5">
             <div>
-              <label class="block text-[10px] font-mono uppercase text-slate-400 mb-1">Theatre Role</label>
+              <label class="mil-data-label block font-mono mb-1">Theatre role</label>
               <select id="bf-theatre-atk" onchange="onEnvironmentChange()" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-2 text-xs text-white focus:outline-none focus:border-amber-500" title="Locks which side is assaulting vs entrenched in fortifications/rivers">
                 <option value="A">Side A Invades / B Entrenched</option>
                 <option value="B">Side B Invades / A Entrenched</option>
               </select>
             </div>
             <div>
-              <label class="block text-[10px] font-mono uppercase text-slate-400 mb-1">Opening</label>
+              <label class="mil-data-label block font-mono mb-1">Opening</label>
               <label class="flex items-center gap-1.5 bg-slate-950 border border-slate-700 rounded-lg px-2 py-2 text-[11px] cursor-pointer">
                 <input type="checkbox" id="bf-unexpected" onchange="onEnvironmentChange()" class="rounded accent-amber-500">
                 <span class="truncate" title="Unexpected Initiative on Round 1">Surprise Rd1</span>
@@ -218,7 +218,7 @@
         <div id="gm-controls-bar" class="hidden mt-2.5 pt-2.5 border-t border-[#4d4224] bg-[#1b1912] px-3 py-2 flex flex-wrap items-center justify-between gap-2 font-mono text-[11px]">
           <div class="flex flex-wrap items-center gap-2">
             <span class="text-[#c8a24b] font-bold uppercase tracking-wider">GM LIVE MODE //</span>
-            <button type="button" onclick="undoLastRound()" class="mil-btn px-2.5 py-1 bg-[#262f25] hover:bg-[#364435] border border-[#5e6e5c] text-[#e7ece4] text-[10.5px] font-bold">◄ UNDO 1 ROUND</button>
+            <button type="button" onclick="undoLastRound()" class="mil-btn px-2.5 py-1 bg-[#262f25] hover:bg-[#364435] border border-[#5e6e5c] text-[#e7ece4] text-[10.5px] font-bold">◄ UNDO 1 ROUND <kbd class="mil-kbd ml-1">CTRL+Z</kbd></button>
             <button type="button" onclick="gmAdjustDepot('A', 50)" class="mil-btn px-2 py-1 bg-[#1b2936] hover:bg-[#24394d] border border-[#3f6a91] text-[#8ec0e8] text-[10.5px]">+50 DEPOT A</button>
             <button type="button" onclick="gmAdjustDepot('B', 50)" class="mil-btn px-2 py-1 bg-[#331b1a] hover:bg-[#4a2624] border border-[#8a3c38] text-[#e69894] text-[10.5px]">+50 DEPOT B</button>
           </div>
@@ -231,10 +231,10 @@
       </div>
 
       <!-- 3-Column Battlefield Layout -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+      <div id="battlefield-main-grid" class="bf-grid-layout">
 
         <!-- SIDE A COLUMN (BLUEFOR) -->
-        <div class="lg:col-span-4 space-y-4">
+        <div id="bf-col-side-a" class="space-y-4 min-w-0">
           <div class="mil-panel mil-panel-bluefor p-4">
             <div class="side-title-plate flex items-center justify-between gap-2 px-2.5 py-2 mb-3.5">
               <div class="flex items-center gap-2 flex-1 min-w-0">
@@ -260,7 +260,7 @@
 
             <!-- Tactic Selection (Full-Width) -->
             <div class="mb-3">
-              <label class="block text-[10px] font-mono uppercase text-slate-400 mb-1">Tactic Selection</label>
+              <label class="mil-data-label block font-mono mb-1">Tactic selection</label>
               <select id="sideA-tactic" onchange="updateSideConfig('A')" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white"></select>
             </div>
 
@@ -283,8 +283,8 @@
           </div>
         </div>
 
-        <!-- CENTER COLUMN: TELEMETRY & LOG -->
-        <div class="lg:col-span-4 space-y-3 flex flex-col">
+        <!-- CENTER COLUMN: STICKY COMMAND & 2D SECTOR -->
+        <div id="bf-col-center" class="space-y-3 flex flex-col min-w-0">
           <!-- Sticky Operational Status Command Block (Collapsible to Compact Sticky Strip) -->
           <div id="center-command-sticky" class="lg:sticky lg:top-[68px] z-20 mil-monitor-frame p-2.5 shadow-xl">
             <!-- Round Telemetry, Primary Command Execution & Force Ratio -->
@@ -309,10 +309,10 @@
                 <div class="flex items-stretch gap-1.5">
                   <span id="op-status-mini-rd" class="op-status-mini-only hidden items-center px-2 bg-[#141915] border border-[#4d4224] font-mono text-[10.5px] font-bold text-[#d4b054] shrink-0">RD-01</span>
                   <button type="button" onclick="runSingleRound()" id="btn-next-round" class="mil-btn mil-cta-primary flex-1 py-2 px-3 bg-[#c8a24b] hover:bg-[#d8b45c] text-[#0d100d] font-bold text-xs sm:text-sm tracking-[0.1em] border border-[#e6c873] flex items-center justify-center gap-1.5">
-                    <span>▶ EXECUTE ROUND</span>
+                    <span>▶ EXECUTE ROUND</span><kbd class="mil-kbd">SPACE</kbd>
                   </button>
                   <button type="button" onclick="toggleAutoRun()" id="btn-auto-run" class="mil-btn px-3 py-2 bg-[#2d472b] hover:bg-[#385936] text-[#d9ead7] font-bold text-xs tracking-wider border border-[#4c7548] shrink-0">
-                    AUTO-OPS
+                    <span>AUTO-OPS</span> <kbd class="mil-kbd ml-1">A</kbd>
                   </button>
                   <button type="button" onclick="toggleOpStatusCollapse()" class="op-status-mini-only hidden items-center justify-center mil-btn px-2 py-1 bg-[#1c221d] hover:bg-[#272f29] border border-[#3a453c] text-[#c8d1c7] font-mono text-[10px] font-bold shrink-0" title="Expand Operational Status">▼</button>
                 </div>
@@ -326,7 +326,7 @@
                   <button type="button" onclick="resetCurrentBattle()" id="btn-reset-battle" class="mil-btn py-1.5 px-2 bg-[#1c221d] hover:bg-[#272f29] border border-[#3a453c] text-[#c8d1c7] font-medium text-[10.5px]" title="Reset battle &amp; restore deployed units">
                     RESET
                   </button>
-                  <button type="button" onclick="emptyBattlefield()" id="btn-empty-bf" class="mil-btn py-1.5 px-2 bg-[#331a19] hover:bg-[#472321] border border-[#6b322f] text-[#eab7b4] font-medium text-[10.5px]" title="Remove all units from both sides">
+                  <button type="button" onclick="emptyBattlefield()" id="btn-empty-bf" class="mil-btn py-1.5 px-2 bg-[#1c1a1a] hover:bg-[#2a2121] border border-[#6e5252] text-[#d6a9a7] font-medium text-[10.5px]" title="Remove all units from both sides">
                     CLEAR
                   </button>
                 </div>
@@ -357,7 +357,37 @@
 
           </div>
 
-          <!-- Tactical Map & Y-Axis Rangefinder Frame -->
+          <!-- Lower Center Split: Combat Log (left) beside 2D Tactical Sector + Y-Axis (right) -->
+          <div id="bf-center-lower" class="bf-center-lower-grid">
+            <div id="bf-col-log" class="flex flex-col min-w-0">
+              <!-- Combat Sitrep Logbook (Archival Paper Theme) -->
+          <div class="paper-sitrep-panel p-3.5 flex-1 flex flex-col min-h-[500px]">
+            <div class="paper-sitrep-header flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <span class="block font-mono text-[9px] font-bold uppercase tracking-widest text-[#4a5448]">OPERATIONAL LOGBOOK // FORM DA-1594</span>
+                <h3 class="font-extrabold font-mono text-xs uppercase tracking-widest text-[#141815]">
+                  SITREP // COMBAT LOG
+                </h3>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <select id="log-filter" onchange="renderCombatLog()" class="px-2 py-0.5 text-[11px]">
+                  <option value="all">ALL CHANNELS</option>
+                  <option value="rolls">RECON &amp; CLASH</option>
+                  <option value="damage">CASUALTIES / ORG</option>
+                  <option value="armor">ARMOR / AP</option>
+                  <option value="support">LOGISTICS / FS</option>
+                  <option value="error">SYS ERRORS</option>
+                </select>
+                <button type="button" onclick="openExpandedLogModal()" class="paper-sitrep-btn paper-sitrep-btn-muted" title="Open full combat log in larger pop-up">EXPAND</button>
+                <button type="button" onclick="copyCombatLog()" class="paper-sitrep-btn paper-sitrep-btn-primary">COPY</button>
+                <button type="button" onclick="clearCombatLog()" class="paper-sitrep-btn paper-sitrep-btn-muted">CLR</button>
+              </div>
+            </div>
+            <div id="combat-log-container" class="paper-sitrep-sheet flex-1 overflow-y-auto custom-scroll space-y-1 font-mono text-xs min-h-[380px] max-h-[520px] lg:h-[600px] lg:max-h-[600px]"></div>
+          </div>
+            </div>
+            <div id="bf-col-map" class="flex flex-col min-w-0">
+                        <!-- Tactical Map & Y-Axis Rangefinder Frame -->
           <div class="mil-monitor-frame p-3 space-y-2.5">
             <!-- Collapsible 2D Tactical Sector Map Canvas -->
             <div id="tactical-sector-panel" class="bg-slate-950 border border-slate-800 p-2.5">
@@ -389,36 +419,12 @@
               <div id="yaxis-line-container"></div>
             </div>
           </div>
-
-          <!-- Combat Sitrep Logbook (Archival Paper Theme) -->
-          <div class="paper-sitrep-panel p-3.5 flex-1 flex flex-col min-h-[500px]">
-            <div class="paper-sitrep-header flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <span class="block font-mono text-[9px] font-bold uppercase tracking-widest text-[#4a5448]">OPERATIONAL LOGBOOK // FORM DA-1594</span>
-                <h3 class="font-extrabold font-mono text-xs uppercase tracking-widest text-[#141815]">
-                  SITREP // COMBAT LOG
-                </h3>
-              </div>
-              <div class="flex items-center gap-1.5">
-                <select id="log-filter" onchange="renderCombatLog()" class="px-2 py-0.5 text-[11px]">
-                  <option value="all">ALL CHANNELS</option>
-                  <option value="rolls">RECON &amp; CLASH</option>
-                  <option value="damage">CASUALTIES / ORG</option>
-                  <option value="armor">ARMOR / AP</option>
-                  <option value="support">LOGISTICS / FS</option>
-                  <option value="error">SYS ERRORS</option>
-                </select>
-                <button type="button" onclick="openExpandedLogModal()" class="paper-sitrep-btn paper-sitrep-btn-muted" title="Open full combat log in larger pop-up">EXPAND</button>
-                <button type="button" onclick="copyCombatLog()" class="paper-sitrep-btn paper-sitrep-btn-primary">COPY</button>
-                <button type="button" onclick="clearCombatLog()" class="paper-sitrep-btn paper-sitrep-btn-muted">CLR</button>
-              </div>
             </div>
-            <div id="combat-log-container" class="paper-sitrep-sheet flex-1 overflow-y-auto custom-scroll space-y-1 font-mono text-xs min-h-[380px] max-h-[520px] lg:h-[600px] lg:max-h-[600px]"></div>
           </div>
         </div>
 
         <!-- SIDE B COLUMN (OPFOR) -->
-        <div class="lg:col-span-4 space-y-4">
+        <div id="bf-col-side-b" class="space-y-4 min-w-0">
           <div class="mil-panel mil-panel-opfor p-4">
             <div class="side-title-plate flex items-center justify-between gap-2 px-2.5 py-2 mb-3.5">
               <div class="flex items-center gap-2 flex-1 min-w-0">
@@ -444,7 +450,7 @@
 
             <!-- Tactic Selection (Full-Width) -->
             <div class="mb-3">
-              <label class="block text-[10px] font-mono uppercase text-slate-400 mb-1">Tactic Selection</label>
+              <label class="mil-data-label block font-mono mb-1">Tactic selection</label>
               <select id="sideB-tactic" onchange="updateSideConfig('B')" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white"></select>
             </div>
 

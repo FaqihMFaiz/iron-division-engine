@@ -625,16 +625,16 @@ window.IronDivision = window.IronDivision || {};
 
       summaryEl.innerHTML = `
         <div>
-          <span class="block text-[9px] font-mono uppercase tracking-wider text-[#6e7a6d]">FORMATIONS</span>
+          <span class="block text-[10.5px] font-mono text-[#a6b2a4]">Formations</span>
           <span class="font-bold text-base sm:text-lg text-[#f0f4ee] leading-tight" style="font-family:'Chakra Petch',sans-serif;">${activeUnits.length}/${sideObj.units.length}</span>
         </div>
         <div>
-          <span class="block text-[9px] font-mono uppercase tracking-wider text-[#6e7a6d]">EFF. STRENGTH / AFV</span>
+          <span class="block text-[10.5px] font-mono text-[#a6b2a4]">Eff. strength / AFV</span>
           <span class="font-bold text-base sm:text-lg text-[#89c983] leading-tight" style="font-family:'Chakra Petch',sans-serif;">${totalPers.toLocaleString()} <span class="text-[#c8a24b]">[${totalArmor}]</span></span>
         </div>
         <div>
-          <span class="block text-[9px] font-mono uppercase tracking-wider text-[#6e7a6d]">LOSSES (KIA+WIA)</span>
-          <span class="font-bold text-base sm:text-lg text-[#e07973] leading-tight" style="font-family:'Chakra Petch',sans-serif;">${totalDeadWounded.toLocaleString()}</span>
+          <span class="block text-[10.5px] font-mono text-[#a6b2a4]">Losses (KIA+WIA)</span>
+          <span class="font-bold text-base sm:text-lg ${totalDeadWounded > 0 ? 'text-[#e07973]' : 'text-[#a6b2a4]'} leading-tight" style="font-family:'Chakra Petch',sans-serif;">${totalDeadWounded.toLocaleString()}</span>
         </div>
         <div class="col-span-3 pt-2 mt-1 border-t border-slate-800 text-left">
           <div class="flex justify-between text-[10px] font-mono uppercase mb-1">
@@ -794,22 +794,22 @@ window.IronDivision = window.IronDivision || {};
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10.5px] font-mono">
             <div>
               <div class="flex justify-between">
-                <span class="text-[#7c877b]">PERS</span>
+                <span class="text-[#a6b2a4]">Pers</span>
                 <span class="text-[#89b884]">${u.personnel}/${u.maxPersonnel} (${persPct}%)</span>
               </div>
               <div class="w-full h-2 bar-track mt-0.5">
                 <div class="bg-[#5e8f59] h-full bar-fill" style="width: ${persPct}%"></div>
               </div>
-              <div class="unit-card-secondary text-[9.5px] text-[#7c877b] mt-0.5">KIA <span class="text-[#d46a64]">${u.dead}</span> | WIA <span class="text-[#c8a24b]">${u.wounded}</span>${lossMalus < 0 ? ` <span class="text-[#d46a64]">[${lossMalus}%]</span>` : ''}</div>
+              <div class="unit-card-secondary text-[9.5px] text-[#7c877b] mt-0.5">KIA <span class="${u.dead > 0 ? 'text-[#d46a64] font-semibold' : 'text-[#a6b2a4]'}">${u.dead}</span> | WIA <span class="${u.wounded > 0 ? 'text-[#c8a24b] font-semibold' : 'text-[#a6b2a4]'}">${u.wounded}</span>${lossMalus < 0 ? ` <span class="text-[#d46a64]">[${lossMalus}%]</span>` : ''}</div>
             </div>
 
             <div>
               <div class="flex justify-between">
-                <span class="text-[#7c877b]">ORG</span>
-                <span class="text-[#8ec0e8]">${(u.isMonster || u.isZombie) ? 'N/A' : `${u.org}/${u.maxOrg} (${orgPct}%)`}</span>
+                <span class="text-[#a6b2a4]">Org</span>
+                <span class="text-[#7cd1cc]">${(u.isMonster || u.isZombie) ? 'N/A' : `${u.org}/${u.maxOrg} (${orgPct}%)`}</span>
               </div>
               <div class="w-full h-2 bar-track mt-0.5">
-                <div class="bg-[#4e8ec4] h-full bar-fill" style="width: ${orgPct}%"></div>
+                <div class="bg-[#3ea6a0] h-full bar-fill" style="width: ${orgPct}%"></div>
               </div>
               <div class="unit-card-secondary text-[9.5px] text-[#7c877b] mt-0.5">CLASS <span class="text-[#b8c2b6]">${escapeHtml(u.armorTier.toUpperCase())}</span>${orgMalus < 0 ? ` <span class="text-[#d46a64]">[${orgMalus}%]</span>` : ''}</div>
             </div>
@@ -818,7 +818,7 @@ window.IronDivision = window.IronDivision || {};
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10.5px] font-mono">
             <div>
               <div class="flex justify-between">
-                <span class="text-[#7c877b]">SUP</span>
+                <span class="text-[#a6b2a4]">Sup</span>
                 <span class="text-[#c8a24b]">${(u.isMonster || u.isZombie) ? 'N/A' : `${u.supply}/${u.maxSupply} (${supPct}%)`}</span>
               </div>
               <div class="w-full h-1.5 bar-track mt-0.5">
@@ -830,7 +830,7 @@ window.IronDivision = window.IronDivision || {};
             ${u.maxArmor > 0 ? `
             <div>
               <div class="flex justify-between">
-                <span class="text-[#7c877b]">AFV</span>
+                <span class="text-[#a6b2a4]">AFV</span>
                 <span class="text-[#d99b52]">${u.armor}/${u.maxArmor}</span>
               </div>
               <div class="w-full h-1.5 bar-track mt-0.5">
@@ -1489,7 +1489,7 @@ window.IronDivision = window.IronDivision || {};
             <button type="button" onclick="duplicateUnitTemplate('${u.id}')" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700" title="Duplicate this template">⧉ Duplicate</button>
             <button type="button" onclick="deployTemplateById('${u.id}', 'A')" class="px-2.5 py-1 rounded bg-sky-700 hover:bg-sky-600 text-white">+ Side A</button>
             <button type="button" onclick="deployTemplateById('${u.id}', 'B')" class="px-2.5 py-1 rounded bg-rose-700 hover:bg-rose-600 text-white">+ Side B</button>
-            <button type="button" onclick="deleteUnitTemplate('${u.id}')" class="ml-auto px-2 py-1 rounded bg-rose-950 hover:bg-rose-900 text-rose-300">Delete</button>
+            <button type="button" onclick="deleteUnitTemplate('${u.id}')" class="ml-auto px-2 py-1 rounded bg-[#1c1a1a] hover:bg-[#2b2020] border border-[#6e5252] text-[#d6a9a7]">Delete</button>
           </div>
         </div>
       `;
@@ -1645,7 +1645,7 @@ window.IronDivision = window.IronDivision || {};
           </div>
           <div class="flex items-center gap-2 pt-2 border-t border-slate-800 text-xs">
             <button type="button" onclick="loadCommanderIntoForm('${c.id}')" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200">✎ Edit</button>
-            ${c.id !== 'cmd_none' ? `<button type="button" onclick="deleteCommander('${c.id}')" class="ml-auto px-2.5 py-1 rounded bg-rose-950 hover:bg-rose-900 text-rose-300">Erase</button>` : ''}
+            ${c.id !== 'cmd_none' ? `<button type="button" onclick="deleteCommander('${c.id}')" class="ml-auto px-2.5 py-1 rounded bg-[#1c1a1a] hover:bg-[#2b2020] border border-[#6e5252] text-[#d6a9a7]">Erase</button>` : ''}
           </div>
         </div>
       `;

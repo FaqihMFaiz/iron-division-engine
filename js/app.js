@@ -409,13 +409,19 @@ window.IronDivision = window.IronDivision || {};
     }
     const btn = document.getElementById('btn-auto-run');
     if (btn) {
-      btn.textContent = 'AUTO-OPS';
+      btn.innerHTML = '<span>AUTO-OPS</span> <kbd class="mil-kbd ml-1">A</kbd>';
       btn.className = 'mil-btn px-3 py-2 bg-[#2d472b] hover:bg-[#385936] text-[#d9ead7] font-semibold text-xs border border-[#4c7548]';
     }
   }
 
-  function resetCurrentBattle() {
+  function resetCurrentBattle(skipConfirm = false) {
     stopAutoRun();
+    if (!skipConfirm && typeof window.confirm === 'function' && ID.state.battle.round > 1) {
+      if (!window.confirm('Reset the current battle back to Round 1? (You can press Ctrl+Z to undo.)')) return;
+    }
+    if (ID.Combat && typeof ID.Combat.pushHistorySnapshot === 'function') {
+      ID.Combat.pushHistorySnapshot();
+    }
 
     if (ID.state.battle.initialSnapshot) {
       ID.state.battle.sideA.units = structuredClone(ID.state.battle.initialSnapshot.sideA);
@@ -467,8 +473,15 @@ window.IronDivision = window.IronDivision || {};
     }
   }
 
-  function emptyBattlefield() {
+  function emptyBattlefield(skipConfirm = false) {
     stopAutoRun();
+    const totalUnits = (ID.state.battle.sideA.units?.length || 0) + (ID.state.battle.sideB.units?.length || 0);
+    if (!skipConfirm && typeof window.confirm === 'function' && totalUnits > 0) {
+      if (!window.confirm('Clear all deployed units from both sides? (You can press Ctrl+Z to undo.)')) return;
+    }
+    if (ID.Combat && typeof ID.Combat.pushHistorySnapshot === 'function') {
+      ID.Combat.pushHistorySnapshot();
+    }
     ID.state.battle.sideA.units = [];
     ID.state.battle.sideB.units = [];
     ID.state.battle.round = 1;
@@ -1510,6 +1523,45 @@ window.IronDivision = window.IronDivision || {};
   // --------------------------------------------------------------------------
   // 10. Bootstrap Lifecycle
   // --------------------------------------------------------------------------
+
+  // Desktop Keyboard Shortcuts (Space/Enter: Execute Round, A: Auto-Ops, Ctrl+Z: Undo)
+  window.addEventListener('keydown', (e) => {
+    const tag = (e.target && e.target.tagName) ? e.target.tagName.toUpperCase() : '';
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target && e.target.isContentEditable)) return;
+
+    // Skip if any modal or tutorial overlay is open
+    const openOverlay = document.querySelector('#welcome-modal:not(.hidden), #battle-modal:not(.hidden), #log-expand-modal:not(.hidden), #cmd-trait-modal:not(.hidden), #ui-tour-overlay:not(.hidden)');
+    if (openOverlay) return;
+
+    // Only trigger combat shortcuts when Battlefield tab is visible
+    const bfView = document.getElementById('view-battlefield');
+    if (!bfView || bfView.classList.contains('hidden')) return;
+
+    // Ctrl+Z / Cmd+Z -> Undo 1 Round
+    if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'z') {
+      e.preventDefault();
+      undoLastRound();
+      return;
+    }
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+    // Space or Enter -> Execute Round
+    if (e.code === 'Space' || e.key === 'Enter') {
+      // Avoid double-triggering if user focused a specific button other than Execute Round
+      if (tag === 'BUTTON' && e.target.id !== 'btn-next-round') return;
+      e.preventDefault();
+      if (ID.Combat && typeof ID.Combat.runSingleRound === 'function') {
+        ID.Combat.runSingleRound();
+      }
+      return;
+    }
+
+    // A -> Toggle Auto-Ops
+    if (e.key.toLowerCase() === 'a') {
+      e.preventDefault();
+      toggleAutoRun();
+    }
+  });
 
   window.addEventListener('DOMContentLoaded', () => {
     loadDefaultSkirmish();

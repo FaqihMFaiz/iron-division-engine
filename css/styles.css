@@ -2384,3 +2384,120 @@ body.compact-unit-cards .unit-tooltip-compact-extra {
   background: #c8a24b;
   transition: width 0.2s ease;
 }
+
+
+/* --------------------------------------------------------------------------
+   Wide 4-Column Battlefield Layout, Desktop Min-Width, Keycaps & Legibility
+   -------------------------------------------------------------------------- */
+@media (min-width: 1024px) {
+  #view-battlefield {
+    min-width: 1280px;
+  }
+}
+
+.bf-grid-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+
+.bf-center-lower-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.85rem;
+  align-items: start;
+}
+
+@media (min-width: 1200px) and (max-width: 1499px) {
+  .bf-grid-layout {
+    grid-template-columns: minmax(360px, 1fr) minmax(440px, 1.15fr) minmax(360px, 1fr);
+    gap: 1rem;
+  }
+  #bf-col-side-a { grid-column: 1; }
+  #bf-col-center { grid-column: 2; position: sticky; top: 68px; align-self: start; z-index: 20; }
+  #bf-col-side-b { grid-column: 3; }
+  #bf-col-map { order: 1; }
+  #bf-col-log { order: 2; }
+}
+
+@media (min-width: 1500px) {
+  .bf-grid-layout {
+    grid-template-columns: minmax(410px, 1.08fr) minmax(680px, 1.55fr) minmax(410px, 1.08fr);
+    gap: 1rem;
+  }
+  #bf-col-side-a { grid-column: 1; }
+  #bf-col-center { grid-column: 2; position: sticky; top: 68px; align-self: start; z-index: 20; }
+  #bf-col-side-b { grid-column: 3; }
+
+  .bf-center-lower-grid {
+    grid-template-columns: minmax(320px, 1fr) minmax(340px, 1fr);
+    gap: 0.85rem;
+    align-items: start;
+  }
+  #bf-col-log { order: 1; }
+  #bf-col-map { order: 2; }
+
+  #bf-col-log .paper-sitrep-panel {
+    min-height: 440px;
+    max-height: calc(100vh - 340px);
+  }
+  #bf-col-log #combat-log-container {
+    height: calc(100vh - 430px) !important;
+    max-height: calc(100vh - 430px) !important;
+    min-height: 310px;
+  }
+}
+
+@media (min-width: 1200px) {
+  #sideA-units-list,
+  #sideB-units-list {
+    max-height: calc(100vh - 300px) !important;
+    min-height: 360px;
+  }
+}
+
+/* Keyboard Shortcut Keycap Badges */
+.mil-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 9.5px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 2px 5px;
+  border-radius: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(0, 0, 0, 0.24);
+  color: inherit;
+  letter-spacing: 0.04em;
+  opacity: 0.9;
+}
+#btn-next-round .mil-kbd {
+  border-color: rgba(13, 16, 13, 0.35);
+  background: rgba(13, 16, 13, 0.14);
+  color: #0d100d;
+}
+
+/* Raised Legibility: Lighten dim secondary labels & enforce readable minimum text floor */
+.mil-ui .text-\[\#6e7a6d\],
+.mil-ui .text-\[\#7c877b\],
+.mil-ui .text-\[\#667065\],
+.mil-ui .unit-stat-label {
+  color: #a6b2a4 !important;
+}
+.mil-ui .unit-stat-label {
+  font-size: 10px !important;
+  text-transform: none !important;
+  letter-spacing: 0.02em !important;
+}
+.mil-ui .text-\[9px\],
+.mil-ui .text-\[9\.5px\] {
+  font-size: 10.5px !important;
+}
+.mil-ui label.mil-data-label {
+  text-transform: none !important;
+  color: #b2beb0 !important;
+  font-size: 11px !important;
+}
