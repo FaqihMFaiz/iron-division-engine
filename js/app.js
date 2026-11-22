@@ -536,7 +536,7 @@ window.IronDivision = window.IronDivision || {};
     ID.state.environment.feature = cfg.feature || 'Normal';
     ID.state.environment.weather = cfg.weather || 'Sunny';
     ID.state.environment.dynamicWeather = Boolean(cfg.dynamicWeather);
-    ID.state.environment.battleYear = cfg.year || 1944;
+    ID.state.environment.battleYear = (cfg.year !== undefined && cfg.year !== null) ? Number(cfg.year) : 1944;
     ID.state.environment.battleMonth = cfg.month || 9;
     ID.state.environment.battleDay = cfg.day || 18;
     ID.state.environment.battleHour = cfg.hour !== undefined ? cfg.hour : 7;

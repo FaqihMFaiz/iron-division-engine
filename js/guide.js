@@ -68,13 +68,13 @@ window.IronDivision = window.IronDivision || {};
                 FM 100-5-BOOT: STOP GUESSING AND READ THE MANUAL
               </h2>
               <p class="text-sm text-[#323a33] max-w-3xl mt-1">
-                Listen up, recruit! Never played a grand-strategy wargame or Hearts of Iron in your life? Good — at least you don't have bad habits yet. This manual explains every single button, number, and dirty trick in Iron Division, and more importantly, <strong>what real-world battlefield reality each rule translates from</strong>.
+                Listen up, recruit! Never played a grand-strategy wargame or Hearts of Iron in your life? Good — at least you don't have bad habits yet. This manual explains every single button, number, armor rule, logistics trap, and dirty trick in Iron Division, and more importantly, <strong>what real-world battlefield reality each rule translates from</strong>.
               </p>
             </div>
             <div class="tradoc-mono text-[11px] bg-[#faf8f2] border border-[#b5ad98] p-3 text-right shrink-0 space-y-1 text-[#1c211d]">
               <div><strong>PUB NO:</strong> FM 100-5-BOOT</div>
               <div><strong>AUTHOR:</strong> SGM IRONCLAD (RET.)</div>
-              <div><strong>ENGINE:</strong> IRON DIVISION v3.0</div>
+              <div><strong>ENGINE:</strong> IRON DIVISION v3.5</div>
               <button type="button" onclick="openWelcomeModal(true)" class="mt-1 px-2 py-0.5 bg-[#1b221c] text-[#e0be6a] border border-[#4d4224] text-[10px] font-bold uppercase">
                 RE-OPEN BRIEFING POP-UP
               </button>
@@ -84,11 +84,12 @@ window.IronDivision = window.IronDivision || {};
           <!-- Quick Jump Table of Contents -->
           <div class="mt-4 pt-3 border-t border-[#c9c1ab] flex flex-wrap gap-2 tradoc-mono text-[10.5px]">
             <a href="#fm-ch1" class="px-2 py-1 bg-[#f0ead9] border border-[#bfb7a1] text-[#1c211d] hover:bg-[#e5dcc5] font-bold">01. WHAT IS THIS?</a>
-            <a href="#fm-ch2" class="px-2 py-1 bg-[#f0ead9] border border-[#bfb7a1] text-[#1c211d] hover:bg-[#e5dcc5] font-bold">02. THEATRE BAR &amp; CLOCK</a>
-            <a href="#fm-ch3" class="px-2 py-1 bg-[#f0ead9] border border-[#bfb7a1] text-[#1c211d] hover:bg-[#e5dcc5] font-bold">03. UNIT STATS &amp; DOG TAGS</a>
+            <a href="#fm-ch2" class="px-2 py-1 bg-[#f0ead9] border border-[#bfb7a1] text-[#1c211d] hover:bg-[#e5dcc5] font-bold">02. THEATRE &amp; CLIMATE</a>
+            <a href="#fm-ch3" class="px-2 py-1 bg-[#f0ead9] border border-[#bfb7a1] text-[#1c211d] hover:bg-[#e5dcc5] font-bold">03. STATS &amp; ARMOR MATH</a>
             <a href="#fm-ch4" class="px-2 py-1 bg-[#f0ead9] border border-[#bfb7a1] text-[#1c211d] hover:bg-[#e5dcc5] font-bold">04. HOW A ROUND WORKS</a>
-            <a href="#fm-ch5" class="px-2 py-1 bg-[#f0ead9] border border-[#bfb7a1] text-[#1c211d] hover:bg-[#e5dcc5] font-bold">05. RANGE, ROUTING &amp; COMMAND</a>
-            <a href="#fm-ch6" class="px-2 py-1 bg-[#f0ead9] border border-[#bfb7a1] text-[#1c211d] hover:bg-[#e5dcc5] font-bold">06. CUSTOMIZING YOUR WAR</a>
+            <a href="#fm-ch5" class="px-2 py-1 bg-[#f0ead9] border border-[#bfb7a1] text-[#1c211d] hover:bg-[#e5dcc5] font-bold">05. RANGE, ROUT &amp; REPAIRS</a>
+            <a href="#fm-ch6" class="px-2 py-1 bg-[#f0ead9] border border-[#bfb7a1] text-[#1c211d] hover:bg-[#e5dcc5] font-bold">06. FORM DA-774 AAR</a>
+            <a href="#fm-ch7" class="px-2 py-1 bg-[#f0ead9] border border-[#bfb7a1] text-[#1c211d] hover:bg-[#e5dcc5] font-bold">07. CUSTOMIZING YOUR WAR</a>
           </div>
         </header>
 
@@ -99,23 +100,23 @@ window.IronDivision = window.IronDivision || {};
             <h3 class="tradoc-chapter-title">CHAPTER 01 // WHAT THE HELL IS THIS SIMULATOR?</h3>
             <p class="tradoc-para">
               <span class="tradoc-para-id">1-1.</span>
-              <strong>Drop the arcade mindset right now.</strong> In a video game shooter, a soldier runs around at 1 HP like nothing happened until a final bullet deletes him. Real war does not work like that. Real formations break because their radios go dead, their ammunition runs dry, artillery pins them in the mud, or half their buddies just got hit and nobody wants to stand up anymore.
+              <strong>Drop the arcade mindset right now.</strong> In a video game shooter, a soldier runs around at 1 HP like nothing happened until a final bullet deletes him. Real war does not work like that. Real formations break because their radios go dead, their ammunition trucks burn up, artillery pins them in the mud, or their tanks get knocked out and nobody wants to climb out of a ditch into machine-gun fire anymore.
             </p>
             <p class="tradoc-para">
               <span class="tradoc-para-id">1-2.</span>
-              <strong>Iron Division</strong> is a tabletop-RPG (TTRPG) operational combat simulator. You put two opposing armies on the screen (by default, the historical <strong>Battle of San Marino</strong> on 17 September 1944 — the British Indian Army assaulting the Wehrmacht), set the dirt, weather, and clock, assign generals, and press <strong>EXECUTE ROUND</strong>. The engine rolls polyhedral dice under the hood, tracks every dead, wounded, captured, and knocked-out tank, logs every event like a real Army Sitrep (Form DA-1594), and spits out a printable After-Action Report (Form DA-774) when the smoke clears.
+              <strong>Iron Division</strong> is a tabletop-RPG (TTRPG) operational combat simulator. By default, it boots straight into the historical <strong>Battle of Arracourt (18 September 1944, Lorraine Hills)</strong> — General Hasso von Manteuffel's 5th Panzer Army assaulting Colonel Bruce C. Clarke's U.S. 4th Armored Division (CCA) in morning fog (with the <strong>Battle of San Marino</strong> also ready in presets). Set the terrain, climate, clock, and commanders, then hit <strong>EXECUTE ROUND</strong>. Under the hood, the engine rolls polyhedral dice, resolves armor penetration, tracks every KIA, WIA, POW, escaped soldier, and disabled hull, writes a live Army Sitrep (Form DA-1594), and compiles a printable <strong>Form DA-774 After-Action Report</strong> when one side collapses.
             </p>
             <div class="tradoc-callout">
-              <strong>DRILL SERGEANT'S GOLDEN RULE:</strong> Battles are NOT won by killing 100% of the enemy. Battles are won by shattering the enemy's <strong>Organization (ORG)</strong>, starving their <strong>Supply</strong>, and forcing them off the field while keeping your own boys intact.
+              <strong>LISTEN UP, RECRUIT — THIS AIN'T A HEALTH-BAR SHOOTER:</strong> If a battalion has 600 men left, zero bullets, dead radios, and three artillery groups dropping 155mm iron on their helmets, they are NOT doing a heroic backflip into a machine-gun nest — they're sprinting for the next county! Battles are won by shattering the enemy's <strong>Organization (ORG)</strong>, starving their <strong>Supply</strong>, and stripping their screening forces while keeping your own boys intact.
             </div>
           </section>
 
           <!-- ==================== CHAPTER 2 ==================== -->
           <section id="fm-ch2" class="tradoc-chapter">
-            <h3 class="tradoc-chapter-title">CHAPTER 02 // WHAT IS THE THEATRE SETTINGS BAR?</h3>
+            <h3 class="tradoc-chapter-title">CHAPTER 02 // THEATRE COMMAND, CLIMATE &amp; THE 24-HOUR CLOCK</h3>
             <p class="tradoc-para">
               <span class="tradoc-para-id">2-1.</span>
-              Look at the top box on the Battlefield tab labeled <strong>THEATRE COMMAND &amp; ENVIRONMENT</strong>. That box is Mother Nature and High Command combined. You can collapse it anytime with <strong>COLLAPSE</strong>, but before you fire a single shot, here is what every knob in that bar actually does:
+              Look at the top box on the Battlefield tab labeled <strong>THEATRE COMMAND &amp; ENVIRONMENT</strong>. That box is Mother Nature and High Command combined. You can collapse it anytime with <strong>COLLAPSE</strong>, but before you fire a single shot, learn what every knob in that bar actually does:
             </p>
 
             <table class="tradoc-table">
@@ -129,18 +130,18 @@ window.IronDivision = window.IronDivision || {};
               <tbody>
                 <tr>
                   <td><strong>Base Terrain</strong></td>
-                  <td>Sets attack/defense bonuses per unit type, Vigilance, Supply drain, <strong>Max Dig-In</strong>, and <strong>Max Outnumber Cap</strong>.</td>
-                  <td>Tanks love open Plains and hate Mountain passes. A narrow city street or mountain ridge physically stops 10,000 men from all shooting at once — that is why Urban caps outnumbering at +40% and Mountain at +35%.</td>
+                  <td>Sets attack/defense bonuses per unit class, Vigilance, Supply drain, <strong>Max Dig-In</strong>, vehicle recovery mods, and <strong>Max Outnumber Cap</strong>.</td>
+                  <td>Tanks love open Plains and hate Mountain passes. A narrow city street or ridge physically stops 10,000 men from all shooting at once — that is why Urban caps outnumbering at +40% and Mountain at +35%.</td>
                 </tr>
                 <tr>
                   <td><strong>Terrain Feature</strong></td>
                   <td>Applies a multiplicative modifier (Roads, Small/Large Rivers, Amphibious Landings, Fortified Strongpoints).</td>
-                  <td>Crossing a wide river under machine-gun fire is suicide unless you bring <strong>Marines</strong> or engineers. Concrete bunkers (Fort) multiply defender strength and raise how deep they can dig in.</td>
+                  <td>Crossing a wide river under machine-gun fire is suicide unless you bring <strong>Marines</strong> or engineers. Concrete bunkers (Fort) multiply defender strength and raise how deep they can dig in (+2 cap).</td>
                 </tr>
                 <tr>
-                  <td><strong>Weather &amp; DYN</strong></td>
-                  <td>Modifies Attack, Defense, Vigilance, Supply burn, and <strong>Air Support Efficiency</strong>. Check <strong>DYN</strong> to let weather shift every 3 rounds.</td>
-                  <td>Airplanes do not fly bombing runs cleanly through pea-soup fog or torrential storms — in Foggy or Heavy Rain, airstrikes lose 50-60% power and can be completely <strong>grounded</strong>.</td>
+                  <td><strong>Climate-Aware Weather &amp; DYN</strong></td>
+                  <td>Modifies Attack, Defense, Vigilance, Supply burn, and <strong>Air Support Efficiency</strong>. Check <strong>DYN</strong> to let weather shift every 3 rounds — automatically filtered by <strong>Terrain, Calendar Season, and Time of Day</strong>.</td>
+                  <td>September hills in Lorraine get morning fog, overcast, and rain — NOT blizzards or desert heatwaves. Deserts stay dry, nights don't spawn sudden heatwaves, and bad weather slashes airstrike power by 50–60% or grounds aircraft completely.</td>
                 </tr>
                 <tr>
                   <td><strong>Theatre Role</strong></td>
@@ -153,31 +154,35 @@ window.IronDivision = window.IronDivision || {};
                   <td>Catching the enemy with their boots off before the sentries can sound the alarm.</td>
                 </tr>
                 <tr>
-                  <td><strong>Date, 24H Clock &amp; Round Length</strong></td>
-                  <td>Sets the exact Date, 24-hour time, and how many <strong>Minutes, Hours, or Days</strong> each round advances. Automatically drives <strong>Dawn (05-06), Daylight (07-17), Dusk (18-19), and Night (20-04)</strong> plus the <strong>1st/2nd/3rd Day</strong> counter (flips after 24:00).</td>
-                  <td>Fighting at 22:00 at night is NOT the same as fighting at noon. Darkness blinds optics, boosts ambushes, grounds close air support, and shrinks how far units can spot targets. Your printable AAR records this exact operational clock.</td>
+                  <td><strong>Any-Era Date, 24H Clock &amp; Round Length</strong></td>
+                  <td>Set <strong>any historical or fictional year from -270000 (BCE) to +270000</strong> (including Year 0, ancient years like 44, WW2 1944, or sci-fi 40999), exact 24H clock, and <strong>Minutes/Hours/Days</strong> per round. Drives <strong>Dawn (05–06), Daylight (07–17), Dusk (18–19), Night (20–04)</strong> and the <strong>1st/2nd/3rd Day</strong> counter.</td>
+                  <td>Fighting at 02:00 HRS in pitch darkness blinds tank optics, boosts ambushes (+15), grounds close air support, and clamps sight range. Every weather shift and milestone is stamped to this exact clock in your AAR.</td>
                 </tr>
               </tbody>
             </table>
 
             <p class="tradoc-para mt-3">
               <span class="tradoc-para-id">2-2.</span>
-              <strong>Compound Hazards (When Terrain &amp; Weather Team Up to Ruin Your Day):</strong> Certain combinations trigger red <strong>HAZARD</strong> alerts automatically:
+              <strong>Compound Hazards (When Dirt &amp; Sky Team Up to Ruin Your Day):</strong> Certain combinations trigger red <strong>HAZARD</strong> alerts automatically:
             </p>
             <ul class="list-disc pl-6 space-y-1 text-sm text-[#232a24]">
-              <li><strong>MUD / RASPUTITSA</strong> <em>(Heavy Rain on Plains/Forest/Hills/Marsh/Road)</em>: Tanks bog down in knee-deep mud (-1 to -2 mobility), supply trucks get stuck (+2 Supply drain), and recovering knocked-out tanks gets brutally hard.</li>
-              <li><strong>ZERO VISIBILITY</strong> <em>(Foggy anywhere, or Night in Urban/Forest/Jungle)</em>: Caps direct-fire sight range to 3-4 distance bands and hits Vigilance (-15) unless you brought Recon or Concealment specialists.</li>
-              <li><strong>DEEP FREEZE</strong> <em>(Snowy on Mountain/Hills/Plains)</em>: Wounded men freeze (+3% Died-of-Wounds mortality), supply burns faster, and low-supply tanks risk frozen engine breakdowns.</li>
-              <li><strong>HEATSTROKE / DUST</strong> <em>(Heat Waves in Desert)</em>: Infantry burn extra water/supply and lose Org to heat exhaustion; dust storms blind tank and artillery optics (-15 Vigilance).</li>
+              <li><strong>MUD / RASPUTITSA</strong> <em>(Heavy Rain on Plains/Forest/Hills/Marsh/Road)</em>: Tanks bog down in knee-deep mud (-1 to -2 mobility), supply trucks get stuck (+2 Supply drain), and towing/recovering knocked-out armor gets brutally hard (-15 Veh Rec).</li>
+              <li><strong>ZERO VISIBILITY</strong> <em>(Foggy anywhere, or Night in Urban/Forest/Jungle)</em>: Caps direct-fire sight range to 3–4 distance bands and hits Vigilance (-15) unless you brought Recon or Concealment specialists.</li>
+              <li><strong>DEEP FREEZE</strong> <em>(Snowy on Mountain/Hills/Plains)</em>: Wounded men freeze (+3% Died-of-Wounds mortality), supply burns faster, and low-supply tanks (&lt;30% Supply) risk frozen engine breakdowns (halved by Simple Engineering).</li>
+              <li><strong>HEATSTROKE / DUST</strong> <em>(Heat Waves in Desert)</em>: Infantry burn extra water/supply (+2) and lose Org (-2/rd) to heat exhaustion; dust storms blind tank and artillery optics (-15 Vigilance).</li>
             </ul>
+
+            <div class="tradoc-callout mt-3">
+              <strong>STOP ORDERING BLIZZARDS IN THE SAHARA AT MIDNIGHT, GENIUS:</strong> Mother Nature does not take orders from your fever dreams — dynamic weather now obeys real terrain, calendar seasons, and time of day, so you won't get a surprise heatstroke in a January snowdrift or a blizzard in September Lorraine. And yes, you can set the year to <strong>-216 (216 BCE)</strong> or <strong>40999</strong> for your crazy fictional war — just don't expect a P-47 Thunderbolt to fly CAS through zero-visibility fog at 02:00 HRS unless you want your pilots parking in a barn!
+            </div>
           </section>
 
           <!-- ==================== CHAPTER 3 ==================== -->
           <section id="fm-ch3" class="tradoc-chapter">
-            <h3 class="tradoc-chapter-title">CHAPTER 03 // UNIT STATS &amp; DOG TAGS (WHAT ALL THOSE NUMBERS MEAN)</h3>
+            <h3 class="tradoc-chapter-title">CHAPTER 03 // UNIT STATS, ARMOR PHYSICS &amp; DOG TAGS</h3>
             <p class="tradoc-para">
               <span class="tradoc-para-id">3-1.</span>
-              Every unit on the Battlefield has its name stamped onto a steel <strong>Soldier's Dog Tag</strong>, with a NATO military symbol on the left and its <strong>Experience Rank Insignia</strong> on the right (blank for Green rookies up to a Star for Elite killers — hover the card to see every deep stat). Here is what each number actually means in real combat:
+              Every unit on the Battlefield has its name stamped onto a steel <strong>Soldier's Dog Tag</strong>, with a NATO military symbol on the left and its <strong>Experience Rank Insignia</strong> on the right (blank for Green rookies up to a Star for Elite killers — hover any card to inspect deep stats). Here is what each stat actually means under fire:
             </p>
 
             <table class="tradoc-table">
@@ -190,42 +195,46 @@ window.IronDivision = window.IronDivision || {};
               </thead>
               <tbody>
                 <tr>
-                  <td><strong>Personnel (PERS / HP)</strong></td>
-                  <td>Living, breathing troops still able to pull a trigger. Split into Active, WIA (Wounded), KIA (Dead), and POW (Captured).</td>
-                  <td>Lose men and your firepower drops. Wounded men can die later (DOW) if your supply runs out and you have no Medics or First Aid Kits.</td>
+                  <td><strong>Personnel (PERS)</strong></td>
+                  <td>Living, breathing troops still able to pull a trigger. Accounted exactly across <strong>Active, KIA (Dead), WIA (Wounded), POW (Captured), and ESC (Escaped)</strong>.</td>
+                  <td>Lose men and your firepower drops. Wounded men can succumb to Died-of-Wounds (DOW) from Round 4+ if your supply runs dry and you skipped Medics or First Aid Kits.</td>
                 </tr>
                 <tr>
                   <td><strong>Organization (ORG)</strong></td>
-                  <td>Morale, cohesion, chain of command, and nerve. Blue bar on every unit card.</td>
+                  <td>Morale, cohesion, chain of command, and nerve (Blue bar). Drops from casualties, vehicle knockouts, suppression, and late-battle combat fatigue.</td>
                   <td>When ORG hits <strong>0</strong>, the unit breaks and routs — even if 70% of the men are still alive. Real regiments stop fighting when their officers are down and squads are scattered, not when the last man dies.</td>
                 </tr>
                 <tr>
                   <td><strong>Supply (SUP) &amp; Depot</strong></td>
-                  <td>Ammunition, rations, fuel, and medical kits (Yellow bar). Logistics traits pull fresh supply from your side's shared <strong>Supply Depot</strong>.</td>
-                  <td>An army marches on its stomach and shoots with its ammo trucks. Drop below 50% supply and your combat power craters; hit 0% and your men starve and collapse (-50% stats + continuous Org loss).</td>
+                  <td>Ammunition, rations, fuel, and spare parts (Yellow bar). Units pull refills from their side's shared <strong>Theatre Supply Depot</strong>.</td>
+                  <td>An army marches on its stomach and shoots with its ammo trucks. Drop below 50% supply (-10% stats), below 20% (-20% stats), or hit 0% (-50% stats + continuous Org collapse).</td>
                 </tr>
                 <tr>
-                  <td><strong>Soft Attack</strong></td>
-                  <td>Firepower against <strong>unarmored targets</strong> (rifles, machine guns, high-explosive shells, grenades).</td>
-                  <td>A machine gun shreds infantry in the open, but it cannot scratch a 40-ton steel tank. That's Soft Attack.</td>
-                </tr>
-                <tr>
-                  <td><strong>Hard Attack</strong></td>
-                  <td>Firepower against <strong>armored vehicles &amp; tanks</strong> (anti-tank cannons, bazookas, armor-piercing shells).</td>
-                  <td>High-velocity tungsten and shaped-charge rounds built to punch through steel hulls and cook off ammunition racks.</td>
+                  <td><strong>Soft vs. Hard Attack</strong></td>
+                  <td><strong>Soft Attack</strong> shreds unarmored infantry (rifles, MGs, HE). <strong>Hard Attack</strong> punches through armored vehicles and tanks (AT cannons, bazookas, AP rounds).</td>
+                  <td>A machine gun mows down riflemen in the open, but it cannot scratch a 40-ton steel tank. Bring the right ammo for the right target.</td>
                 </tr>
                 <tr>
                   <td><strong>Piercing vs. Hardness</strong></td>
-                  <td><strong>Hardness</strong> is how thick your armor is. <strong>Piercing</strong> is how much steel the shooter's gun can punch through.</td>
-                  <td>If your Piercing beats the enemy's Hardness, you penetrate cleanly. If you FAIL to pierce a heavy tank, your rounds ricochet off the glacis plate for drastically reduced damage.</td>
+                  <td><strong>Hardness</strong> is armor thickness/slope; <strong>Piercing</strong> is your gun's penetration. Determines whether shots pierce cleanly or trigger <strong>ARMOR HELD</strong>.</td>
+                  <td>If your Piercing fails to beat Medium/Heavy/Super Hardness, rounds ricochet off the glacis: <strong>personnel casualties are halved, Explosive bonus dice are negated, and Heavy/Super Org shock is capped at -1</strong>.</td>
+                </tr>
+                <tr>
+                  <td><strong>AFV Knockouts &amp; Recovery</strong></td>
+                  <td>Knocked-out hulls split into <strong>Recoverable</strong> (thrown tracks, jammed turrets, engine hits) and <strong>Destroyed (KO)</strong> (brewed-up write-offs) using a dynamic <strong>80 + d20% recovery cap</strong>.</td>
+                  <td>Even on a clean armor hit, not every tank explodes into confetti — most are disabled and await recovery, while probabilistic fractional rolls ensure even small hits can still cook off permanent write-offs.</td>
                 </tr>
                 <tr>
                   <td><strong>Defense &amp; Dig-In</strong></td>
-                  <td>How well a unit avoids taking clean hits. Defending units automatically dig deeper trenches (<strong>Dig-In</strong>) every round they hold still.</td>
-                  <td>A rifleman lying in a dug-in foxhole with overhead log cover is five times harder to kill than a rifleman jogging across a wheat field.</td>
+                  <td>How well a unit avoids clean hits. Holding ground automatically builds <strong>Entrenchment (Dig-In)</strong> every round up to the terrain cap (+1 with Fortification Engineers).</td>
+                  <td>A rifleman in a dug-in foxhole with overhead log cover is five times harder to kill than a rifleman jogging across an open wheat field.</td>
                 </tr>
               </tbody>
             </table>
+
+            <div class="tradoc-callout mt-3">
+              <strong>STOP SHOOTING A 45-TON PANTHER WITH A .30-CALIBER MACHINE GUN:</strong> All you're doing is scratching the paint and making the German commander spill his coffee! When your Piercing can't beat their Hardness, <strong>ARMOR HELD</strong> cuts your personnel damage in half, cancels your Explosive dice, and caps Heavy/Super Org shock at -1 — and deflected low-pressure clashes knock out ZERO tanks. Bring Tank Destroyers, High-Caliber AP guns, or flank 'em; you can't dent Krupp steel with harsh language!
+            </div>
           </section>
 
           <!-- ==================== CHAPTER 4 ==================== -->
@@ -233,72 +242,109 @@ window.IronDivision = window.IronDivision || {};
             <h3 class="tradoc-chapter-title">CHAPTER 04 // HOW A SINGLE ROUND PLAYS OUT (STEP-BY-STEP)</h3>
             <p class="tradoc-para">
               <span class="tradoc-para-id">4-1.</span>
-              Every time you slam that big brass <strong>EXECUTE ROUND</strong> button in the center console (or toggle <strong>AUTO-OPS</strong>), the simulator executes an exact 8-step operational sequence — no magic, no hidden cheating:
+              Every time you slam that big brass <strong>EXECUTE ROUND</strong> button in the center console (or toggle <strong>AUTO-OPS</strong>), the simulator executes an exact 8-step operational sequence — zero hidden cheating:
             </p>
             <ol class="list-decimal pl-6 space-y-1.5 text-sm text-[#232a24]">
-              <li><strong>Snapshot &amp; Clock Tick:</strong> The engine saves a 1-round Undo snapshot (for GM Live mode), advances the 24-hour clock by your Round Length, checks if Dawn/Dusk/Night arrived, and rolls Dynamic Weather if enabled.</li>
-              <li><strong>Logistics, Dig-In &amp; Rallying:</strong> Units in active contact burn Supply (approach marches before contact pause ammo burn!), pull logistics refills from their Depot, build Entrenchment if defending, heal/suffer Died-of-Wounds checks, and routed units resting in the rear roll to <strong>Rally</strong> back into the fight.</li>
-              <li><strong>Tactic Selection:</strong> Each side picks one of 25 real-world combat tactics (either automatically via the Commander's personality AI, or manually by you).</li>
-              <li><strong>Vigilance (Recon) Roll:</strong> Both sides roll <code>1d100 + Modifiers</code> (Terrain, Weather, Night, Recon Support, Commander Staff). Whoever wins spots the enemy first and gains a combat accuracy advantage.</li>
-              <li><strong>Fire Support Volleys:</strong> Mortars, Heavy Artillery, and Air Support fire before the main clash. Enemy Anti-Air guns intercept airstrikes — and bad weather can ground aircraft entirely.</li>
-              <li><strong>Maneuver &amp; Closing Distance:</strong> Units out of weapon range march forward along the <strong>Y-Axis (-7 to +7)</strong> toward the contact line (0). Defenders already in range hold their ground and fire <strong>Defensive Overwatch</strong> at advancing attackers!</li>
-              <li><strong>Main Firefight &amp; Return Fire:</strong> Units in range engage targets based on Target Value (Frontliners draw fire away from fragile artillery!). Piercing is checked against Hardness, casualties split into KIA/WIA, tanks are disabled or knocked out, Org drops, and surviving defenders fire back.</li>
-              <li><strong>Victory, Pursuit &amp; Salvage:</strong> If one side has zero active frontline troops left, the battle ends! Winners pursue retreating losers to capture POWs, recovery tractors tow damaged tanks home, victors salvage abandoned enemy hulls (<em>Beutepanzers</em>), and the <strong>Form DA-774 After-Action Report</strong> is generated.</li>
+              <li><strong>Snapshot, Clock &amp; Climate Tick:</strong> Saves a 1-round Undo snapshot (up to 15 rounds for GM Live), advances the 24-hour clock by your Round Length, updates Dawn/Daylight/Dusk/Night lighting, and rolls <strong>Climate-Aware Dynamic Weather</strong> every 3 rounds if enabled.</li>
+              <li><strong>Logistics, Dig-In, Fatigue &amp; Field Repairs:</strong> Units <em>in engagement range</em> burn combat Supply and take late-battle Combat Fatigue (Round 6+); units <em>out of range</em> on approach marches pause ammo burn, pause Combat Fatigue, and pause Green rookie -1 Org drift! Defenders dig in, wounded roll Died-of-Wounds checks, rallied units recover in the rear, and organic <strong>Field Repair Crews</strong> restore disabled hulls every 4 rounds (unless pinned by anti-armor fire last round).</li>
+              <li><strong>Tactic Selection:</strong> Each side executes one of 25 real-world combat doctrines (chosen by the Commander AI or manually by you). Certain tactics directly counter others — e.g., Ambush shreds Reckless Assault.</li>
+              <li><strong>Vigilance (Recon) Roll:</strong> Both sides roll <code>1d100 + Modifiers</code> (Terrain, Feature, Weather, Night, Recon Support, Commander). Whoever wins spots the enemy first and earns a combat accuracy edge.</li>
+              <li><strong>Fire Support Volleys:</strong> Mortars, Heavy Artillery, and Air Support strike before the main clash. Enemy Anti-Air guns intercept aircraft — and bad weather or Night can slash airstrike efficiency or ground planes outright.</li>
+              <li><strong>Maneuver &amp; Closing Distance:</strong> Units out of range march forward along the <strong>Y-Axis (-7 to +7)</strong> toward Contact (0). Defenders already in range hold their trenches and fire <strong>Defensive Overwatch</strong> at advancing columns!</li>
+              <li><strong>Main Firefight, Close-Range Raids &amp; Return Fire:</strong> Units in range engage based on Target Value (Frontliners screen fragile artillery!). Piercing checks against Hardness, deflected clashes gate vehicle knockouts (0 below 70% pressure, max 2 above), close-range direct-fire raiders (<code>Distance &lt;= 2</code>, non-artillery) can steal enemy Supply, casualties split into KIA/WIA, and surviving defenders return fire.</li>
+              <li><strong>Victory, Pursuit, Towing &amp; Salvage:</strong> If one side has zero active frontline troops left (or only unscreened artillery that auto-withdraws), the battle ends! Winners pursue retreating losers to take POWs, recovery tractors tow repairable hulls back to depot, victors salvage abandoned enemy vehicles (impressed into service, stripped for spares, or scuttled), and the engine compiles the <strong>Form DA-774 AAR</strong>.</li>
             </ol>
+
+            <div class="tradoc-callout mt-3">
+              <strong>NO, YOUR ARTILLERY BATTERY CANNOT TELEPORT SIX KILOMETERS TO MUG AN ENEMY SUPPLY TRUCK:</strong> Supply raiding is strictly locked to close-range direct-fire fighters (<code>Distance &lt;= 2</code>, no artillery) — if your howitzer crew wants enemy rations, they can walk! Same goes for your mechanics: <strong>Field Repair Crews</strong> only work every 4 rounds, restore 1–2 hulls (up to 3 with Simple Engineering), and immediately duck for cover if the unit took anti-armor hits the round before. Nobody's welding a Sherman transmission while 88mm shells are bouncing off the turret!
+            </div>
           </section>
 
           <!-- ==================== CHAPTER 5 ==================== -->
           <section id="fm-ch5" class="tradoc-chapter">
-            <h3 class="tradoc-chapter-title">CHAPTER 05 // BATTLEFIELD MECHANICS (WHY REAL PHYSICS MATTERS)</h3>
+            <h3 class="tradoc-chapter-title">CHAPTER 05 // RANGE, ROUTING, DISMOUNTING &amp; COMMAND</h3>
 
             <p class="tradoc-para">
               <span class="tradoc-para-id">5-1.</span>
               <strong>Y-Axis Distance &amp; Engagement Range (NO, YOU CANNOT SNIPE WITH AN M4 AT 2 KILOMETERS!):</strong> Look at the horizontal <strong>Y-AXIS CONTACT (0)</strong> strip in the center column. Side A starts on the negative side and Side B on the positive side. Add both positions together to get <strong>Total Distance</strong>.
             </p>
             <div class="tradoc-callout">
-              <strong>LISTEN UP, SOLDIER:</strong> You cannot shoot an M4 rifle two kilometers straight and expect to hit anything — if you pull that off, I'll personally pin a medal on your forehead and give you a standing ovation! That is why <strong>Infantry &amp; Armored Vehicles must close to Distance &lt;= 2</strong>, <strong>Tanks engage at Distance &lt;= 3</strong>, and <strong>Artillery shells from the rear up to Distance &lt;= 6</strong>. And if Fog or Night triggers a <strong>VIS CAP</strong>, even your tanks have to creep closer before they can see what they're shooting at!
+              <strong>LISTEN UP, SOLDIER:</strong> You cannot shoot an M4 rifle two kilometers straight and expect to hit anything — if you pull that off, I'll personally pin a medal on your forehead and give you a standing ovation! That is why <strong>Infantry &amp; standard Armored Vehicles must close to Distance &lt;= 2</strong>, <strong>Tanks AND Anti-Tank Tank Destroyers engage at Distance &lt;= 3</strong>, and <strong>Artillery shells from the rear up to Distance &lt;= 6</strong>. And if Fog or Night triggers a <strong>VIS CAP</strong>, even your tanks and TDs have to creep closer before they can see what they're shooting at!
             </div>
 
             <p class="tradoc-para">
               <span class="tradoc-para-id">5-2.</span>
-              <strong>Routing &amp; Rallying (Fall Back, Don't Vanish):</strong> When a unit hits 0 Organization, it doesn't disappear in a puff of smoke. It <strong>routs to the rear staging area</strong>. If it hasn't rallied before and has enough survivors left, it spends a few rounds catching its breath, rebuilding Org, and rolling a <strong>Rally Check</strong> (boosted by Rally Master / Organizer commanders) to march back onto the line. If it shatters a second time, it's permanently out of the fight.
+              <strong>Routing, Rallying &amp; The Rally Org Floor:</strong> When a unit hits 0 Organization, it doesn't vanish in a puff of smoke. It <strong>routs to the rear staging area</strong>, syncing its cumulative casualty-loss tracker so it won't get double-punished by old losses when it returns. If it hasn't rallied before and has enough survivors left, it rests in the rear, draws Depot Refit supply, and rolls a <strong>Rally Check</strong> (boosted by Rally Master / Organizer commanders) to return with a guaranteed <strong>Rally Org Floor</strong> (at least 18 Org or 35% of Max Org). Shatter a second time and it's permanently out of the fight.
             </p>
 
             <p class="tradoc-para">
               <span class="tradoc-para-id">5-3.</span>
-              <strong>Tactics &amp; The Doctrine Manual:</strong> Every round, attackers and defenders execute a doctrine (Blitz, Breakthrough, Ambush, Elastic Defense, Mouse-Holing in cities, etc.). Some tactics directly counter others — an Ambush tears apart a reckless Assault. Flip through Tab <strong>[06] Doctrines</strong> (the 25-page paper manual) to study every tactic's real-world history and exact simulator math.
+              <strong>Dismounting vs. Armor Withdrawal &amp; Unscreened Artillery:</strong> Not every mechanized formation fights the same way when its vehicles burn:
             </p>
+            <ul class="list-disc pl-6 space-y-1 text-sm text-[#232a24]">
+              <li><strong>Armored Infantry &amp; Recon (<code>armored_vehicle</code> without <code>anti_tank</code>):</strong> When Org drops to <strong>&lt;= 20%</strong> (with &gt;= 50% personnel) or all transports are lost, the troops <strong>dismount and fight on foot</strong> as infantry (Field Repair Crews stop burning supply on dismounted units).</li>
+              <li><strong>Tanks, SP Artillery &amp; Tank Destroyers (<code>tank</code>, <code>artillery</code>, or <code>anti_tank</code>):</strong> When they hit <strong>0 combat-ready vehicles</strong>, crews do NOT charge trenches with pistols — the formation <strong>withdraws from the sector to depot for refit</strong> (<code>WITHDRAWN (0 AFV)</code>).</li>
+              <li><strong>Unscreened Artillery Auto-Withdrawal:</strong> If every friendly frontline unit is knocked out and only rear-area artillery remains, the gunners limber up and withdraw (<code>WITHDRAWN (UNSCREENED)</code>) rather than fighting a pointless suicide duel.</li>
+            </ul>
+
+            <div class="tradoc-callout mt-3">
+              <strong>A TANK CREW WITH ZERO TANKS IS NOT AN INFANTRY BATTALION — AND LONE ARTILLERY DOESN'T FIX BAYONETS:</strong> Halftrack infantry will bail out and hold the hedgerow with Garands, but when the 37th Tank Battalion or 704th Tank Destroyers run out of working hulls, they pull back to depot for replacement iron. Keep your frontliners alive to screen your howitzers, or your gun batteries will pack up and leave you in the dust!
+            </div>
 
             <p class="tradoc-para">
               <span class="tradoc-para-id">5-4.</span>
-              <strong>Commanding Officers &amp; 10-Tier Officer Rank Insignia:</strong> Each side has its own dedicated <strong>COMMANDING OFFICER</strong> box. Every level of <strong>ATK, DEF, CMD (Org), and LOG (Supply)</strong> adds +2.5% to your whole army, plus specialized Commander Traits. A general's <strong>total stat points</strong> automatically determine their Officer Rank Insignia (stepping every 4 points): <em>First Lieutenant (0-3), Captain (4-7), Major (8-11), Lieutenant Colonel (12-15), Colonel (16-19), Brigadier General (20-23), Major General (24-27), Lieutenant General (28-31), General (32-35), and 5-Star General of the Army (36+)</em>.
+              <strong>Tactics, Commanding Officers &amp; 10-Tier Officer Rank Insignia:</strong> Flip through Tab <strong>[06] Doctrines</strong> (the 25-page paper manual) to study every tactic's real-world history and exact counter-matchups. Each side's <strong>COMMANDING OFFICER</strong> adds +2.5% army-wide per level of <strong>ATK, DEF, CMD, and LOG</strong>, plus Commander Traits, and their total stat points automatically set their <strong>10-Tier Officer Rank Insignia</strong> (stepping every 4 points from <em>First Lieutenant [0–3]</em> up to <em>5-Star General of the Army [36+]</em>).
             </p>
 
             <p class="tradoc-para">
               <span class="tradoc-para-id">5-5.</span>
-              <strong>GM Live Controls &amp; Expandable Logs:</strong> Running a live TTRPG session for players? Click <strong>GM LIVE</strong> in the center console to unlock <strong>UNDO 1 ROUND</strong>, inject +50 Depot Supply, tweak any unit's Supply/Org/Position mid-battle, or drop reinforcements straight onto the field. Click <strong>EXPAND</strong> on the Sitrep Logbook anytime to open the full searchable combat record with exact <code>[RD-XX | HH:MM]</code> timestamps.
+              <strong>GM Live Controls &amp; Expandable Logs:</strong> Running a live TTRPG session? Click <strong>GM LIVE</strong> in the center console to unlock <strong>UNDO 1 ROUND</strong>, inject +50 Depot Supply, tweak any unit's Supply/Org/Position mid-battle, or drop reinforcements straight onto the field. Click <strong>EXPAND</strong> on the Sitrep Logbook anytime for the full searchable record with exact <code>[RD-XX | HH:MM]</code> timestamps.
             </p>
           </section>
 
           <!-- ==================== CHAPTER 6 ==================== -->
           <section id="fm-ch6" class="tradoc-chapter">
-            <h3 class="tradoc-chapter-title">CHAPTER 06 // CUSTOMIZING YOUR WAR (ORBAT, COMMAND HQ, TERRAIN &amp; JSON)</h3>
+            <h3 class="tradoc-chapter-title">CHAPTER 06 // THE AFTER-ACTION REPORT (FORM DA-774) &amp; TELEMETRY</h3>
             <p class="tradoc-para">
               <span class="tradoc-para-id">6-1.</span>
-              <strong>Renaming Factions:</strong> Click directly on the gray steel nameplate (<strong>BRITISH INDIAN ARMY</strong> or <strong>WEHRMACHT</strong>) on the Battlefield and type any faction name you want. It automatically updates every Combat Log, Y-Axis label, and printable AAR. Clear it completely and it snaps right back to default.
+              When the smoke clears (or anytime mid-battle for an interim SITREP), open the <strong>After-Action Report</strong> modal or hit <strong>EXPORT PDF (FORM DA-774)</strong>. The printable Form DA-774 is built like a genuine military staff document — complete with running <code>FORM DA-774 // DOC-ID</code> and <code>PAGE X OF Y</code> footers, zero game-engine dice formulas, and full operational telemetry:
+            </p>
+            <ul class="list-disc pl-6 space-y-1 text-sm text-[#232a24]">
+              <li><strong>Section 1 — Executive Summary &amp; Force Comparison:</strong> Victory degree (Heroic, Decisive, Close, Pyrrhic, or Draw), operational day, full timestamped <strong>METEO weather trail</strong>, and a side-by-side comparison of Personnel Attrition %, KIA:WIA ratio, AFV losses/write-offs, formations intact, and <strong>Theatre Depot Logistics</strong> expenditure.</li>
+              <li><strong>Section 2 — Self-Verifying ORBAT &amp; Combat Output Ledger:</strong> Exact personnel conservation (<code>Start = Rem + KIA + WIA + POW + ESC</code>), outcome-specific <strong>Final Status</strong> dispositions (<code>OPERATIONAL</code>, <code>DISMOUNTED (OP)</code>, <code>WITHDRAWN (0 AFV)</code>, <code>WITHDRAWN (UNSCREENED)</code>, <code>ROUTED</code>, <code>DISPERSED</code>, <code>WIPED OUT</code>), self-verifying AFV column (<code>Start | Act/Rec/Tow/KO</code>), and per-unit <strong>Inflicted (Cas/AFV)</strong> combat output.</li>
+              <li><strong>Section 3 — Faction-Neutral Battlefield Salvage:</strong> Abandoned enemy hulls captured by the victor, split cleanly into <em>Captured &amp; Impressed into Service</em>, <em>Stripped for Depot Spares &amp; Munitions</em>, and <em>Scuttled / Written Off</em>.</li>
+              <li><strong>Section 4 — Phase-Balanced Chronology:</strong> Captures key milestones across Opening, Mid-Battle, and Endgame (weather shifts, breakthroughs, unit withdrawals, decisive collapse, and salvage) stamped to the 24-hour operational clock.</li>
+              <li><strong>Section 5 — Data-Driven G-3 Operational Assessment:</strong> Automatically cites top casualty-inflicting and anti-armor formations, organic field maintenance output, indirect-fire &amp; close-air-support casualty shares, and depot logistics strain.</li>
+            </ul>
+
+            <div class="tradoc-callout mt-3">
+              <strong>DON'T YOU DARE HAND THE GENERAL A REPORT FULL OF "d20[14] vs DC 12":</strong> If you march into G-3 Headquarters babbling about polyhedral dice rolls, round counters, and "Supply Points," the Colonel is going to have you peeling potatoes until the Year 40999! That's why Form DA-774 scrubs every shred of simulation math, accounts for every single rifleman and tank down to the last bolt, and tells you in plain military English which battalion actually carried the day.
+            </div>
+          </section>
+
+          <!-- ==================== CHAPTER 7 ==================== -->
+          <section id="fm-ch7" class="tradoc-chapter">
+            <h3 class="tradoc-chapter-title">CHAPTER 07 // CUSTOMIZING YOUR WAR (ORBAT, COMMAND HQ, TERRAIN &amp; JSON)</h3>
+            <p class="tradoc-para">
+              <span class="tradoc-para-id">7-1.</span>
+              <strong>Renaming Factions:</strong> Click directly on the steel nameplate on either side of the Battlefield and type any faction name you want. It automatically updates every Combat Log, Y-Axis label, and Form DA-774 AAR. Clear it completely to snap back to default.
             </p>
             <p class="tradoc-para">
-              <span class="tradoc-para-id">6-2.</span>
-              <strong>[02] ORBAT (Unit Customization):</strong> Build any unit from Napoleonic infantry to modern armored brigades or sci-fi squads. Set Personnel, Max Org, Armor Tier/Count, Soft/Hard Attack, Piercing, Hardness, and Experience. Use the <strong>Search traits...</strong> bar to quickly attach Traits &amp; Support Modules (Medics, Mortars, Anti-Tank, Marines, Air Support, Engineers), then hit <strong>SAVE TEMPLATE</strong> or deploy straight to Side A/B.
+              <span class="tradoc-para-id">7-2.</span>
+              <strong>[02] ORBAT (Unit Customization):</strong> Build any unit from ancient hoplites and Napoleonic grenadier regiments to WW2 armored battalions, modern brigades, or sci-fi mech companies. Set Personnel, Max Org, Armor Tier/Count, Soft/Hard Attack, Piercing, Hardness, Recovery, and Experience. Use the <strong>Search traits...</strong> bar to attach Traits &amp; Support Modules (Medics, Mortars, Anti-Tank, Repair Crew, Simple Engineering, Marines, Air Support, Engineers), then hit <strong>SAVE TEMPLATE</strong> or deploy straight to Side A/B.
             </p>
             <p class="tradoc-para">
-              <span class="tradoc-para-id">6-3.</span>
-              <strong>[03] Traits &amp; [04] Command HQ:</strong> Invent custom unit traits with your own percentage/flat modifiers in the Traits tab, or commission custom generals in Command HQ — slide their 4 stats (watching their officer rank insignia climb from 1LT to 5-Star General of the Army!) and even create custom Commander Traits.
+              <span class="tradoc-para-id">7-3.</span>
+              <strong>[03] Traits &amp; [04] Command HQ:</strong> Invent custom unit traits with your own percentage/flat modifiers in the Traits tab, or commission custom generals in Command HQ — slide their 4 stats (watching their officer rank insignia climb from 1LT to 5-Star General of the Army!) and create custom Commander Traits.
             </p>
             <p class="tradoc-para">
-              <span class="tradoc-para-id">6-4.</span>
-              <strong>[05] Terrain Customization &amp; Preset JSON Backup:</strong> Want to tweak how brutal Mountains are, change a terrain's <strong>Max Entrenchment</strong> or <strong>Max Outnumber %</strong>, or invent a custom sci-fi terrain? Edit and save it in Tab 5. Everything saves automatically to your browser, and you can use <strong>EXPORT JSON / IMPORT JSON</strong> in the top-right Command Deck to back up or share your entire custom army, generals, traits, and terrains with your TTRPG group!
+              <span class="tradoc-para-id">7-4.</span>
+              <strong>[05] Terrain Customization &amp; Preset JSON Backup:</strong> Want to tweak how brutal Mountains are, change a terrain's <strong>Max Entrenchment</strong> or <strong>Max Outnumber %</strong>, or invent a custom sci-fi wasteland? Edit and save it in Tab 5. Everything auto-saves to your browser, and you can hit <strong>EXPORT JSON / IMPORT JSON</strong> in the top-right Command Deck to back up or share your entire custom army, generals, traits, and terrains with your TTRPG table!
             </p>
+
+            <div class="tradoc-callout mt-3">
+              <strong>YES, YOU CAN PIT ROMAN LEGIONARIES FROM 216 BCE AGAINST SPACE MARINES FROM 40999:</strong> Set any year from <code>-270000</code> to <code>+270000</code>, build your dream army in ORBAT, and unleash chaos — just don't come crying to me when your Centurions forget to pack Anti-Tank guns! And hit <strong>EXPORT JSON</strong> before you accidentally nuke your masterpiece!
+            </div>
           </section>
 
         </div>
@@ -314,7 +360,7 @@ window.IronDivision = window.IronDivision || {};
             <article class="tradoc-doc" aria-label="Iron Division Technical Manual TM 9-1005-TECH">
         <div class="tradoc-class-strip">
           <span>UNCLASSIFIED // ENGINE REFERENCE &amp; MATHEMATICAL SPECIFICATION</span>
-          <span>TRADOC PUB // TM 9-1005-TECH (REV 3.0)</span>
+          <span>TRADOC PUB // TM 9-1005-TECH (REV 3.5)</span>
         </div>
 
         <header class="tradoc-header">
@@ -327,7 +373,7 @@ window.IronDivision = window.IronDivision || {};
                 TM 9-1005-TECH: Simulation Rules &amp; Architecture
               </h2>
               <p class="text-sm text-[#323a33] max-w-3xl mt-1">
-                Concise technical reference for combat formulas, penetration checks, spatial range caps, compound environment rules, officer rank scaling, and client-side data persistence.
+                Authoritative technical reference for combat formulas, armor penetration &amp; knockout gating, dynamic recovery &amp; field repair cadence, climate-aware weather, arbitrary-era calendars, telemetry pipelines, and Form DA-774 AAR generation.
               </p>
             </div>
             <div class="tradoc-mono text-[11px] bg-[#faf8f2] border border-[#b5ad98] p-3 text-right shrink-0 space-y-0.5 text-[#1c211d]">
@@ -341,7 +387,7 @@ window.IronDivision = window.IronDivision || {};
         <div class="tradoc-body space-y-5">
 
           <section class="tradoc-chapter">
-            <h3 class="tradoc-chapter-title">1. COMBAT RESOLUTION &amp; PENETRATION MATH</h3>
+            <h3 class="tradoc-chapter-title">1. COMBAT RESOLUTION, ARMOR MITIGATION &amp; KNOCKOUT GATING</h3>
             <table class="tradoc-table">
               <thead>
                 <tr>
@@ -359,27 +405,27 @@ window.IronDivision = window.IronDivision || {};
                   <td><code>1d100 + Terrain + Feature + Weather + Time-of-Day + Tactic + Avg Unit Traits + Commander</code>. Winner gains <code>floor(|diff| / 10)</code> stat bonus.</td>
                 </tr>
                 <tr>
-                  <td><strong>Soft vs. Hard Mix</strong></td>
-                  <td>Unarmored targets receive <code>Soft Attack</code>; armored targets (<code>armor &gt; 0</code>) use <code>Hard Attack</code> + kinetic penetration check.</td>
+                  <td><strong>Soft vs. Hard &amp; ARMOR HELD</strong></td>
+                  <td>Unarmored targets take <code>Soft Attack</code>; armored targets (<code>armor &gt; 0</code>) take <code>Hard Attack</code> + penetration check. On unpierced hits (<code>Piercing &lt; Hardness</code>) vs. <code>Medium/Heavy/Super</code> armor: personnel casualties are <strong>halved (&times;0.5)</strong>, bonus <code>Explosive</code> dice are <strong>negated</strong>, and unpierced Org shock vs. <code>Heavy/Super</code> armor is <strong>capped at -1</strong>. Sealed unpierced Medium+ hulls remain immune to Zombie swarms.</td>
                 </tr>
                 <tr>
-                  <td><strong>Piercing vs. Hardness</strong></td>
-                  <td>If <code>Piercing &gt;= Hardness</code>: full armor penetration. If <code>Piercing &lt; Hardness</code>: mitigated damage (unpierced sealed Medium/Heavy/Super-Heavy hulls are immune to Zombie swarms).</td>
+                  <td><strong>Vehicle Knockout Brackets &amp; Deflected Clashes</strong></td>
+                  <td>Piercing/hardness knockout brackets: <code>d3</code>, <code>1+d4</code>, <code>2+d6</code>, <code>3+d8</code>, subject to a <strong>15% Fleet Cap</strong> per hit. On deflected clashes (Main Attack &amp; Return Fire): <code>pressure &lt; 0.70</code> causes <strong>0 knockouts</strong>; <code>pressure &gt;= 0.70</code> is capped at <code>min(2, max(1, floor(disabled * 0.5)))</code>.</td>
                 </tr>
                 <tr>
                   <td><strong>Outnumbering Bonus</strong></td>
                   <td>Force Power = <code>Personnel + (Armor * 15)</code>. Grants <code>+20%</code> Atk/Def per <code>+50%</code> advantage, capped by active terrain's <code>outnumberCap</code> (Plains <code>100%</code>, Urban <code>40%</code>, Mountain <code>35%</code>; <code>-15%</code> for Fort/River/Amphib, min <code>25%</code>).</td>
                 </tr>
                 <tr>
-                  <td><strong>Org &amp; Supply Maluses</strong></td>
-                  <td>Org &lt;=70/50/30/10% imposes <code>-5/-10/-20/-40%</code> stats (halved if Unbreakable). Supply &lt;50/20/0% imposes <code>-10/-20/-50%</code> stats plus Org shock.</td>
+                  <td><strong>Org, Supply &amp; Out-of-Range Pauses</strong></td>
+                  <td>Org &lt;=70/50/30/10% imposes <code>-5/-10/-20/-40%</code> stats (halved if Unbreakable). Supply &lt;50/20/0% imposes <code>-10/-20/-50%</code> stats + Org shock. While a unit is <strong>out of engagement range</strong>, base combat ammo burn, late-battle <strong>Combat Fatigue</strong> (<code>rd &gt; 5</code> / <code>rd &gt; 12</code>), and <code>Green</code> <code>-1</code> Org drift are paused.</td>
                 </tr>
               </tbody>
             </table>
           </section>
 
           <section class="tradoc-chapter">
-            <h3 class="tradoc-chapter-title">2. SPATIAL RANGE, ENVIRONMENT &amp; COMPOUND HAZARDS</h3>
+            <h3 class="tradoc-chapter-title">2. SPATIAL RANGE, CLIMATE WEATHER &amp; ARBITRARY-ERA CLOCK</h3>
             <table class="tradoc-table">
               <thead>
                 <tr>
@@ -389,41 +435,51 @@ window.IronDivision = window.IronDivision || {};
               </thead>
               <tbody>
                 <tr>
-                  <td><strong>Y-Axis Range</strong></td>
-                  <td><code>Total Distance = posA + posB</code>. Base ranges: <code>Infantry/AV &lt;= 2</code>, <code>Tank &lt;= 3</code>, <code>Artillery &lt;= 6</code>, <code>Zombie &lt;= 1</code>. Pre-contact approach pauses base ammo drain.</td>
+                  <td><strong>Y-Axis Range &amp; Close Raiding</strong></td>
+                  <td><code>Total Distance = posA + posB</code>. Base ranges: <code>Infantry / standard AV &lt;= 2</code>, <code>Tank &amp; anti_tank AV (TDs) &lt;= 3</code>, <code>Artillery &lt;= 6</code>, <code>Zombie &lt;= 1</code>. Supply raiding (<code>[Supply Stolen]</code>) is strictly gated to <code>category !== 'artillery' &amp;&amp; totalDist &lt;= 2</code>.</td>
                 </tr>
                 <tr>
-                  <td><strong>24-Hour Clock &amp; Lighting</strong></td>
-                  <td><code>05:00-06:59</code> Dawn (<code>-10 Vig, -15% Air, VisCap 6</code>) &middot; <code>07:00-17:59</code> Daylight &middot; <code>18:00-19:59</code> Dusk &middot; <code>20:00-04:59</code> Night (<code>-25 Vig, -40% Air, VisCap 4, +15 Ambush</code>). Ordinal Day increments after <code>24:00</code>.</td>
+                  <td><strong>Arbitrary-Era Calendar &amp; 24H Clock</strong></td>
+                  <td>Uses <code>Date.setUTCFullYear()</code> (bypassing <code>Date.UTC</code> 1900-mapping) to support any year from <code>-270000</code> (formatted as <code>BCE</code>) to <code>+270000</code>, including Year <code>0</code> and double-digit years. Lighting: <code>05–06</code> Dawn (<code>-10 Vig, -15% Air, VisCap 6</code>), <code>07–17</code> Daylight, <code>18–19</code> Dusk, <code>20–04</code> Night (<code>-25 Vig, -40% Air, VisCap 4, +15 Ambush</code>).</td>
                 </tr>
                 <tr>
-                  <td><strong>Air Support Weather</strong></td>
-                  <td>Damage/suppression scales by <code>airEfficiency = clamp(1 + (weather.airMod + tod.airMod)/100, 0.10, 1.20)</code>. At <code>&lt;= -50%</code>, strike rolls abort/grounding check (<code>min(75%, |mod|)</code>) with 0 supply spent.</td>
+                  <td><strong>Climate-Aware Dynamic Weather</strong></td>
+                  <td>Every 3 rounds (if <code>DYN</code> active), <code>getClimateWeatherCandidates(curW, terrain, month, todPhase)</code> filters transitions by terrain, calendar season (<code>Winter/Spring/Summer/Autumn</code>), and time of day (e.g., blocking snow in autumn temperate hills or new heatwaves at night).</td>
                 </tr>
                 <tr>
-                  <td><strong>Compound Hazards</strong></td>
-                  <td><strong>Mud/Rasputitsa</strong> (<code>-1/-2</code> AFV speed, <code>+2</code> Sup, <code>-15</code> Veh Rec) &middot; <strong>Zero Visibility</strong> (<code>VisCap 3-4</code>, <code>-15</code> Vig w/o Recon) &middot; <strong>Deep Freeze</strong> (<code>+3%</code> DOW, <code>+1</code> Sup, <code>15%</code> cold AFV stall &lt;30% Sup) &middot; <strong>Heatstroke/Dust</strong> (<code>+2</code> Inf Sup, <code>-2</code> Inf Org/rd, <code>-15</code> Armor/Art Vig).</td>
+                  <td><strong>Air Support &amp; Compound Hazards</strong></td>
+                  <td><code>airEfficiency = clamp(1 + (weather.airMod + tod.airMod)/100, 0.10, 1.20)</code>; at <code>&lt;= -50%</code>, rolls grounding check (<code>min(75%, |mod|)</code>, 0 supply spent). Hazards: <strong>Mud/Rasputitsa</strong> (<code>-1/-2</code> AFV speed, <code>+2</code> Sup, <code>-15</code> Veh Rec) &middot; <strong>Zero Visibility</strong> (<code>VisCap 3–4</code>, <code>-15</code> Vig w/o Recon) &middot; <strong>Deep Freeze</strong> (<code>+3%</code> DOW, <code>+1</code> Sup, <code>15%</code> cold AFV stall &lt;30% Sup, <code>7%</code> w/ SimpleEng) &middot; <strong>Heatstroke/Dust</strong> (<code>+2</code> Inf Sup, <code>-2</code> Inf Org/rd, <code>-15</code> Armor/Art Vig).</td>
                 </tr>
                 <tr>
                   <td><strong>Entrenchment Cap</strong></td>
-                  <td><code>base = terrain.maxEntrench + (Fort ? 2 : 0)</code> (clamped <code>1-8</code>), plus <code>+1</code> per unit with <code>Fortification Engineer</code>.</td>
+                  <td><code>base = terrain.maxEntrench + (Fort ? 2 : 0)</code> (clamped <code>1–8</code>), plus <code>+1</code> per unit with <code>Fortification Engineer</code>.</td>
                 </tr>
               </tbody>
             </table>
           </section>
 
           <section class="tradoc-chapter">
-            <h3 class="tradoc-chapter-title">3. COMMANDERS, RECOVERY &amp; POST-BATTLE PIPELINE</h3>
+            <h3 class="tradoc-chapter-title">3. RECOVERY, FIELD REPAIR, DISMOUNTING &amp; ROUT/RALLY</h3>
             <ul class="list-disc pl-6 space-y-1 text-sm text-[#232a24]">
-              <li><strong>Commander Stat Scaling:</strong> Each level (<code>0-10</code>) of <code>ATK</code>, <code>DEF</code>, <code>CMD</code>, and <code>LOG</code> grants <code>+2.5%</code> army-wide bonus. Officer Rank Insignia steps every <code>4</code> total points (<code>0-3</code> 1LT up to <code>36+</code> 5-Star General of the Army).</li>
-              <li><strong>Casualty &amp; Armor Recovery:</strong> Personnel recovery uses <code>50 + d50 + Modifiers</code> (split into KIA/WIA); Died of Wounds (DOW) triggers from Round 4+ when supply is low or in freezing/marsh/heat conditions. Armor recovery uses <code>50 + d50 + ArmorRecBonus</code> (recoverable vs. write-off).</li>
-              <li><strong>Pursuit &amp; Salvage:</strong> On victory, average effective mobility determines POW capture vs. escape, recovery tractors tow repairable hulls (deducted from field salvage), and victors roll salvage on abandoned enemy hulls (<code>Beutepanzers</code> restored, stripped for <code>+5</code> Supply/hull, or scuttled).</li>
-              <li><strong>GM Undo Stack:</strong> Every round pushes a deep clone of battle + environment state into <code>battle.history</code> (FIFO max <code>15</code> rounds).</li>
+              <li><strong>Armor Recovery (Dynamic Cap):</strong> Uses <code>clamp(baseRec + d50 + armorRecBonus, 5, 80 + d20)</code> with probabilistic fractional rounding (<code>floor(expected) + bernoulli(frac)</code>) so small-to-medium hits retain a realistic permanent write-off (<code>KO</code>) chance.</li>
+              <li><strong>Field Repair Crew Tempo:</strong> Fires every <strong>4 rounds</strong> (<code>round % 4 === 0</code>) when <code>!isDismounted &amp;&amp; maxArmor &gt; 0 &amp;&amp; Supply &gt;= 25%</code>. Paused if <code>lastArmorHitRound === round - 1</code> (mechanics pinned). Restores <code>min(recoverable, ceil(0.35 * recoverable), maxPerCycle, ceil(dN / 2) + simpleEngBonus)</code> where <code>maxPerCycle</code> is <code>2</code> (or <code>3</code> with <code>Simple Engineering</code>).</li>
+              <li><strong>Dismounting vs. Withdrawal:</strong> Only <code>armored_vehicle</code> units <em>without</em> <code>anti_tank</code> dismount as infantry (at <code>Org &lt;= 20%</code> with <code>&gt;= 50%</code> personnel, or at <code>0</code> vehicles). <code>tank</code>, SP <code>artillery</code>, and <code>anti_tank</code> TDs retire (<code>defeated = true</code>) at <code>0</code> operational vehicles. Unscreened lone <code>artillery</code> auto-withdraws when all friendly frontliners are defeated.</li>
+              <li><strong>Rout, Rally Floor &amp; Shock Sync:</strong> On rout/scatter, <code>cumPersonnelLostTenths</code> syncs to current loss ratio so rallied units only take cumulative Org shock for new losses after returning. Rallied units return with a minimum Org floor of <code>min(maxOrg, max(18, ceil(maxOrg * 0.35)))</code>.</li>
+              <li><strong>Commander Scaling &amp; Undo Stack:</strong> Each level (<code>0–10</code>) of <code>ATK/DEF/CMD/LOG</code> grants <code>+2.5%</code> army-wide; 10-tier Officer Rank Insignia steps every <code>4</code> total points (<code>1LT</code> to <code>5-Star General</code>). GM Undo stack stores up to <code>15</code> round snapshots in <code>battle.history</code>.</li>
             </ul>
           </section>
 
           <section class="tradoc-chapter">
-            <h3 class="tradoc-chapter-title">4. MODULE ARCHITECTURE &amp; DATA PERSISTENCE</h3>
+            <h3 class="tradoc-chapter-title">4. TELEMETRY, PURSUIT CONSERVATION &amp; FORM DA-774 AAR</h3>
+            <ul class="list-disc pl-6 space-y-1 text-sm text-[#232a24]">
+              <li><strong>Exact Personnel &amp; AFV Conservation:</strong> Pursuit partitions surviving losing-side personnel cleanly into <code>escaped</code> + <code>captured</code> while keeping <code>wounded</code> intact (zeroing <code>personnel</code>), enforcing <code>START === REM + KIA + WIA + POW + ESC</code> on every unit. AFV ledger reconciles <code>Start === Act + Rec(+Abn) + Tow + KO</code>.</li>
+              <li><strong>Per-Unit Combat &amp; Logistics Telemetry:</strong> Each unit tracks <code>stats.{casualtiesInflicted, afvsDisabled, afvsDestroyed, fieldRepairs, indirectCasualtiesInflicted, airCasualtiesInflicted}</code>; <code>buildAfterActionReport()</code> snapshots side-level depot expenditure, critical-supply counts, supply raided, and timestamped <code>weatherTrail</code>.</li>
+              <li><strong>Printable Form DA-774 Pipeline:</strong> <code>sanitizeForPrintableAAR()</code> strips engine tags, dice/DC formulas, round numbers, and Org/Mobility jargon; <code>extractAARChronology()</code> balances up to 18 milestones across Opening, Mid-Battle, and Endgame; CSS <code>@page</code> renders running <code>FORM DA-774 // DOC-ID</code> and <code>PAGE X OF Y</code> footers with faction-neutral salvage labels and data-driven G-3 citations.</li>
+            </ul>
+          </section>
+
+          <section class="tradoc-chapter">
+            <h3 class="tradoc-chapter-title">5. MODULE ARCHITECTURE &amp; DATA PERSISTENCE</h3>
             <table class="tradoc-table">
               <thead>
                 <tr>
@@ -432,12 +488,13 @@ window.IronDivision = window.IronDivision || {};
                 </tr>
               </thead>
               <tbody>
-                <tr><td><code>js/data.js</code></td><td>Static registries: Terrains, Features, Weather, Time-of-Day, Compound Hazards, 32 Traits, 10 Commander Traits, Commanders, 25 Tactics, Unit Templates.</td></tr>
-                <tr><td><code>js/engine-helpers.js</code></td><td>Dice RNG, simulated 24H clock/ordinal day, environment &amp; visibility resolver, NATO &amp; 10-tier Officer SVG icons, combat log buffer.</td></tr>
-                <tr><td><code>js/engine-combat.js</code></td><td>Round orchestration, undo snapshots, supply/dig-in/rallying, vigilance, fire support + AA/weather grounding, maneuver, firefight, armor &amp; DOW.</td></tr>
-                <tr><td><code>js/engine-pursuit.js</code></td><td>Victory checks, mobility pursuit/POWs, recovery towing, field salvage, and Form DA-774 AAR snapshot builder.</td></tr>
-                <tr><td><code>js/ui-render.js</code></td><td>DOM rendering, searchable black-diamond dropdowns, floating unit tooltip, expanded logs modal, flippable Tactics Manual, and printable A4 AAR.</td></tr>
-                <tr><td><code>js/app.js</code></td><td>Global <code>IronDivision.state</code>, <code>localStorage</code> persistence, Preset JSON Export/Import, GM Live overrides, and event controllers.</td></tr>
+                <tr><td><code>js/data.js</code></td><td>Static registries: Terrains, Features, Weather, Time-of-Day, Compound Hazards, 32 Traits, 10 Commander Traits, Commanders, 25 Tactics, Unit Templates (Arracourt &amp; San Marino).</td></tr>
+                <tr><td><code>js/engine-helpers.js</code></td><td>Dice RNG, arbitrary-era UTC calendar &amp; 24H clock, climate-aware dynamic weather resolver, visibility/range calculators, NATO &amp; 10-tier Officer SVGs, combat log buffer.</td></tr>
+                <tr><td><code>js/engine-combat.js</code></td><td>Round orchestration, undo snapshots, supply/dig-in/rallying, vigilance, fire support + AA/weather grounding, maneuver, firefight, armor mitigation/recovery/repair, DOW, and per-unit telemetry.</td></tr>
+                <tr><td><code>js/engine-pursuit.js</code></td><td>Victory checks, mobility pursuit/POW conservation, recovery towing, faction-neutral field salvage, and Form DA-774 AAR telemetry/logistics/weather-trail snapshot builder.</td></tr>
+                <tr><td><code>js/ui-render.js</code></td><td>DOM rendering, searchable dropdowns, floating unit tooltip, expanded logs modal, flippable Tactics Manual, and Form DA-774 modal + printable A4 PDF generator.</td></tr>
+                <tr><td><code>js/guide.js</code></td><td>Manila-folder Field Manual (<code>FM 100-5-BOOT</code> Drill Sergeant Edition) and Technical Manual (<code>TM 9-1005-TECH</code>).</td></tr>
+                <tr><td><code>js/app.js</code></td><td>Global <code>IronDivision.state</code>, <code>localStorage</code> persistence, scenario loaders (Arracourt default), Preset JSON Export/Import, GM Live overrides, and event controllers.</td></tr>
               </tbody>
             </table>
           </section>

@@ -195,7 +195,12 @@ window.IronDivision = window.IronDivision || {};
 
     if (dyEl) state.environment.battleDay = H.clamp(parseInt(dyEl.value, 10) || 1, 1, 31);
     if (moEl) state.environment.battleMonth = H.clamp(parseInt(moEl.value, 10) || 1, 1, 12);
-    if (yrEl && yrEl.value !== '') state.environment.battleYear = parseInt(yrEl.value, 10) || 1944;
+    if (yrEl && yrEl.value !== '') {
+      const parsedYr = parseInt(yrEl.value, 10);
+      if (!Number.isNaN(parsedYr)) {
+        state.environment.battleYear = H.clamp(parsedYr, -270000, 270000);
+      }
+    }
     if (hrEl && hrEl.value !== '') state.environment.battleHour = H.clamp(parseInt(hrEl.value, 10) || 0, 0, 23);
     if (mnEl && mnEl.value !== '') state.environment.battleMinute = H.clamp(parseInt(mnEl.value, 10) || 0, 0, 59);
     if (durValEl) state.environment.roundDurationValue = Math.max(1, parseInt(durValEl.value, 10) || 1);
@@ -2033,7 +2038,7 @@ window.IronDivision = window.IronDivision || {};
     const hh = String(d.getUTCHours()).padStart(2, '0');
     const mm = String(d.getUTCMinutes()).padStart(2, '0');
     const mon = months[d.getUTCMonth()];
-    const yyyy = d.getUTCFullYear();
+    const yyyy = H.formatYearLabel ? H.formatYearLabel(d.getUTCFullYear()) : String(d.getUTCFullYear());
     return `${dd}${hh}${mm}Z ${mon} ${yyyy}`;
   }
 

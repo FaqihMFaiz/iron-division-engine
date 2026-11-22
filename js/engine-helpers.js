@@ -32,9 +32,25 @@ window.IronDivision = window.IronDivision || {};
     return trimmed || DEFAULT_SIDE_NAMES[key];
   }
 
+  function makeUtcTimestamp(yr, monthIdx, day, hr = 0, mn = 0, sec = 0) {
+    // Use setUTCFullYear so years 0..99 stay literal instead of being mapped to 1900..1999 by Date.UTC
+    const d = new Date(0);
+    d.setUTCFullYear(yr, monthIdx, day);
+    d.setUTCHours(hr, mn, sec, 0);
+    return d.getTime();
+  }
+
+  function formatYearLabel(y) {
+    const n = Number(y);
+    if (!Number.isFinite(n)) return '1944';
+    if (n < 0) return `${Math.abs(n)} BCE`;
+    return String(n);
+  }
+
   function getSimulatedBattleDate(roundNumber = null) {
     const env = ID.state?.environment || {};
-    const yr = Number.isFinite(Number(env.battleYear)) ? Number(env.battleYear) : 1944;
+    const rawYr = (env.battleYear !== undefined && env.battleYear !== null && env.battleYear !== '') ? Number(env.battleYear) : 1944;
+    const yr = Number.isFinite(rawYr) ? clamp(Math.trunc(rawYr), -270000, 270000) : 1944;
     const mo = clamp(Number(env.battleMonth) || 6, 1, 12);
     const dy = clamp(Number(env.battleDay) || 6, 1, 31);
     const hr = clamp(Number.isFinite(Number(env.battleHour)) ? Number(env.battleHour) : 6, 0, 23);
@@ -48,7 +64,7 @@ window.IronDivision = window.IronDivision || {};
       ? Math.max(1, Number(roundNumber) || 1)
       : Math.max(1, Number(ID.state?.battle?.round) || 1);
 
-    const baseMs = Date.UTC(yr, mo - 1, dy, hr, mn, 0);
+    const baseMs = makeUtcTimestamp(yr, mo - 1, dy, hr, mn, 0);
     return new Date(baseMs + (rd - 1) * durVal * multMs);
   }
 
@@ -72,8 +88,8 @@ window.IronDivision = window.IronDivision || {};
   function getBattleDayOrdinal(roundNumber = null) {
     const startD = getSimulatedBattleDate(1);
     const curD = getSimulatedBattleDate(roundNumber);
-    const startMidnight = Date.UTC(startD.getUTCFullYear(), startD.getUTCMonth(), startD.getUTCDate());
-    const curMidnight = Date.UTC(curD.getUTCFullYear(), curD.getUTCMonth(), curD.getUTCDate());
+    const startMidnight = makeUtcTimestamp(startD.getUTCFullYear(), startD.getUTCMonth(), startD.getUTCDate());
+    const curMidnight = makeUtcTimestamp(curD.getUTCFullYear(), curD.getUTCMonth(), curD.getUTCDate());
     const dayNum = Math.max(1, Math.floor((curMidnight - startMidnight) / 86400000) + 1);
     return `${getOrdinalSuffix(dayNum)} DAY`;
   }
@@ -83,7 +99,7 @@ window.IronDivision = window.IronDivision || {};
     const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
     const dd = String(d.getUTCDate()).padStart(2, '0');
     const mon = months[d.getUTCMonth()];
-    const yyyy = d.getUTCFullYear();
+    const yyyy = formatYearLabel(d.getUTCFullYear());
     const hh = String(d.getUTCHours()).padStart(2, '0');
     const mm = String(d.getUTCMinutes()).padStart(2, '0');
     return `${dd} ${mon} ${yyyy} · ${hh}:${mm}`;
@@ -753,6 +769,7 @@ window.IronDivision = window.IronDivision || {};
     getSimulatedBattleDate,
     formatClockHHMM,
     getBattleDayOrdinal,
+    formatYearLabel,
     formatSimulatedClock,
     getClockTimeOfDay,
     getRoundDurationLabel,
