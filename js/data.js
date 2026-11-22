@@ -232,17 +232,17 @@ window.IronDivision = window.IronDivision || {};
     },
     {
       id: 'field_medic', name: 'Field Medic',
-      desc: '+10 Personnel Recovery roll, reduces DOW mortality by -3%, and heals d3 wounded back to active personnel every round.',
+      desc: 'Dedicated triage detachment: +12% Personnel Recovery, -2% DOW mortality, heals 1+d3 WIA back to active duty each round (at >=25% Supply), and reduces casualty Org shock by 1.',
       atkPct: 0, atkFlat: 0, defPct: 0, defFlat: 0, softFlat: 0, hardFlat: 0, pierceFlat: 0, hardnessFlat: 0,
-      vigilance: 0, orgRegen: 0, supplyRegen: 0, supplySteal: 0, recBonus: 10, armorRecBonus: 0,
+      vigilance: 0, orgRegen: 0, supplyRegen: 0, supplySteal: 0, recBonus: 12, armorRecBonus: 0,
       enemyDefMalus: 0, enemyHardMalus: 0, terrainTarget: '', terrainBonus: 0, antiCategory: '', antiBonus: 0,
       grantsHighCaliber: false, grantsExplosive: false, isFrontliner: false, isRepairCrew: false, isFieldMedic: true
     },
     {
       id: 'first_aid_kit', name: 'First Aid Kit',
-      desc: 'Squad-level sterile dressings, tourniquets, and coagulants. Reduces Died of Wounds (DOW) mortality by -4% and grants +10 to Personnel Recovery rolls.',
+      desc: 'Individual trauma dressings, sulfa powder, and tourniquets: +8% Personnel Recovery, -2% DOW mortality, and mitigates +5 of High-Caliber/Explosive recovery penalties.',
       atkPct: 0, atkFlat: 0, defPct: 0, defFlat: 0, softFlat: 0, hardFlat: 0, pierceFlat: 0, hardnessFlat: 0,
-      vigilance: 0, orgRegen: 0, supplyRegen: 0, supplySteal: 0, recBonus: 10, armorRecBonus: 0,
+      vigilance: 0, orgRegen: 0, supplyRegen: 0, supplySteal: 0, recBonus: 8, armorRecBonus: 0,
       pursueBonus: 0, retreatBonus: 0, enemyDefMalus: 0, enemyHardMalus: 0, terrainTarget: '', terrainBonus: 0,
       antiCategory: '', antiBonus: 0, grantsHighCaliber: false, grantsExplosive: false, isFrontliner: false,
       isRepairCrew: false, isFirstAidKit: true
@@ -273,31 +273,31 @@ window.IronDivision = window.IronDivision || {};
     },
     {
       id: 'repair_crew', name: 'Repair Crew',
-      desc: 'Every 3 turns (if Supply >= 30%), expends 1+d2 Supply to field-repair up to d2–d5 recoverable armor in-combat; remaining recoverable armor is repaired post-battle.',
+      desc: 'Organic ARVs & mechanics: +12% Armor Recovery; every 2 rounds (if Supply >= 25%), spends 1+d2 Supply to field-repair up to d2–d5 recoverable vehicles back into combat.',
       atkPct: 0, atkFlat: 0, defPct: 0, defFlat: 0, softFlat: 0, hardFlat: 0, pierceFlat: 0, hardnessFlat: 0,
-      vigilance: 0, orgRegen: 0, supplyRegen: 0, supplySteal: 0, recBonus: 0, armorRecBonus: 10,
+      vigilance: 0, orgRegen: 0, supplyRegen: 0, supplySteal: 0, recBonus: 0, armorRecBonus: 12,
       enemyDefMalus: 0, enemyHardMalus: 0, terrainTarget: '', terrainBonus: 0, antiCategory: '', antiBonus: 0,
       grantsHighCaliber: false, grantsExplosive: false, isFrontliner: false, isRepairCrew: true
     },
     {
       id: 'redundancy', name: 'Redundancy',
-      desc: '+15 to Armor Recovery roll when vehicles are disabled; +2 Hardness.',
+      desc: 'Wet ammo stowage, dual hydraulics & spall liners: +15% Armor Recovery, +5% Personnel Recovery (crew survivability), and +2 Hardness.',
       atkPct: 0, atkFlat: 0, defPct: 0, defFlat: 0, softFlat: 0, hardFlat: 0, pierceFlat: 0, hardnessFlat: 2,
-      vigilance: 0, orgRegen: 0, supplyRegen: 0, supplySteal: 0, recBonus: 0, armorRecBonus: 15,
+      vigilance: 0, orgRegen: 0, supplyRegen: 0, supplySteal: 0, recBonus: 5, armorRecBonus: 15,
       enemyDefMalus: 0, enemyHardMalus: 0, terrainTarget: '', terrainBonus: 0, antiCategory: '', antiBonus: 0,
       grantsHighCaliber: false, grantsExplosive: false, isFrontliner: false, isRepairCrew: false
     },
     {
       id: 'tough_chassis', name: 'Tough Chassis',
-      desc: '+15 to Armor Recovery roll, +4 Hardness, and +5% Defense.',
+      desc: 'Heavy cast/welded hull frame: +15% Armor Recovery, +4 Hardness, +5% Defense, and reduces crew casualties from knocked-out vehicles by 1 (min 1).',
       atkPct: 0, atkFlat: 0, defPct: 5, defFlat: 0, softFlat: 0, hardFlat: 0, pierceFlat: 0, hardnessFlat: 4,
       vigilance: 0, orgRegen: 0, supplyRegen: 0, supplySteal: 0, recBonus: 0, armorRecBonus: 15,
       enemyDefMalus: 0, enemyHardMalus: 0, terrainTarget: '', terrainBonus: 0, antiCategory: '', antiBonus: 0,
-      grantsHighCaliber: false, grantsExplosive: false, isFrontliner: false, isRepairCrew: false
+      grantsHighCaliber: false, grantsExplosive: false, isFrontliner: false, isRepairCrew: false, isToughChassis: true
     },
     {
       id: 'simple_engineering', name: 'Simple Engineering',
-      desc: '+20 Armor Recovery roll. Reduces in-combat field repair supply cost by 1, and Repair Crews restore +1 extra vehicle per cycle.',
+      desc: 'Standardized modular powertrain: +20% Armor Recovery, -1 field repair supply cost, +1 extra vehicle restored per Repair Crew cycle, and halves Deep Freeze AFV breakdown risk.',
       atkPct: 0, atkFlat: 0, defPct: 0, defFlat: 0, softFlat: 0, hardFlat: 0, pierceFlat: 0, hardnessFlat: 0,
       vigilance: 0, orgRegen: 0, supplyRegen: 0, supplySteal: 0, recBonus: 0, armorRecBonus: 20,
       enemyDefMalus: 0, enemyHardMalus: 0, terrainTarget: '', terrainBonus: 0, antiCategory: '', antiBonus: 0,
@@ -463,6 +463,8 @@ window.IronDivision = window.IronDivision || {};
 
   const DEFAULT_COMMANDERS = [
     { id: 'cmd_none',      name: 'No Assigned Commander (Autonomous Staff)', personality: 'Balanced',   attackLevel: 0, defenseLevel: 0, commandLevel: 0, logisticsLevel: 0, traits: [] },
+    { id: 'cmd_clarke',    name: 'Col. Bruce C. Clarke (CCA, 4th Armored Div)', personality: 'Balanced', attackLevel: 5, defenseLevel: 5, commandLevel: 5, logisticsLevel: 4, traits: ['tank_leader', 'skilled_staff', 'organizer'] },
+    { id: 'cmd_manteuffel',name: 'Gen. Hasso von Manteuffel (5th Panzer Army)', personality: 'Aggressive', attackLevel: 8, defenseLevel: 7, commandLevel: 8, logisticsLevel: 6, traits: ['tank_leader', 'rally_master', 'rearguard_specialist'] },
     { id: 'cmd_holworthy', name: 'Maj. Gen. Arthur Holworthy (4th Indian Div)', personality: 'Balanced', attackLevel: 6, defenseLevel: 6, commandLevel: 7, logisticsLevel: 6, traits: ['infantry_leader', 'organizer', 'rally_master'] },
     { id: 'cmd_hoppe',     name: 'Lt. Gen. Harry Hoppe (278. Infanterie-Div)',  personality: 'Cautious', attackLevel: 6, defenseLevel: 8, commandLevel: 7, logisticsLevel: 7, traits: ['infantry_leader', 'iron_disciplinarian', 'rearguard_specialist'] },
     { id: 'cmd_patton',  name: 'Gen. George Vanguard (Armor Thrust)',       personality: 'Aggressive', attackLevel: 5, defenseLevel: 2, commandLevel: 4, logisticsLevel: 2, traits: ['tank_leader', 'skilled_staff'] },
@@ -634,195 +636,341 @@ window.IronDivision = window.IronDivision || {};
     {
       id: 'tpl_light_inf', name: 'Light Infantry Unit', category: 'infantry', armorTier: 'unarmored',
       personnel: 1000, maxOrg: 65, armorCount: 0, maxSupply: 40,
-      softAttack: 16, hardAttack: 4, defense: 22, piercing: 5, hardness: 2,
+      softAttack: 16, hardAttack: 4, defense: 22, piercing: 5, hardness: 2, recovery: 52,
       experience: 'Regular', traits: ['recon_support', 'field_medic', 'first_aid_kit']
     },
     {
       id: 'tpl_heavy_inf', name: 'Heavy Infantry Unit', category: 'infantry', armorTier: 'unarmored',
       personnel: 1200, maxOrg: 75, armorCount: 0, maxSupply: 45,
-      softAttack: 24, hardAttack: 10, defense: 30, piercing: 9, hardness: 4,
+      softAttack: 24, hardAttack: 10, defense: 30, piercing: 9, hardness: 4, recovery: 52,
       experience: 'Regular', traits: ['high_caliber', 'frontliner_defender', 'mortar_support', 'engineering_support', 'first_aid_kit']
     },
     {
       id: 'tpl_mechanized', name: 'Mechanized Unit', category: 'armored_vehicle', armorTier: 'light',
       personnel: 900, maxOrg: 70, armorCount: 60, maxSupply: 50,
-      softAttack: 26, hardAttack: 14, defense: 28, piercing: 14, hardness: 14,
+      softAttack: 26, hardAttack: 14, defense: 28, piercing: 14, hardness: 14, recovery: 56,
       experience: 'Seasoned', traits: ['high_caliber', 'repair_crew', 'simple_engineering', 'logistic_support', 'first_aid_kit']
     },
     {
       id: 'tpl_medium_tank', name: 'Medium Tank Unit', category: 'tank', armorTier: 'medium',
       personnel: 600, maxOrg: 65, armorCount: 50, maxSupply: 55,
-      softAttack: 30, hardAttack: 28, defense: 26, piercing: 24, hardness: 24,
+      softAttack: 30, hardAttack: 28, defense: 26, piercing: 24, hardness: 24, recovery: 55,
       experience: 'Seasoned', traits: ['high_caliber', 'explosive_weapon', 'repair_crew', 'redundancy']
     },
     {
       id: 'tpl_heavy_tank', name: 'Heavy Tank Unit', category: 'tank', armorTier: 'heavy',
       personnel: 500, maxOrg: 60, armorCount: 40, maxSupply: 60,
-      softAttack: 34, hardAttack: 38, defense: 32, piercing: 34, hardness: 36,
+      softAttack: 34, hardAttack: 38, defense: 32, piercing: 34, hardness: 36, recovery: 54,
       experience: 'Veteran', traits: ['high_caliber', 'explosive_weapon', 'tough_chassis', 'repair_crew', 'frontliner_defender']
     },
     {
       id: 'tpl_artillery', name: 'Artillery Unit', category: 'artillery', armorTier: 'unarmored',
       personnel: 500, maxOrg: 45, armorCount: 0, maxSupply: 55,
-      softAttack: 42, hardAttack: 18, defense: 12, piercing: 14, hardness: 2,
+      softAttack: 42, hardAttack: 18, defense: 12, piercing: 14, hardness: 2, recovery: 50,
       experience: 'Regular', traits: ['explosive_weapon', 'logistic_support']
     },
     {
       id: 'tpl_special_forces', name: 'Special Forces Unit', category: 'infantry', armorTier: 'unarmored',
       personnel: 600, maxOrg: 90, armorCount: 0, maxSupply: 50,
-      softAttack: 28, hardAttack: 14, defense: 28, piercing: 12, hardness: 4,
+      softAttack: 28, hardAttack: 14, defense: 28, piercing: 12, hardness: 4, recovery: 62,
       experience: 'Elite', traits: ['special_forces', 'unbreakable', 'infiltration_specialist', 'grenade_assault', 'first_aid_kit']
     },
     {
       id: 'tpl_terrain_mtn', name: 'Terrain Unit: Mountaineers', category: 'infantry', armorTier: 'unarmored',
       personnel: 900, maxOrg: 75, armorCount: 0, maxSupply: 45,
-      softAttack: 20, hardAttack: 8, defense: 26, piercing: 8, hardness: 3,
+      softAttack: 20, hardAttack: 8, defense: 26, piercing: 8, hardness: 3, recovery: 56,
       experience: 'Veteran', traits: ['mountaineers', 'recon_support', 'mortar_support', 'field_medic']
     },
     {
       id: 'tpl_terrain_marine', name: 'Terrain Unit: Marines', category: 'infantry', armorTier: 'unarmored',
       personnel: 950, maxOrg: 75, armorCount: 0, maxSupply: 48,
-      softAttack: 22, hardAttack: 10, defense: 24, piercing: 10, hardness: 3,
+      softAttack: 22, hardAttack: 10, defense: 24, piercing: 10, hardness: 3, recovery: 56,
       experience: 'Veteran', traits: ['marines', 'engineering_support', 'grenade_assault', 'air_support']
     },
     {
       id: 'tpl_terrain_ranger', name: 'Terrain Unit: Rangers', category: 'infantry', armorTier: 'unarmored',
       personnel: 800, maxOrg: 75, armorCount: 0, maxSupply: 45,
-      softAttack: 21, hardAttack: 9, defense: 25, piercing: 9, hardness: 3,
+      softAttack: 21, hardAttack: 9, defense: 25, piercing: 9, hardness: 3, recovery: 56,
       experience: 'Veteran', traits: ['rangers', 'concealment_specialist', 'supply_raiders']
     },
     {
       id: 'tpl_anti_tank', name: 'Anti-Tank Unit', category: 'infantry', armorTier: 'unarmored',
       personnel: 700, maxOrg: 55, armorCount: 0, maxSupply: 42,
-      softAttack: 12, hardAttack: 32, defense: 20, piercing: 30, hardness: 3,
+      softAttack: 12, hardAttack: 32, defense: 20, piercing: 30, hardness: 3, recovery: 50,
       experience: 'Regular', traits: ['anti_tank', 'high_caliber', 'aa_gun']
     },
     {
       id: 'tpl_tank_destroyer', name: 'Tank Destroyer Unit', category: 'armored_vehicle', armorTier: 'medium',
       personnel: 550, maxOrg: 60, armorCount: 45, maxSupply: 50,
-      softAttack: 16, hardAttack: 40, defense: 24, piercing: 36, hardness: 26,
+      softAttack: 16, hardAttack: 40, defense: 24, piercing: 36, hardness: 26, recovery: 54,
       experience: 'Seasoned', traits: ['anti_tank', 'high_caliber', 'tough_chassis', 'repair_crew']
     },
     {
       id: 'tpl_militia', name: 'Militia Unit', category: 'infantry', armorTier: 'unarmored',
       personnel: 1400, maxOrg: 45, armorCount: 0, maxSupply: 30,
-      softAttack: 11, hardAttack: 2, defense: 15, piercing: 3, hardness: 1,
+      softAttack: 11, hardAttack: 2, defense: 15, piercing: 3, hardness: 1, recovery: 38,
       experience: 'Green', traits: ['desperate_defense', 'frontliner_defender']
     },
     {
       id: 'tpl_zombie_horde', name: 'Undead Zombie Horde (Special)', category: 'infantry', armorTier: 'unarmored',
       personnel: 1600, maxOrg: 100, armorCount: 0, maxSupply: 100,
-      softAttack: 18, hardAttack: 1, defense: 8, piercing: 1, hardness: 1,
+      softAttack: 18, hardAttack: 1, defense: 8, piercing: 1, hardness: 1, recovery: 20,
       experience: 'Regular', traits: ['zombie_unit']
     },
     // --- Battle of San Marino (17 Sep 1944): Wehrmacht (278. Infanterie-Division) ---
     {
       id: 'tpl_ger_gr992', name: 'Grenadier-Regiment 992', category: 'infantry', armorTier: 'none',
       personnel: 1800, maxOrg: 68, armorCount: 0, maxSupply: 55,
-      softAttack: 24, hardAttack: 8, defense: 26, piercing: 8, hardness: 0,
+      softAttack: 24, hardAttack: 8, defense: 26, piercing: 8, hardness: 0, recovery: 52,
       experience: 'Seasoned', traits: ['frontliner_defender', 'desperate_defense']
     },
     {
       id: 'tpl_ger_gr993', name: 'Grenadier-Regiment 993', category: 'infantry', armorTier: 'none',
       personnel: 1750, maxOrg: 65, armorCount: 0, maxSupply: 55,
-      softAttack: 23, hardAttack: 7, defense: 24, piercing: 7, hardness: 0,
+      softAttack: 23, hardAttack: 7, defense: 24, piercing: 7, hardness: 0, recovery: 50,
       experience: 'Regular', traits: ['frontliner_defender', 'grenade_assault']
     },
     {
       id: 'tpl_ger_gr994', name: 'Grenadier-Regiment 994', category: 'infantry', armorTier: 'none',
       personnel: 1700, maxOrg: 64, armorCount: 0, maxSupply: 55,
-      softAttack: 22, hardAttack: 7, defense: 25, piercing: 7, hardness: 0,
+      softAttack: 22, hardAttack: 7, defense: 25, piercing: 7, hardness: 0, recovery: 50,
       experience: 'Regular', traits: ['desperate_defense', 'mortar_support']
     },
     {
       id: 'tpl_ger_ar278', name: 'Artillerie-Regiment 278', category: 'artillery', armorTier: 'none',
       personnel: 1100, maxOrg: 52, armorCount: 0, maxSupply: 65,
-      softAttack: 34, hardAttack: 16, defense: 14, piercing: 14, hardness: 0,
+      softAttack: 34, hardAttack: 16, defense: 14, piercing: 14, hardness: 0, recovery: 50,
       experience: 'Seasoned', traits: ['heavy_artillery_support', 'high_caliber']
     },
     {
       id: 'tpl_ger_fus278', name: 'Divisions-Füsilier-Kompanie 278', category: 'infantry', armorTier: 'none',
       personnel: 420, maxOrg: 72, armorCount: 0, maxSupply: 50,
-      softAttack: 20, hardAttack: 6, defense: 22, piercing: 6, hardness: 0,
+      softAttack: 20, hardAttack: 6, defense: 22, piercing: 6, hardness: 0, recovery: 55,
       experience: 'Veteran', traits: ['recon_support', 'rangers']
     },
     {
       id: 'tpl_ger_pzj278', name: 'Panzer-Jäger-Abteilung 278', category: 'armored_vehicle', armorTier: 'light',
       personnel: 480, maxOrg: 64, armorCount: 14, maxSupply: 55,
-      softAttack: 16, hardAttack: 28, defense: 20, piercing: 24, hardness: 14,
+      softAttack: 16, hardAttack: 28, defense: 20, piercing: 24, hardness: 14, recovery: 50,
       experience: 'Seasoned', traits: ['anti_tank', 'high_caliber']
     },
     {
       id: 'tpl_ger_eng278', name: 'Engineer-Battalion 278', category: 'infantry', armorTier: 'none',
       personnel: 620, maxOrg: 66, armorCount: 0, maxSupply: 55,
-      softAttack: 20, hardAttack: 12, defense: 26, piercing: 10, hardness: 0,
+      softAttack: 20, hardAttack: 12, defense: 26, piercing: 10, hardness: 0, recovery: 52,
       experience: 'Seasoned', traits: ['engineering_support', 'fortification_engineer', 'explosive_weapon']
     },
     {
       id: 'tpl_ger_sig278', name: 'Signals Battalion 278', category: 'infantry', armorTier: 'none',
       personnel: 380, maxOrg: 60, armorCount: 0, maxSupply: 65,
-      softAttack: 12, hardAttack: 4, defense: 16, piercing: 4, hardness: 0,
+      softAttack: 12, hardAttack: 4, defense: 16, piercing: 4, hardness: 0, recovery: 52,
       experience: 'Regular', traits: ['recon_support', 'logistic_support']
     },
     // --- Battle of San Marino (17 Sep 1944): British Indian Army (11th Indian Inf Bde / 4th Indian Div) ---
     {
       id: 'tpl_ind_hq11', name: 'HQ 11th Indian Infantry Brigade', category: 'infantry', armorTier: 'none',
       personnel: 360, maxOrg: 76, armorCount: 0, maxSupply: 70,
-      softAttack: 15, hardAttack: 5, defense: 20, piercing: 5, hardness: 0,
+      softAttack: 15, hardAttack: 5, defense: 20, piercing: 5, hardness: 0, recovery: 58,
       experience: 'Veteran', traits: ['recon_support', 'logistic_support']
     },
     {
       id: 'tpl_ind_cameron', name: "2nd Bn, Queen's Own Cameron Highlanders", category: 'infantry', armorTier: 'none',
       personnel: 840, maxOrg: 74, armorCount: 0, maxSupply: 60,
-      softAttack: 25, hardAttack: 8, defense: 25, piercing: 8, hardness: 0,
-      experience: 'Veteran', traits: ['mountaineers', 'frontliner_defender']
+      softAttack: 25, hardAttack: 8, defense: 25, piercing: 8, hardness: 0, recovery: 56,
+      experience: 'Veteran', traits: ['mountaineers', 'frontliner_defender', 'first_aid_kit']
     },
     {
       id: 'tpl_ind_mahratta', name: '2nd Bn, 5th Mahratta Light Infantry', category: 'infantry', armorTier: 'none',
       personnel: 820, maxOrg: 72, armorCount: 0, maxSupply: 60,
-      softAttack: 24, hardAttack: 8, defense: 24, piercing: 8, hardness: 0,
+      softAttack: 24, hardAttack: 8, defense: 24, piercing: 8, hardness: 0, recovery: 55,
       experience: 'Veteran', traits: ['mountaineers', 'grenade_assault']
     },
     {
       id: 'tpl_ind_rajputana', name: "1st Bn (Wellesley's), 6th Rajputana Rifles", category: 'infantry', armorTier: 'none',
       personnel: 810, maxOrg: 70, armorCount: 0, maxSupply: 60,
-      softAttack: 23, hardAttack: 7, defense: 24, piercing: 7, hardness: 0,
+      softAttack: 23, hardAttack: 7, defense: 24, piercing: 7, hardness: 0, recovery: 55,
       experience: 'Seasoned', traits: ['mountaineers', 'field_medic']
     },
     {
       id: 'tpl_ind_rajput', name: '4th Bn, 7th Rajput Regiment', category: 'infantry', armorTier: 'none',
       personnel: 800, maxOrg: 68, armorCount: 0, maxSupply: 58,
-      softAttack: 22, hardAttack: 7, defense: 23, piercing: 7, hardness: 0,
+      softAttack: 22, hardAttack: 7, defense: 23, piercing: 7, hardness: 0, recovery: 54,
       experience: 'Seasoned', traits: ['frontliner_defender', 'first_aid_kit']
     },
     {
       id: 'tpl_ind_ffr', name: '3rd (Royal) Bn, 12th Frontier Force Regiment', category: 'infantry', armorTier: 'none',
       personnel: 830, maxOrg: 73, armorCount: 0, maxSupply: 60,
-      softAttack: 24, hardAttack: 8, defense: 24, piercing: 8, hardness: 0,
+      softAttack: 24, hardAttack: 8, defense: 24, piercing: 8, hardness: 0, recovery: 55,
       experience: 'Veteran', traits: ['mountaineers', 'mortar_support']
     },
     {
       id: 'tpl_ind_punjab', name: '3rd Bn, 14th Punjab Regiment', category: 'infantry', armorTier: 'none',
       personnel: 810, maxOrg: 70, armorCount: 0, maxSupply: 58,
-      softAttack: 23, hardAttack: 11, defense: 23, piercing: 11, hardness: 0,
+      softAttack: 23, hardAttack: 11, defense: 23, piercing: 11, hardness: 0, recovery: 54,
       experience: 'Seasoned', traits: ['rangers', 'anti_tank']
     },
     {
       id: 'tpl_ind_gurkha', name: '2nd Bn, 7th Gurkha Rifles', category: 'infantry', armorTier: 'none',
       personnel: 820, maxOrg: 82, armorCount: 0, maxSupply: 60,
-      softAttack: 28, hardAttack: 9, defense: 26, piercing: 9, hardness: 0,
+      softAttack: 28, hardAttack: 9, defense: 26, piercing: 9, hardness: 0, recovery: 60,
       experience: 'Elite', traits: ['mountaineers', 'melee_attack', 'special_forces']
     },
     {
       id: 'tpl_ind_yugoslav', name: '1st Bn, Royal Yugoslav Guards', category: 'infantry', armorTier: 'none',
       personnel: 650, maxOrg: 72, armorCount: 0, maxSupply: 55,
-      softAttack: 21, hardAttack: 7, defense: 24, piercing: 7, hardness: 0,
+      softAttack: 21, hardAttack: 7, defense: 24, piercing: 7, hardness: 0, recovery: 52,
       experience: 'Seasoned', traits: ['desperate_defense', 'unbreakable']
+    },
+    // --- Battle of Arracourt (18-29 Sep 1944): U.S. 4th Armored Division (Combat Command A) ---
+    {
+      id: 'tpl_us_37tk', name: '37th Tank Battalion', category: 'tank', armorTier: 'medium',
+      personnel: 720, maxOrg: 78, armorCount: 53, maxSupply: 62,
+      softAttack: 30, hardAttack: 26, defense: 28, piercing: 24, hardness: 24, recovery: 62,
+      experience: 'Veteran', traits: ['high_caliber', 'explosive_weapon', 'repair_crew', 'simple_engineering', 'recon_support']
+    },
+    {
+      id: 'tpl_us_35tk', name: '35th Tank Battalion (Elements)', category: 'tank', armorTier: 'medium',
+      personnel: 380, maxOrg: 74, armorCount: 24, maxSupply: 58,
+      softAttack: 26, hardAttack: 24, defense: 26, piercing: 23, hardness: 24, recovery: 60,
+      experience: 'Veteran', traits: ['high_caliber', 'explosive_weapon', 'simple_engineering', 'repair_crew']
+    },
+    {
+      id: 'tpl_us_53aib', name: '53rd Armored Infantry Battalion', category: 'armored_vehicle', armorTier: 'light',
+      personnel: 980, maxOrg: 76, armorCount: 52, maxSupply: 58,
+      softAttack: 27, hardAttack: 13, defense: 29, piercing: 12, hardness: 12, recovery: 58,
+      experience: 'Veteran', traits: ['frontliner_defender', 'mortar_support', 'first_aid_kit', 'field_medic']
+    },
+    {
+      id: 'tpl_us_10aib', name: '10th Armored Infantry Battalion (Elements)', category: 'armored_vehicle', armorTier: 'light',
+      personnel: 460, maxOrg: 72, armorCount: 24, maxSupply: 55,
+      softAttack: 24, hardAttack: 11, defense: 26, piercing: 11, hardness: 12, recovery: 56,
+      experience: 'Seasoned', traits: ['frontliner_defender', 'first_aid_kit', 'grenade_assault']
+    },
+    {
+      id: 'tpl_us_704td', name: '704th Tank Destroyer Battalion', category: 'armored_vehicle', armorTier: 'light',
+      personnel: 640, maxOrg: 72, armorCount: 36, maxSupply: 58,
+      softAttack: 18, hardAttack: 38, defense: 24, piercing: 34, hardness: 14, recovery: 58,
+      experience: 'Veteran', traits: ['anti_tank', 'high_caliber', 'concealment_specialist', 'recon_support']
+    },
+    {
+      id: 'tpl_us_25cav', name: '25th Cavalry Reconnaissance Squadron', category: 'armored_vehicle', armorTier: 'light',
+      personnel: 680, maxOrg: 74, armorCount: 42, maxSupply: 60,
+      softAttack: 22, hardAttack: 14, defense: 24, piercing: 14, hardness: 12, recovery: 56,
+      experience: 'Veteran', traits: ['recon_support', 'air_support', 'supply_raiders']
+    },
+    {
+      id: 'tpl_us_66afa', name: '66th Armored Field Artillery Battalion', category: 'artillery', armorTier: 'light',
+      personnel: 520, maxOrg: 60, armorCount: 18, maxSupply: 65,
+      softAttack: 38, hardAttack: 18, defense: 16, piercing: 15, hardness: 10, recovery: 56,
+      experience: 'Veteran', traits: ['heavy_artillery_support', 'explosive_weapon']
+    },
+    {
+      id: 'tpl_us_94afa', name: '94th Armored Field Artillery Battalion', category: 'artillery', armorTier: 'light',
+      personnel: 520, maxOrg: 60, armorCount: 18, maxSupply: 65,
+      softAttack: 38, hardAttack: 18, defense: 16, piercing: 15, hardness: 10, recovery: 56,
+      experience: 'Veteran', traits: ['heavy_artillery_support', 'explosive_weapon']
+    },
+    {
+      id: 'tpl_us_177fag', name: '177th Field Artillery Group', category: 'artillery', armorTier: 'unarmored',
+      personnel: 640, maxOrg: 56, armorCount: 0, maxSupply: 70,
+      softAttack: 42, hardAttack: 20, defense: 13, piercing: 16, hardness: 2, recovery: 54,
+      experience: 'Seasoned', traits: ['heavy_artillery_support', 'high_caliber', 'logistic_support']
+    },
+    {
+      id: 'tpl_us_191fa', name: '191st Field Artillery Battalion', category: 'artillery', armorTier: 'unarmored',
+      personnel: 540, maxOrg: 56, armorCount: 0, maxSupply: 65,
+      softAttack: 40, hardAttack: 18, defense: 13, piercing: 15, hardness: 2, recovery: 54,
+      experience: 'Seasoned', traits: ['heavy_artillery_support', 'explosive_weapon']
+    },
+    {
+      id: 'tpl_us_24aeb', name: '24th Armored Engineer Battalion', category: 'armored_vehicle', armorTier: 'light',
+      personnel: 620, maxOrg: 68, armorCount: 28, maxSupply: 62,
+      softAttack: 21, hardAttack: 12, defense: 26, piercing: 10, hardness: 10, recovery: 58,
+      experience: 'Seasoned', traits: ['engineering_support', 'fortification_engineer', 'repair_crew', 'logistic_support']
+    },
+    {
+      id: 'tpl_us_166ecb', name: '166th Engineer Combat Battalion', category: 'infantry', armorTier: 'unarmored',
+      personnel: 610, maxOrg: 66, armorCount: 0, maxSupply: 58,
+      softAttack: 20, hardAttack: 11, defense: 26, piercing: 9, hardness: 2, recovery: 54,
+      experience: 'Regular', traits: ['engineering_support', 'fortification_engineer', 'explosive_weapon']
+    },
+    // --- Battle of Arracourt (18-29 Sep 1944): 5th Panzer Army (11th Panzer Div + 111th & 113th Panzer Brigades) ---
+    {
+      id: 'tpl_ger_15pzr', name: '15. Panzer-Regiment (11. Pz-Div)', category: 'tank', armorTier: 'medium',
+      personnel: 520, maxOrg: 72, armorCount: 32, maxSupply: 48,
+      softAttack: 28, hardAttack: 30, defense: 26, piercing: 28, hardness: 26, recovery: 52,
+      experience: 'Veteran', traits: ['high_caliber', 'explosive_weapon', 'repair_crew']
+    },
+    {
+      id: 'tpl_ger_111pzb', name: '111. Panzer-Brigade', category: 'tank', armorTier: 'heavy',
+      personnel: 1100, maxOrg: 46, armorCount: 85, maxSupply: 38,
+      softAttack: 28, hardAttack: 36, defense: 24, piercing: 34, hardness: 32, recovery: 40,
+      experience: 'Green', traits: ['high_caliber', 'explosive_weapon', 'tough_chassis']
+    },
+    {
+      id: 'tpl_ger_113pzb', name: '113. Panzer-Brigade', category: 'tank', armorTier: 'heavy',
+      personnel: 1100, maxOrg: 46, armorCount: 85, maxSupply: 38,
+      softAttack: 28, hardAttack: 36, defense: 24, piercing: 34, hardness: 32, recovery: 40,
+      experience: 'Green', traits: ['high_caliber', 'explosive_weapon', 'tough_chassis']
+    },
+    {
+      id: 'tpl_ger_110pzg', name: '110. Panzergrenadier-Regiment', category: 'armored_vehicle', armorTier: 'light',
+      personnel: 1450, maxOrg: 72, armorCount: 36, maxSupply: 50,
+      softAttack: 26, hardAttack: 12, defense: 27, piercing: 11, hardness: 12, recovery: 52,
+      experience: 'Veteran', traits: ['frontliner_defender', 'grenade_assault', 'first_aid_kit']
+    },
+    {
+      id: 'tpl_ger_111pzg', name: '111. Panzergrenadier-Regiment', category: 'armored_vehicle', armorTier: 'light',
+      personnel: 1400, maxOrg: 68, armorCount: 32, maxSupply: 50,
+      softAttack: 25, hardAttack: 11, defense: 26, piercing: 10, hardness: 12, recovery: 50,
+      experience: 'Seasoned', traits: ['frontliner_defender', 'mortar_support', 'first_aid_kit']
+    },
+    {
+      id: 'tpl_ger_61pzj', name: '61. Panzerjäger-Abteilung', category: 'armored_vehicle', armorTier: 'medium',
+      personnel: 480, maxOrg: 64, armorCount: 24, maxSupply: 48,
+      softAttack: 16, hardAttack: 34, defense: 22, piercing: 32, hardness: 22, recovery: 48,
+      experience: 'Seasoned', traits: ['anti_tank', 'high_caliber']
+    },
+    {
+      id: 'tpl_ger_11aufkl', name: '11. Aufklärungs-Abteilung', category: 'armored_vehicle', armorTier: 'light',
+      personnel: 520, maxOrg: 70, armorCount: 28, maxSupply: 48,
+      softAttack: 20, hardAttack: 10, defense: 22, piercing: 10, hardness: 10, recovery: 52,
+      experience: 'Veteran', traits: ['recon_support', 'rangers']
+    },
+    {
+      id: 'tpl_ger_119pza', name: '119. Panzer-Artillerie-Regiment', category: 'artillery', armorTier: 'light',
+      personnel: 980, maxOrg: 56, armorCount: 18, maxSupply: 54,
+      softAttack: 36, hardAttack: 17, defense: 14, piercing: 14, hardness: 8, recovery: 50,
+      experience: 'Seasoned', traits: ['heavy_artillery_support', 'explosive_weapon']
+    },
+    {
+      id: 'tpl_ger_277flak', name: '277. Heeres-Flak-Battalion', category: 'infantry', armorTier: 'unarmored',
+      personnel: 540, maxOrg: 58, armorCount: 0, maxSupply: 50,
+      softAttack: 18, hardAttack: 26, defense: 20, piercing: 26, hardness: 2, recovery: 48,
+      experience: 'Regular', traits: ['aa_gun', 'anti_tank']
+    },
+    {
+      id: 'tpl_ger_209pio', name: '209. Panzer-Pioneer-Battalion', category: 'armored_vehicle', armorTier: 'light',
+      personnel: 600, maxOrg: 66, armorCount: 18, maxSupply: 50,
+      softAttack: 21, hardAttack: 12, defense: 25, piercing: 10, hardness: 10, recovery: 50,
+      experience: 'Seasoned', traits: ['engineering_support', 'explosive_weapon', 'repair_crew']
+    },
+    {
+      id: 'tpl_ger_89nach', name: '89. Panzer-Nachrichten-Battalion', category: 'infantry', armorTier: 'unarmored',
+      personnel: 380, maxOrg: 60, armorCount: 0, maxSupply: 56,
+      softAttack: 12, hardAttack: 4, defense: 16, piercing: 4, hardness: 2, recovery: 50,
+      experience: 'Regular', traits: ['recon_support', 'logistic_support']
+    },
+    {
+      id: 'tpl_ger_61feld', name: '61. Feldersatz-Battalion', category: 'infantry', armorTier: 'unarmored',
+      personnel: 680, maxOrg: 56, armorCount: 0, maxSupply: 48,
+      softAttack: 16, hardAttack: 5, defense: 20, piercing: 5, hardness: 2, recovery: 52,
+      experience: 'Trained', traits: ['field_medic', 'desperate_defense']
     },
     {
       id: 'tpl_kaiju_monster', name: 'Behemoth Monster (Special)', category: 'tank', armorTier: 'super',
       personnel: 350, maxOrg: 100, armorCount: 1, maxSupply: 100,
-      softAttack: 45, hardAttack: 45, defense: 35, piercing: 38, hardness: 40,
+      softAttack: 45, hardAttack: 45, defense: 35, piercing: 38, hardness: 40, recovery: 0,
       experience: 'Elite', traits: ['monster_unit', 'high_caliber', 'explosive_weapon']
     }
   ];

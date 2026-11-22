@@ -78,6 +78,7 @@ window.IronDivision = window.IronDivision || {};
       defense: Number(template.defense),
       piercing: Number(template.piercing),
       hardness: Number(template.hardness),
+      recovery: (template.recovery !== undefined && template.recovery !== null) ? Number(template.recovery) : 50,
       experience: template.experience || 'Regular',
       traits: Array.from(traitSet),
 
@@ -1040,7 +1041,13 @@ window.IronDivision = window.IronDivision || {};
     }
 
     // 3. Frontline Unit Loop
-    for (const u of sideState.units.filter(isUnitActive)) {
+    const activeFrontUnits = sideState.units.filter(isUnitActive);
+    const hasBrigadeLogistics = activeFrontUnits.some(unit => (unit.traits || []).includes('logistic_support'));
+    let brigadeResupplyTotal = 0;
+    let brigadeResupplyCount = 0;
+    let brigadeDepotDryWarned = false;
+
+    for (const u of activeFrontUnits) {
       const unitTraits = u.traits.map(getTraitById).filter(Boolean);
       const expObj = D.EXPERIENCE_TIERS[u.experience] || D.EXPERIENCE_TIERS.Regular;
 
@@ -1070,13 +1077,32 @@ window.IronDivision = window.IronDivision || {};
           const netDrain = Math.max(0, drain - actualRegenDrawn);
           u.supply = H.clamp(u.supply - netDrain, 0, u.maxSupply);
 
+          // Brigade-Wide Frontline Depot Resupply: units below 60% supply draw from Side Depot
+          if (u.supply < u.maxSupply * 0.60) {
+            if (sideState.supplyDepot > 0) {
+              const maxBrigadeDraw = hasBrigadeLogistics ? 4 : 2;
+              const needed = Math.max(0, u.maxSupply - u.supply);
+              const drawn = Math.min(sideState.supplyDepot, maxBrigadeDraw, needed);
+              if (drawn > 0) {
+                sideState.supplyDepot = Math.max(0, sideState.supplyDepot - drawn);
+                u.supply = H.clamp(u.supply + drawn, 0, u.maxSupply);
+                brigadeResupplyTotal += drawn;
+                brigadeResupplyCount++;
+              }
+            } else if (!brigadeDepotDryWarned) {
+              brigadeDepotDryWarned = true;
+              H.addLog('support', `[WARN] [Depot Exhausted] ${H.getSideName(side)}'s Supply Depot is empty — frontline units cannot draw brigade resupply!`);
+            }
+          }
+
           // Compound Hazard: Heatstroke & Dust (Infantry Org attrition)
           if (envFx.hasHeatstroke && u.category === 'infantry') {
             u.org = Math.max(0, u.org - 2);
             H.addLog('support', `[WTH] [Heatstroke] ${u.name} suffers -2 Org from extreme desert heat.`);
           }
           // Compound Hazard: Deep Freeze (Cold-weather AFV breakdown below 30% supply)
-          if (envFx.hasDeepFreeze && u.armor > 0 && (u.supply / Math.max(1, u.maxSupply)) < 0.30 && Math.random() < 0.15) {
+          const freezeRisk = unitTraits.some(t => t.isSimpleEngineering || t.id === 'simple_engineering') ? 0.07 : 0.15;
+          if (envFx.hasDeepFreeze && u.armor > 0 && (u.supply / Math.max(1, u.maxSupply)) < 0.30 && Math.random() < freezeRisk) {
             u.armor = Math.max(0, u.armor - 1);
             u.recoverableArmor = (u.recoverableArmor || 0) + 1;
             H.addLog('support', `[WTH] [Deep Freeze Breakdown] ${u.name} loses 1 AFV to frozen mechanics (recoverable, ${u.armor}/${u.maxArmor} operational).`);
@@ -1181,34 +1207,38 @@ window.IronDivision = window.IronDivision || {};
         }
       }
 
-      // Field Medic Regeneration
+      // Field Medic Regeneration (revamped: 1+d3 WIA healed at >=25% supply)
       if (unitTraits.some(t => t.isFieldMedic) && u.wounded > 0) {
-        const healed = Math.min(u.wounded, H.rollDie(3));
-        u.wounded -= healed;
-        u.personnel = Math.min(u.maxPersonnel, u.personnel + healed);
-        if (healed > 0) {
-          H.addLog('support', `[MED] [Field Medic] ${u.name} heals ${healed} wounded back to active duty (${u.personnel} active).`);
+        const medSupOk = u.isMonster || u.isZombie || ((u.supply / Math.max(1, u.maxSupply)) >= 0.25);
+        if (medSupOk) {
+          const healed = Math.min(u.wounded, 1 + H.rollDie(3));
+          u.wounded -= healed;
+          u.personnel = Math.min(u.maxPersonnel, u.personnel + healed);
+          if (healed > 0) {
+            H.addLog('support', `[MED] [Field Medic] ${u.name} stabilizes and returns ${healed} wounded to active duty (${u.personnel} active).`);
+          }
         }
       }
 
-      // Died of Wounds (DOW)
+      // Died of Wounds (DOW) — realistic per-round attrition scaled to 30-min rounds
       if (ID.state.battle.round >= 4 && u.wounded > 0 && !u.isMonster && !u.isZombie) {
         const supRatio = u.supply / Math.max(1, u.maxSupply);
         let dowRate = 0;
 
-        if (supRatio < 0.20) dowRate += 5;
-        else if (supRatio < 0.50) dowRate += 2;
-        if (u.supply <= 0) dowRate += 5;
+        if (u.supply <= 0) dowRate += 4;
+        else if (supRatio < 0.20) dowRate += 2;
+        else if (supRatio < 0.50) dowRate += 1;
 
         const dowEnvFx = H.getActiveEnvironmentEffects ? H.getActiveEnvironmentEffects() : { extraDowRate: 0 };
-        if (ID.state.environment.weather === 'Snowy') dowRate += 2;
+        if (ID.state.environment.weather === 'Snowy') dowRate += 1;
         if (ID.state.environment.weather === 'HeatWaves' || ID.state.environment.terrain === 'Marsh') dowRate += 1;
-        if (dowEnvFx.extraDowRate) dowRate += dowEnvFx.extraDowRate;
+        if (dowEnvFx.extraDowRate) dowRate += Math.ceil(dowEnvFx.extraDowRate / 2);
 
-        if (u.traits.includes('first_aid_kit')) dowRate -= 4;
-        if (u.traits.includes('field_medic')) dowRate -= 3;
+        if ((u.recovery !== undefined ? Number(u.recovery) : 50) >= 65) dowRate -= 1;
+        if (u.traits.includes('first_aid_kit')) dowRate -= 2;
+        if (u.traits.includes('field_medic')) dowRate -= 2;
 
-        const finalRate = H.clamp(dowRate, 0, 15);
+        const finalRate = H.clamp(dowRate, 0, 8);
 
         if (finalRate > 0) {
           const expected = u.wounded * (finalRate / 100);
@@ -1226,9 +1256,9 @@ window.IronDivision = window.IronDivision || {};
         }
       }
 
-      // Field Repair Crew
-      if (ID.state.battle.round % 3 === 0 && unitTraits.some(t => t.isRepairCrew) && u.recoverableArmor > 0) {
-        const hasSupplyToRepair = u.isMonster || u.isZombie || (u.supply >= u.maxSupply * 0.30);
+      // Field Repair Crew (revamped: every 2 rounds if Supply >= 25%)
+      if (ID.state.battle.round % 2 === 0 && unitTraits.some(t => t.isRepairCrew) && u.recoverableArmor > 0) {
+        const hasSupplyToRepair = u.isMonster || u.isZombie || (u.supply >= u.maxSupply * 0.25);
         if (hasSupplyToRepair) {
           const hasSimpleEng = unitTraits.some(t => t.id === 'simple_engineering');
           const repCostReduction = hasSimpleEng ? 1 : 0;
@@ -1252,6 +1282,10 @@ window.IronDivision = window.IronDivision || {};
       }
 
       checkAndMarkUnitDefeat(u);
+    }
+
+    if (brigadeResupplyTotal > 0) {
+      H.addLog('support', `[LOG] [Brigade Resupply] ${H.getSideName(side)} Depot distributes +${brigadeResupplyTotal} supply across ${brigadeResupplyCount} frontline unit${brigadeResupplyCount === 1 ? '' : 's'}${hasBrigadeLogistics ? ' (Logistics Train)' : ''} (Depot: ${sideState.supplyDepot}/${sideState.maxSupplyDepot}).`);
     }
   }
 
@@ -1540,9 +1574,10 @@ window.IronDivision = window.IronDivision || {};
     target.armor -= actualDisabled;
 
     const opMods = H.getTerrainOperationalMods(target.category);
+    const baseArmorRec = (target.recovery !== undefined && target.recovery !== null) ? Number(target.recovery) : 50;
     const armorRecBonus = getUnitArmorRecoveryBonus(target) + opMods.vehicleRecMod;
     const rawD50 = H.rollDie(50);
-    const recRoll = 50 + rawD50;
+    const recRoll = baseArmorRec + rawD50;
     const totalRecPct = H.clamp(recRoll + armorRecBonus, 5, 95);
     const recVehicles = Math.round(actualDisabled * (totalRecPct / 100));
     const unrecVehicles = actualDisabled - recVehicles;
@@ -1550,9 +1585,14 @@ window.IronDivision = window.IronDivision || {};
     target.recoverableArmor += recVehicles;
     target.unrecoverableArmor += unrecVehicles;
 
+    const hasToughChassis = (target.traits || []).some(tid => {
+      const t = getTraitById(tid);
+      return t && (t.isToughChassis || t.id === 'tough_chassis');
+    });
     let crewDowned = 0;
     for (let i = 0; i < unrecVehicles; i++) crewDowned += (1 + H.rollDie(4));
     for (let i = 0; i < recVehicles; i++) crewDowned += H.rollDie(2);
+    if (hasToughChassis && crewDowned > 1) crewDowned = Math.max(1, crewDowned - 1);
 
     let vehOrgShock = 0;
     if (!target.isMonster && !target.isZombie) {
@@ -1572,7 +1612,7 @@ window.IronDivision = window.IronDivision || {};
 
     H.addLog(
       'armor',
-      `[AFV] [${sourceLabel} Armor Hit] ${target.name} (${bracketDesc}): ${actualDisabled} vehicles knocked out! Recovery (50+d50[${rawD50}])=${recRoll}+${armorRecBonus}=${totalRecPct}% -> ` +
+      `[AFV] [${sourceLabel} Armor Hit] ${target.name} (${bracketDesc}): ${actualDisabled} vehicles knocked out! Recovery (${baseArmorRec}+d50[${rawD50}])=${recRoll}+${armorRecBonus}=${totalRecPct}% -> ` +
       `${recVehicles} Recoverable, ${unrecVehicles} Destroyed (${target.armor}/${target.maxArmor} active) | Crew Casualties: ${crewDowned} downed, -${vehOrgShock} Org shock!`
     );
 
@@ -2305,8 +2345,9 @@ window.IronDivision = window.IronDivision || {};
     }
 
     const isZombie = defender.isZombie;
-    const rawRecRoll = isZombie ? H.rollDie(100) : (50 + H.rollDie(50));
-    const baseRec = rawRecRoll;
+    const baseUnitRec = (defender.recovery !== undefined && defender.recovery !== null) ? Number(defender.recovery) : 50;
+    const recDieRoll = isZombie ? H.rollDie(100) : H.rollDie(50);
+    const baseRec = isZombie ? recDieRoll : (baseUnitRec + recDieRoll);
     const defTraits = defender.traits.map(getTraitById).filter(Boolean);
     const expObj = D.EXPERIENCE_TIERS[defender.experience] || D.EXPERIENCE_TIERS.Regular;
 
@@ -2315,6 +2356,9 @@ window.IronDivision = window.IronDivision || {};
     let recMod = (expObj.recBonus || 0) + defTraits.reduce((s, t) => s + (t.recBonus || 0), 0) + cmdRecBonus + opMods.triageMod;
     if (hasHighCal) recMod -= 10;
     if (hasExplosive) recMod -= 15;
+    if ((hasHighCal || hasExplosive) && defTraits.some(t => t.isFirstAidKit || t.id === 'first_aid_kit')) {
+      recMod += 5;
+    }
 
     let finalRecScore = H.clamp(baseRec + recMod, 5, 95);
     if (defender.isZombie && (hasHighCal || hasExplosive)) {
@@ -2328,10 +2372,10 @@ window.IronDivision = window.IronDivision || {};
 
     if (defender.isZombie) {
       defender.personnel += woundedCount;
-      H.addLog('damage', `[BIO] [Zombie Reanimation] Recovery Roll (d100[${rawRecRoll}])+${recMod}=${finalRecScore}: ${deadCount} permanently destroyed, while ${woundedCount} rise back into battle! (${defender.personnel} active)`);
+      H.addLog('damage', `[BIO] [Zombie Reanimation] Recovery Roll (d100[${recDieRoll}])+${recMod}=${finalRecScore}: ${deadCount} permanently destroyed, while ${woundedCount} rise back into battle! (${defender.personnel} active)`);
     } else {
       defender.wounded += woundedCount;
-      H.addLog('damage', `[MED] [Casualty Recovery] ${defender.name} (50+d50[${rawRecRoll - 50}])=${baseRec}+${recMod}=${finalRecScore}: ${deadCount} KIA (Dead), ${woundedCount} WIA (Wounded) (${defender.personnel}/${defender.maxPersonnel} active).`);
+      H.addLog('damage', `[MED] [Casualty Recovery] ${defender.name} (${baseUnitRec}+d50[${recDieRoll}])=${baseRec}${recMod >= 0 ? '+' : ''}${recMod}=${finalRecScore}: ${deadCount} KIA (Dead), ${woundedCount} WIA (Wounded) (${defender.personnel}/${defender.maxPersonnel} active).`);
     }
 
     if (!defender.isMonster && !defender.isZombie) {
@@ -2405,6 +2449,10 @@ window.IronDivision = window.IronDivision || {};
         orgDmg = Math.max(0, orgDmg - defTactic.flatOrgReduction);
       }
 
+      if (orgDmg > 1 && woundedCount > 0 && defTraits.some(t => t.isFieldMedic || t.id === 'field_medic')) {
+        orgDmg -= 1;
+        orgReasons.push('Field Medic Triage (-1)');
+      }
       defender.org = Math.max(0, defender.org - orgDmg);
       H.addLog('damage', `[ORG] [Org Damage] ${defender.name} loses -${orgDmg} Organization (${orgReasons.join(', ')}) -> ${defender.org}/${defender.maxOrg} Org remaining.`);
     }

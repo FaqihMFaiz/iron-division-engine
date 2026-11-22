@@ -332,11 +332,35 @@
                   <div id="force-ratio-bar-a" class="bg-[#4e8ec4] h-full bar-fill" style="width: 50%"></div>
                   <div id="force-ratio-bar-b" class="bg-[#c2524c] h-full bar-fill" style="width: 50%"></div>
                 </div>
-                <div class="flex justify-end pt-1">
-                  <button type="button" onclick="loadDefaultSkirmish()" class="font-mono text-[10px] uppercase tracking-wider text-[#9ca69a] hover:text-[#e6c46d] px-2 py-0.5 bg-[#151a16] border border-[#2c342e]">
-                    LOAD SAN MARINO SCENARIO
+                <div class="flex flex-wrap items-center justify-end gap-1.5 pt-1">
+                  <span class="font-mono text-[9.5px] uppercase tracking-wider text-[#6e7a6d]">SCENARIOS:</span>
+                  <button type="button" onclick="loadArracourtScenario()" class="font-mono text-[10px] uppercase tracking-wider text-[#e6c46d] hover:text-white px-2 py-0.5 bg-[#1c231c] border border-[#4a5a44]" title="Load Battle of Arracourt (18 SEP 1944) — Default">
+                    ARRACOURT (1944)
+                  </button>
+                  <button type="button" onclick="loadSanMarinoScenario()" class="font-mono text-[10px] uppercase tracking-wider text-[#9ca69a] hover:text-[#e6c46d] px-2 py-0.5 bg-[#151a16] border border-[#2c342e]" title="Load Battle of San Marino (17 SEP 1944)">
+                    SAN MARINO (1944)
                   </button>
                 </div>
+              </div>
+            </div>
+
+            <!-- Collapsible 2D Tactical Sector Map Canvas -->
+            <div id="tactical-sector-panel" class="bg-slate-950 border border-slate-800 p-2.5">
+              <div class="flex items-center justify-between gap-2 pb-1.5 border-b border-slate-800">
+                <div class="flex items-center gap-2 min-w-0">
+                  <span class="text-[10px] font-mono font-bold uppercase tracking-widest text-[#c8a24b]">2D TACTICAL SECTOR</span>
+                  <span id="sector-terrain-tag" class="text-[9.5px] font-mono uppercase text-[#8b968a] truncate">HILLS // NORMAL</span>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                  <span class="hidden sm:inline-flex items-center gap-1.5 text-[9px] font-mono text-[#7c877b]">
+                    <span class="inline-block w-2 h-2 border border-[#5ba0d9] bg-[#162738]"></span>A
+                    <span class="inline-block w-2 h-2 border border-[#d4605a] bg-[#361716]"></span>B
+                  </span>
+                  <button type="button" onclick="toggleSectionBox('tactical-sector-body', this)" aria-expanded="true" class="mil-btn px-2 py-0.5 bg-[#1c221d] border border-[#3a453c] text-[#c8d1c7] font-mono text-[9.5px]" title="Collapse / Expand 2D Tactical Sector">▲</button>
+                </div>
+              </div>
+              <div id="tactical-sector-body" class="pt-2">
+                <div id="tactical-sector-canvas" class="w-full overflow-hidden border border-[#232b24] bg-[#070a08]"></div>
               </div>
             </div>
 
@@ -501,6 +525,10 @@
               <input type="number" id="unit-hardness" min="0" max="500" value="4" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
             </div>
             <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase" title="Base % added to d50 casualty &amp; vehicle recovery rolls (0–95)">Base Recovery (%)</label>
+              <input type="number" id="unit-recovery" min="0" max="95" value="50" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
+            </div>
+            <div>
               <label class="block text-slate-400 mb-1 font-mono uppercase">Experience Tier</label>
               <select id="unit-exp" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-white">
                 <option value="Green">Green (-10% Atk/Def, -10 Ret, -1 Org/t, d2 Repair)</option>
@@ -546,6 +574,19 @@
             </div>
           </div>
           <div id="box-unit-library">
+            <!-- ORBAT Category Filter Bar -->
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3 pb-2.5 border-b border-slate-800/80">
+              <div class="flex flex-wrap items-center gap-1" id="orbat-cat-pills" role="tablist" aria-label="Filter ORBAT by Category">
+                <button type="button" data-cat="all" onclick="setOrbatCategoryFilter('all')" class="orbat-filter-pill is-active px-2.5 py-1 font-mono text-[10.5px] font-bold uppercase">ALL</button>
+                <button type="button" data-cat="infantry" onclick="setOrbatCategoryFilter('infantry')" class="orbat-filter-pill px-2.5 py-1 font-mono text-[10.5px] font-bold uppercase">INFANTRY</button>
+                <button type="button" data-cat="armor" onclick="setOrbatCategoryFilter('armor')" class="orbat-filter-pill px-2.5 py-1 font-mono text-[10.5px] font-bold uppercase">ARMOR</button>
+                <button type="button" data-cat="artillery" onclick="setOrbatCategoryFilter('artillery')" class="orbat-filter-pill px-2.5 py-1 font-mono text-[10.5px] font-bold uppercase">ARTILLERY</button>
+              </div>
+              <div class="flex items-center gap-2">
+                <span id="orbat-lib-count" class="font-mono text-[10px] text-[#8b968a] uppercase">0 UNITS</span>
+                <input type="text" id="orbat-lib-search" oninput="renderUnitDesigner()" placeholder="Filter units..." class="w-36 sm:w-44 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-[11px] font-mono text-white">
+              </div>
+            </div>
             <div id="unit-templates-grid" class="grid grid-cols-1 md:grid-cols-2 gap-3 items-start max-h-[680px] overflow-y-auto custom-scroll pr-1"></div>
           </div>
         </div>
@@ -704,6 +745,19 @@
             <button type="button" onclick="toggleSectionBox('box-trait-directory', this)" aria-expanded="true" class="mil-btn px-2 py-0.5 bg-[#1c221d] border border-[#3a453c] text-[#c8d1c7] font-mono text-[10px]" title="Collapse / Expand">▲</button>
           </div>
           <div id="box-trait-directory">
+            <!-- Traits Category Filter Bar -->
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3 pb-2.5 border-b border-slate-800/80">
+              <div class="flex flex-wrap items-center gap-1" id="traits-cat-pills" role="tablist" aria-label="Filter Traits by Category">
+                <button type="button" data-cat="all" onclick="setTraitsCategoryFilter('all')" class="orbat-filter-pill is-active px-2.5 py-1 font-mono text-[10.5px] font-bold uppercase">ALL</button>
+                <button type="button" data-cat="combat" onclick="setTraitsCategoryFilter('combat')" class="orbat-filter-pill px-2.5 py-1 font-mono text-[10.5px] font-bold uppercase">COMBAT</button>
+                <button type="button" data-cat="support" onclick="setTraitsCategoryFilter('support')" class="orbat-filter-pill px-2.5 py-1 font-mono text-[10.5px] font-bold uppercase">SUPPORT</button>
+                <button type="button" data-cat="special" onclick="setTraitsCategoryFilter('special')" class="orbat-filter-pill px-2.5 py-1 font-mono text-[10.5px] font-bold uppercase">SPECIAL</button>
+              </div>
+              <div class="flex items-center gap-2">
+                <span id="traits-dir-count" class="font-mono text-[10px] text-[#8b968a] uppercase">0 TRAITS</span>
+                <input type="text" id="traits-dir-search" oninput="renderTraitsTab()" placeholder="Filter traits..." class="w-36 sm:w-44 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-[11px] font-mono text-white">
+              </div>
+            </div>
             <div id="traits-list-container" class="grid grid-cols-1 md:grid-cols-2 gap-2.5 items-start max-h-[680px] overflow-y-auto custom-scroll pr-1"></div>
           </div>
         </div>
@@ -804,6 +858,19 @@
             </div>
           </div>
           <div id="box-cmd-roster">
+            <!-- Command HQ Doctrine Filter Bar -->
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3 pb-2.5 border-b border-slate-800/80">
+              <div class="flex flex-wrap items-center gap-1" id="cmd-cat-pills" role="tablist" aria-label="Filter Commanders by Doctrine">
+                <button type="button" data-cat="all" onclick="setCommandersFilter('all')" class="orbat-filter-pill is-active px-2.5 py-1 font-mono text-[10.5px] font-bold uppercase">ALL</button>
+                <button type="button" data-cat="Aggressive" onclick="setCommandersFilter('Aggressive')" class="orbat-filter-pill px-2.5 py-1 font-mono text-[10.5px] font-bold uppercase">AGGRESSIVE</button>
+                <button type="button" data-cat="Balanced" onclick="setCommandersFilter('Balanced')" class="orbat-filter-pill px-2.5 py-1 font-mono text-[10.5px] font-bold uppercase">BALANCED</button>
+                <button type="button" data-cat="Cautious" onclick="setCommandersFilter('Cautious')" class="orbat-filter-pill px-2.5 py-1 font-mono text-[10.5px] font-bold uppercase">CAUTIOUS</button>
+              </div>
+              <div class="flex items-center gap-2">
+                <span id="cmd-roster-count" class="font-mono text-[10px] text-[#8b968a] uppercase">0 GENERALS</span>
+                <input type="text" id="cmd-roster-search" oninput="renderCommandersTab()" placeholder="Filter generals..." class="w-36 sm:w-44 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-[11px] font-mono text-white">
+              </div>
+            </div>
             <div id="commanders-list-container" class="grid grid-cols-1 md:grid-cols-2 gap-3 items-start max-h-[680px] overflow-y-auto custom-scroll pr-1"></div>
           </div>
         </div>
@@ -1147,7 +1214,7 @@
         </div>
 
         <ul class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 font-mono text-[11px] text-[#2c332c]">
-          <li class="px-2 py-1 bg-[#f7f3e8] border border-[#cfc7b2]"><strong>DEFAULT OP:</strong> Battle of San Marino (17 SEP 1944)</li>
+          <li class="px-2 py-1 bg-[#f7f3e8] border border-[#cfc7b2]"><strong>DEFAULT OP:</strong> Battle of Arracourt (18 SEP 1944)</li>
           <li class="px-2 py-1 bg-[#f7f3e8] border border-[#cfc7b2]"><strong>CUSTOMIZE:</strong> ORBAT, Traits, Generals &amp; Terrain</li>
           <li class="px-2 py-1 bg-[#f7f3e8] border border-[#cfc7b2]"><strong>GM TOOLS:</strong> Live Adjustments &amp; 1-Round Undo</li>
           <li class="px-2 py-1 bg-[#f7f3e8] border border-[#cfc7b2]"><strong>EXPORT:</strong> Preset JSON &amp; Printable A4 AAR</li>

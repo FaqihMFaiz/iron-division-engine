@@ -487,13 +487,41 @@ window.IronDivision = window.IronDivision || {};
     }
   }
 
-  function loadDefaultSkirmish() {
+  function syncBuiltInDefinitions() {
+    (D.DEFAULT_COMMANDERS || []).forEach(dc => {
+      if (!ID.state.commanders.some(c => c.id === dc.id)) {
+        ID.state.commanders.push(structuredClone(dc));
+      }
+    });
+    (D.DEFAULT_UNIT_TEMPLATES || []).forEach(dt => {
+      const existing = ID.state.unitTemplates.find(u => u.id === dt.id);
+      if (!existing) {
+        ID.state.unitTemplates.push(structuredClone(dt));
+      } else if (existing.recovery === undefined || existing.recovery === null) {
+        existing.recovery = dt.recovery !== undefined ? dt.recovery : 50;
+      }
+    });
+    (ID.state.unitTemplates || []).forEach(u => {
+      if (u.recovery === undefined || u.recovery === null) u.recovery = 50;
+    });
+    const revampedTraitIds = new Set(['field_medic', 'first_aid_kit', 'repair_crew', 'redundancy', 'tough_chassis', 'simple_engineering']);
+    (D.DEFAULT_TRAITS || []).forEach(dt => {
+      const idx = ID.state.traits.findIndex(t => t.id === dt.id);
+      if (idx < 0) {
+        ID.state.traits.push(structuredClone(dt));
+      } else if (revampedTraitIds.has(dt.id)) {
+        ID.state.traits[idx] = structuredClone(dt);
+      }
+    });
+  }
+
+  function loadScenarioByConfig(cfg) {
     stopAutoRun();
     ID.state.battle.sideA.units = [];
     ID.state.battle.sideB.units = [];
     ID.state.battle.initialSnapshot = null;
     ID.state.battle.round = 1;
-    ID.state.battle.attackerSide = 'A';
+    ID.state.battle.attackerSide = cfg.attackerSide || 'A';
     ID.state.battle.isOver = false;
     ID.state.battle.winner = null;
     ID.state.battle.afterActionReport = null;
@@ -501,54 +529,33 @@ window.IronDivision = window.IronDivision || {};
     ID.state.battle.history = [];
     ID.state.battle.logs = [];
 
-    // Ensure built-in Battle of San Marino templates & commanders exist even if older localStorage was loaded
-    (D.DEFAULT_COMMANDERS || []).forEach(dc => {
-      if (!ID.state.commanders.some(c => c.id === dc.id)) {
-        ID.state.commanders.push(structuredClone(dc));
-      }
-    });
-    (D.DEFAULT_UNIT_TEMPLATES || []).forEach(dt => {
-      if (!ID.state.unitTemplates.some(u => u.id === dt.id)) {
-        ID.state.unitTemplates.push(structuredClone(dt));
-      }
-    });
+    syncBuiltInDefinitions();
 
-    // Battle of San Marino (17 September 1944): British Indian Army vs. Wehrmacht
-    ID.state.environment.terrain = 'Hills';
-    ID.state.environment.feature = 'Normal';
-    ID.state.environment.weather = 'Sunny';
-    ID.state.environment.battleYear = 1944;
-    ID.state.environment.battleMonth = 9;
-    ID.state.environment.battleDay = 17;
-    ID.state.environment.battleHour = 6;
-    ID.state.environment.battleMinute = 0;
-    ID.state.environment.roundDurationValue = 30;
-    ID.state.environment.roundDurationUnit = 'minutes';
-    ID.state.environment.theatreAttackerSide = 'A';
+    ID.state.environment.terrain = cfg.terrain || 'Hills';
+    ID.state.environment.feature = cfg.feature || 'Normal';
+    ID.state.environment.weather = cfg.weather || 'Sunny';
+    ID.state.environment.dynamicWeather = Boolean(cfg.dynamicWeather);
+    ID.state.environment.battleYear = cfg.year || 1944;
+    ID.state.environment.battleMonth = cfg.month || 9;
+    ID.state.environment.battleDay = cfg.day || 18;
+    ID.state.environment.battleHour = cfg.hour !== undefined ? cfg.hour : 7;
+    ID.state.environment.battleMinute = cfg.minute !== undefined ? cfg.minute : 0;
+    ID.state.environment.roundDurationValue = cfg.roundDurationValue || 30;
+    ID.state.environment.roundDurationUnit = cfg.roundDurationUnit || 'minutes';
+    ID.state.environment.theatreAttackerSide = cfg.theatreAttackerSide || cfg.attackerSide || 'A';
 
-    ID.state.battle.sideA.name = 'BRITISH INDIAN ARMY';
-    ID.state.battle.sideA.commanderId = 'cmd_holworthy';
-    ID.state.battle.sideB.name = 'WEHRMACHT';
-    ID.state.battle.sideB.commanderId = 'cmd_hoppe';
-
-    const pickA = [
-      'tpl_ind_hq11', 'tpl_ind_cameron', 'tpl_ind_mahratta',
-      'tpl_ind_rajputana', 'tpl_ind_rajput', 'tpl_ind_ffr',
-      'tpl_ind_punjab', 'tpl_ind_gurkha', 'tpl_ind_yugoslav'
-    ];
-    const pickB = [
-      'tpl_ger_gr992', 'tpl_ger_gr993', 'tpl_ger_gr994',
-      'tpl_ger_ar278', 'tpl_ger_fus278', 'tpl_ger_pzj278',
-      'tpl_ger_eng278', 'tpl_ger_sig278'
-    ];
+    ID.state.battle.sideA.name = cfg.sideAName;
+    ID.state.battle.sideA.commanderId = cfg.sideACmd;
+    ID.state.battle.sideB.name = cfg.sideBName;
+    ID.state.battle.sideB.commanderId = cfg.sideBCmd;
 
     const createUnit = (ID.Combat && ID.Combat.createCombatUnitInstance) ? ID.Combat.createCombatUnitInstance : (tpl, s) => ({ ...tpl, side: s });
 
-    pickA.forEach(id => {
+    (cfg.pickA || []).forEach(id => {
       const tpl = ID.state.unitTemplates.find(t => t.id === id);
       if (tpl) ID.state.battle.sideA.units.push(createUnit(tpl, 'A'));
     });
-    pickB.forEach(id => {
+    (cfg.pickB || []).forEach(id => {
       const tpl = ID.state.unitTemplates.find(t => t.id === id);
       if (tpl) ID.state.battle.sideB.units.push(createUnit(tpl, 'B'));
     });
@@ -560,11 +567,71 @@ window.IronDivision = window.IronDivision || {};
       ID.state.battle.sideB.supplyDepot = ID.state.battle.sideB.maxSupplyDepot;
     }
 
-    H.addLog('rolls', `[OP] Loaded Sample Combined-Arms Battle: Side A (Medium Tank, Mechanized, Artillery) vs Side B (Heavy Infantry, Anti-Tank, Heavy Tank).`);
+    H.addLog('rolls', cfg.loadLog);
 
     if (ID.UI) {
       ID.UI.renderBattlefield(true);
     }
+  }
+
+  function loadArracourtScenario() {
+    loadScenarioByConfig({
+      terrain: 'Hills',
+      feature: 'Normal',
+      weather: 'Foggy',
+      dynamicWeather: true,
+      year: 1944, month: 9, day: 18, hour: 7, minute: 0,
+      roundDurationValue: 30, roundDurationUnit: 'minutes',
+      attackerSide: 'B',
+      theatreAttackerSide: 'B',
+      sideAName: 'U.S. 4TH ARMORED DIV (CCA)',
+      sideACmd: 'cmd_clarke',
+      sideBName: '5TH PANZER ARMY (WEHRMACHT)',
+      sideBCmd: 'cmd_manteuffel',
+      pickA: [
+        'tpl_us_37tk', 'tpl_us_35tk', 'tpl_us_53aib', 'tpl_us_10aib',
+        'tpl_us_704td', 'tpl_us_25cav', 'tpl_us_66afa', 'tpl_us_94afa',
+        'tpl_us_177fag', 'tpl_us_191fa', 'tpl_us_24aeb', 'tpl_us_166ecb'
+      ],
+      pickB: [
+        'tpl_ger_15pzr', 'tpl_ger_111pzb', 'tpl_ger_113pzb', 'tpl_ger_110pzg',
+        'tpl_ger_111pzg', 'tpl_ger_61pzj', 'tpl_ger_11aufkl', 'tpl_ger_119pza',
+        'tpl_ger_277flak', 'tpl_ger_209pio', 'tpl_ger_89nach', 'tpl_ger_61feld'
+      ],
+      loadLog: '[OP] Loaded Battle of Arracourt (18 SEP 1944, Lorraine): 5th Panzer Army (Gen. Hasso von Manteuffel) assaults U.S. 4th Armored Division CCA (Col. Bruce C. Clarke) in morning fog.'
+    });
+  }
+
+  function loadSanMarinoScenario() {
+    loadScenarioByConfig({
+      terrain: 'Hills',
+      feature: 'Normal',
+      weather: 'Sunny',
+      dynamicWeather: false,
+      year: 1944, month: 9, day: 17, hour: 6, minute: 0,
+      roundDurationValue: 30, roundDurationUnit: 'minutes',
+      attackerSide: 'A',
+      theatreAttackerSide: 'A',
+      sideAName: 'BRITISH INDIAN ARMY',
+      sideACmd: 'cmd_holworthy',
+      sideBName: 'WEHRMACHT',
+      sideBCmd: 'cmd_hoppe',
+      pickA: [
+        'tpl_ind_hq11', 'tpl_ind_cameron', 'tpl_ind_mahratta',
+        'tpl_ind_rajputana', 'tpl_ind_rajput', 'tpl_ind_ffr',
+        'tpl_ind_punjab', 'tpl_ind_gurkha', 'tpl_ind_yugoslav'
+      ],
+      pickB: [
+        'tpl_ger_gr992', 'tpl_ger_gr993', 'tpl_ger_gr994',
+        'tpl_ger_ar278', 'tpl_ger_fus278', 'tpl_ger_pzj278',
+        'tpl_ger_eng278', 'tpl_ger_sig278'
+      ],
+      loadLog: '[OP] Loaded Battle of San Marino (17 SEP 1944): British Indian Army (Maj. Gen. Arthur Holworthy) assaults Wehrmacht 278. Infanterie-Division (Lt. Gen. Harry Hoppe).'
+    });
+  }
+
+  function loadDefaultSkirmish() {
+    loadArracourtScenario();
   }
 
   function deployUnitToSide(side) {
@@ -684,6 +751,8 @@ window.IronDivision = window.IronDivision || {};
     document.getElementById('unit-defense').value = u.defense;
     document.getElementById('unit-piercing').value = u.piercing;
     document.getElementById('unit-hardness').value = u.hardness;
+    const recEl = document.getElementById('unit-recovery');
+    if (recEl) recEl.value = (u.recovery !== undefined && u.recovery !== null) ? u.recovery : 50;
     document.getElementById('unit-exp').value = u.experience;
 
     document.querySelectorAll('.unit-trait-chk').forEach(chk => {
@@ -709,6 +778,8 @@ window.IronDivision = window.IronDivision || {};
     document.getElementById('unit-defense').value = 20;
     document.getElementById('unit-piercing').value = 8;
     document.getElementById('unit-hardness').value = 4;
+    const recEl = document.getElementById('unit-recovery');
+    if (recEl) recEl.value = 50;
     document.getElementById('unit-exp').value = 'Regular';
 
     document.querySelectorAll('.unit-trait-chk').forEach(chk => { chk.checked = false; });
@@ -735,6 +806,7 @@ window.IronDivision = window.IronDivision || {};
       defense: Math.max(0, Number(document.getElementById('unit-defense').value) || 0),
       piercing: Math.max(0, Number(document.getElementById('unit-piercing').value) || 0),
       hardness: Math.max(0, Number(document.getElementById('unit-hardness').value) || 0),
+      recovery: H.clamp(Number(document.getElementById('unit-recovery')?.value ?? 50), 0, 95),
       experience: document.getElementById('unit-exp').value,
       traits: selectedTraits
     };
@@ -1302,6 +1374,8 @@ window.IronDivision = window.IronDivision || {};
     resetCurrentBattle,
     emptyBattlefield,
     loadDefaultSkirmish,
+    loadArracourtScenario,
+    loadSanMarinoScenario,
     deployUnitToSide,
     removeUnitFromSide,
     clearCombatLog,
@@ -1362,6 +1436,8 @@ window.IronDivision = window.IronDivision || {};
     resetCurrentBattle,
     emptyBattlefield,
     loadDefaultSkirmish,
+    loadArracourtScenario,
+    loadSanMarinoScenario,
     deployUnitToSide,
     removeUnitFromSide,
 

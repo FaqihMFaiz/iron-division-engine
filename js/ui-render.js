@@ -15,6 +15,9 @@ window.IronDivision = window.IronDivision || {};
   // Internal UI state for dirty-checking and DOM node caching
   const uiState = {
     activeTab: 'battlefield',
+    orbatCategoryFilter: 'all',
+    traitsCategoryFilter: 'all',
+    commandersFilter: 'all',
     renderedTabs: {
       battlefield: false,
       units: false,
@@ -721,6 +724,10 @@ window.IronDivision = window.IronDivision || {};
                   <span class="text-[#7c877b]">RANGE</span>
                   <span class="${inRangeNow ? 'text-[#7cb377]' : 'text-[#c8a24b]'} font-bold">≤${unitRange}${closestEnemyDist !== null ? `/${closestEnemyDist}` : ''}</span>
                 </div>
+                <div class="col-span-2 px-2 py-1 bg-[#181d19] border border-[#29312b] flex justify-between">
+                  <span class="text-[#7c877b]">BASE RECOVERY</span>
+                  <span class="text-[#89b884] font-bold">${u.recovery !== undefined && u.recovery !== null ? u.recovery : 50}%</span>
+                </div>
               </div>
               <div>
                 <div class="font-mono text-[9px] uppercase text-[#7c877b] mb-1">TRAITS &amp; SUPPORT</div>
@@ -877,7 +884,180 @@ window.IronDivision = window.IronDivision || {};
    * with reversed-triangle markers (Blue = A, Red = B, Purple = Both),
    * themed hover tooltips, and an off-line rear-staging strip for routed units.
    */
+  function renderTacticalSectorCanvas() {
+    const state = ID.state;
+    const wrap = document.getElementById('tactical-sector-canvas');
+    if (!wrap || !state || !state.battle) return;
+
+    const env = state.environment || {};
+    const envFx = H.getActiveEnvironmentEffects ? H.getActiveEnvironmentEffects() : {};
+    const terr = env.terrain || 'Plains';
+    const feat = env.feature || 'Normal';
+    const tagEl = document.getElementById('sector-terrain-tag');
+    if (tagEl) {
+      tagEl.textContent = `${terr.toUpperCase()} // ${feat.toUpperCase()}${envFx.visCap ? ` · VIS ${envFx.visCap}` : ''}`;
+    }
+
+    const W = 420;
+    const H_SVG = 166;
+    const midX = W / 2;
+    const padX = 24;
+    const usableHalf = (W / 2) - padX;
+
+    const coordToX = (signedCoord) => {
+      const clamped = Math.max(-7, Math.min(7, signedCoord));
+      return midX + (clamped / 7) * usableHalf;
+    };
+
+    const C = getCombat();
+    const isAct = C.isUnitActive || (u => !u.defeated && !u.isRallying && u.personnel > 0);
+    const activeA = (state.battle.sideA.units || []).filter(isAct);
+    const activeB = (state.battle.sideB.units || []).filter(isAct);
+
+    let terrainSvg = '';
+    if (terr === 'Hills' || terr === 'Mountain') {
+      const peaks = terr === 'Mountain'
+        ? [[60,34],[118,26],[175,38],[248,30],[310,25],[362,36],[90,148],[295,146]]
+        : [[75,36],[160,32],[265,34],[345,38],[120,148],[310,146]];
+      terrainSvg += peaks.map(([px, py]) =>
+        `<path d="M${px-12} ${py+10} L${px} ${py-6} L${px+12} ${py+10}" stroke="#3e4b3d" stroke-width="1.3" fill="none" opacity="0.65"/>`
+      ).join('');
+    } else if (terr === 'Urban') {
+      const blocks = [[45,24,22,12],[82,20,18,14],[140,26,24,10],[256,22,22,12],[312,24,26,12],[60,136,24,12],[298,134,26,12]];
+      terrainSvg += blocks.map(([bx, by, bw, bh]) =>
+        `<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" fill="none" stroke="#424d43" stroke-width="1" opacity="0.55"/>`
+      ).join('');
+    } else if (terr === 'Forest' || terr === 'Jungle') {
+      const trees = [[54,30],[96,24],[148,34],[272,28],[330,24],[368,36],[78,144],[335,142]];
+      terrainSvg += trees.map(([tx, ty]) =>
+        `<circle cx="${tx}" cy="${ty}" r="5.5" fill="none" stroke="#355238" stroke-width="1.2" opacity="0.65"/><circle cx="${tx+4}" cy="${ty+2}" r="4" fill="none" stroke="#355238" stroke-width="1" opacity="0.5"/>`
+      ).join('');
+    }
+    if (feat === 'SmallRiver' || feat === 'LargeRiver' || feat === 'Amphibious') {
+      const rw = feat === 'SmallRiver' ? 5 : 9;
+      terrainSvg += `<path d="M${midX-2} 0 Q${midX+7} 42 ${midX-4} 84 T${midX+3} ${H_SVG}" stroke="#2c5d85" stroke-width="${rw}" fill="none" opacity="0.45"/>`;
+    }
+    if (feat === 'Fort') {
+      const fortX = (env.theatreAttackerSide || 'A') === 'A' ? midX + 12 : midX - 12;
+      terrainSvg += `<line x1="${fortX}" y1="14" x2="${fortX}" y2="${H_SVG-14}" stroke="#8c7538" stroke-width="2" stroke-dasharray="6 4" opacity="0.7"/>`;
+    }
+    if (envFx.visCap !== null && envFx.visCap !== undefined) {
+      const rx = (envFx.visCap / 7) * usableHalf;
+      terrainSvg += `<ellipse cx="${midX}" cy="${H_SVG/2}" rx="${rx.toFixed(1)}" ry="62" fill="none" stroke="#7c6ab0" stroke-width="1" stroke-dasharray="4 3" opacity="0.45"/>`;
+    }
+
+    const drawCounter = (u, side, cx, cy, isRear = false) => {
+      const strokeCol = side === 'A' ? '#6db4eb' : '#e67670';
+      const fillCol = side === 'A' ? '#122230' : '#2e1413';
+      const w = 24;
+      const h = 15;
+      const x0 = cx - w / 2;
+      const y0 = cy - h / 2;
+      let sym = '';
+      if (u.category === 'tank') {
+        sym = `<rect x="${x0+5}" y="${y0+4}" width="${w-10}" height="${h-8}" rx="3.5" fill="none" stroke="${strokeCol}" stroke-width="1.2"/>`;
+      } else if (u.category === 'armored_vehicle') {
+        sym = `<line x1="${x0}" y1="${y0}" x2="${x0+w}" y2="${y0+h}" stroke="${strokeCol}" stroke-width="1"/><line x1="${x0+w}" y1="${y0}" x2="${x0}" y2="${y0+h}" stroke="${strokeCol}" stroke-width="1"/><rect x="${x0+6}" y="${y0+4.5}" width="${w-12}" height="${h-9}" rx="3" fill="none" stroke="${strokeCol}" stroke-width="1"/>`;
+      } else if (u.category === 'artillery') {
+        sym = `<circle cx="${cx}" cy="${cy}" r="3.2" fill="${strokeCol}"/>`;
+      } else {
+        sym = `<line x1="${x0}" y1="${y0}" x2="${x0+w}" y2="${y0+h}" stroke="${strokeCol}" stroke-width="1.15"/><line x1="${x0+w}" y1="${y0}" x2="${x0}" y2="${y0+h}" stroke="${strokeCol}" stroke-width="1.15"/>`;
+      }
+      const persRatio = Math.max(0, Math.min(1, (u.personnel || 0) / Math.max(1, u.maxPersonnel || 1)));
+      const barW = Math.round(w * persRatio);
+      const opacity = isRear ? '0.45' : '0.96';
+      const dash = isRear ? ' stroke-dasharray="2 2"' : '';
+      const tip = `${escapeHtml(u.name)} (${u.category.toUpperCase()}) | PERS ${u.personnel}/${u.maxPersonnel} | ORG ${u.org}/${u.maxOrg} | POS ${u.pos ?? 2}`;
+      return `
+        <g opacity="${opacity}">
+          <title>${tip}</title>
+          <rect x="${x0.toFixed(1)}" y="${y0.toFixed(1)}" width="${w}" height="${h}" fill="${fillCol}" stroke="${strokeCol}" stroke-width="1.3"${dash}/>
+          ${sym}
+          <rect x="${x0.toFixed(1)}" y="${(y0+h+1.5).toFixed(1)}" width="${w}" height="2" fill="#1b221c"/>
+          <rect x="${x0.toFixed(1)}" y="${(y0+h+1.5).toFixed(1)}" width="${barW}" height="2" fill="${side === 'A' ? '#6db4eb' : '#e67670'}"/>
+        </g>`;
+    };
+
+    const placeSideUnits = (units, side) => {
+      const buckets = {};
+      units.forEach(u => {
+        const p = (u.pos !== undefined && u.pos !== null) ? u.pos : 2;
+        const signed = side === 'A' ? -p : p;
+        const key = String(signed);
+        if (!buckets[key]) buckets[key] = [];
+        buckets[key].push(u);
+      });
+      const placed = [];
+      Object.entries(buckets).forEach(([k, list]) => {
+        const baseX = coordToX(Number(k));
+        const count = list.length;
+        list.forEach((u, idx) => {
+          const cols = count > 4 ? 2 : 1;
+          const colIdx = idx % cols;
+          const rowIdx = Math.floor(idx / cols);
+          const rows = Math.ceil(count / cols);
+          const xOffset = cols === 2 ? (colIdx === 0 ? -14 : 14) : 0;
+          const spanY = Math.min(112, Math.max(24, rows * 25));
+          const startY = (H_SVG / 2) - (spanY / 2) + (spanY / (rows * 2));
+          const cy = rows === 1 ? H_SVG / 2 : startY + rowIdx * (spanY / rows);
+          const cx = Math.max(16, Math.min(W - 16, baseX + xOffset));
+          placed.push({ u, side, cx, cy });
+        });
+      });
+      return placed;
+    };
+
+    const placedA = placeSideUnits(activeA, 'A');
+    const placedB = placeSideUnits(activeB, 'B');
+
+    let fireLinesSvg = '';
+    if (placedA.length > 0 && placedB.length > 0) {
+      const leadA = placedA.slice(0, 3);
+      const leadB = placedB.slice(0, 3);
+      leadA.forEach(a => {
+        leadB.forEach(b => {
+          if (H.canUnitEngageTarget && H.canUnitEngageTarget(a.u, b.u)) {
+            fireLinesSvg += `<line x1="${a.cx.toFixed(1)}" y1="${a.cy.toFixed(1)}" x2="${b.cx.toFixed(1)}" y2="${b.cy.toFixed(1)}" stroke="#c8a24b" stroke-width="0.7" stroke-dasharray="2 3" opacity="0.32"/>`;
+          }
+        });
+      });
+    }
+
+    const countersSvg = [
+      ...placedA.map(p => drawCounter(p.u, 'A', p.cx, p.cy, false)),
+      ...placedB.map(p => drawCounter(p.u, 'B', p.cx, p.cy, false))
+    ].join('');
+
+    const nameA = H.getSideName ? H.getSideName('A') : 'SIDE A';
+    const nameB = H.getSideName ? H.getSideName('B') : 'SIDE B';
+
+    wrap.innerHTML = `
+      <svg viewBox="0 0 ${W} ${H_SVG}" width="100%" height="${H_SVG}" class="block select-none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="sec-hatch-b" width="7" height="7" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+            <line x1="0" y1="0" x2="0" y2="7" stroke="#8a2c28" stroke-width="1.4" opacity="0.38"/>
+          </pattern>
+          <pattern id="sec-grid" width="24" height="24" patternUnits="userSpaceOnUse">
+            <path d="M 24 0 L 0 0 0 24" fill="none" stroke="#18211a" stroke-width="0.8"/>
+          </pattern>
+        </defs>
+        <rect x="0" y="0" width="${W}" height="${H_SVG}" fill="#080c09"/>
+        <rect x="0" y="0" width="${W}" height="${H_SVG}" fill="url(#sec-grid)"/>
+        <rect x="2" y="2" width="${midX - 4}" height="${H_SVG - 4}" fill="rgba(45, 92, 134, 0.09)" stroke="#243c52" stroke-width="1"/>
+        <rect x="${midX + 2}" y="2" width="${midX - 4}" height="${H_SVG - 4}" fill="url(#sec-hatch-b)" stroke="#5c2320" stroke-width="1"/>
+        <line x1="${midX}" y1="0" x2="${midX}" y2="${H_SVG}" stroke="#c8a24b" stroke-width="1.6" stroke-dasharray="5 3" opacity="0.85"/>
+        ${terrainSvg}
+        ${fireLinesSvg}
+        ${countersSvg}
+        <text x="8" y="13" fill="#7db3df" font-family="IBM Plex Mono, monospace" font-size="8.5" font-weight="700" opacity="0.85">${escapeHtml(nameA.slice(0, 22).toUpperCase())}</text>
+        <text x="${W - 8}" y="13" text-anchor="end" fill="#e69894" font-family="IBM Plex Mono, monospace" font-size="8.5" font-weight="700" opacity="0.85">${escapeHtml(nameB.slice(0, 22).toUpperCase())}</text>
+        <text x="${midX}" y="${H_SVG - 6}" text-anchor="middle" fill="#c8a24b" font-family="IBM Plex Mono, monospace" font-size="8" font-weight="700" opacity="0.9">CONTACT LINE (0)</text>
+      </svg>
+    `;
+  }
+
   function renderYAxisTracker() {
+    renderTacticalSectorCanvas();
     const state = ID.state;
     const container = document.getElementById('yaxis-line-container');
     if (!container || !state || !state.battle) return;
@@ -1134,6 +1314,15 @@ window.IronDivision = window.IronDivision || {};
   // Subsystem Tabs (Rendered via Dirty Checking)
   // --------------------------------------------------------------------------
 
+  function setOrbatCategoryFilter(cat) {
+    uiState.orbatCategoryFilter = cat || 'all';
+    const pills = document.querySelectorAll('#orbat-cat-pills .orbat-filter-pill');
+    pills.forEach(btn => {
+      btn.classList.toggle('is-active', btn.dataset.cat === uiState.orbatCategoryFilter);
+    });
+    renderUnitDesigner();
+  }
+
   function renderUnitDesigner() {
     const state = ID.state;
     if (!state) return;
@@ -1157,7 +1346,24 @@ window.IronDivision = window.IronDivision || {};
 
     const C = getCombat();
 
-    grid.innerHTML = (state.unitTemplates || []).map(u => {
+    const activeCat = uiState.orbatCategoryFilter || 'all';
+    const searchQ = (document.getElementById('orbat-lib-search')?.value || '').trim().toLowerCase();
+    const filteredTemplates = (state.unitTemplates || []).filter(u => {
+      if (activeCat === 'infantry' && u.category !== 'infantry') return false;
+      if (activeCat === 'armor' && u.category !== 'tank' && u.category !== 'armored_vehicle') return false;
+      if (activeCat === 'artillery' && u.category !== 'artillery') return false;
+      if (searchQ && !(u.name || '').toLowerCase().includes(searchQ) && !(u.category || '').toLowerCase().includes(searchQ)) return false;
+      return true;
+    });
+    const countEl = document.getElementById('orbat-lib-count');
+    if (countEl) countEl.textContent = `${filteredTemplates.length} / ${(state.unitTemplates || []).length} UNITS`;
+
+    if (filteredTemplates.length === 0) {
+      grid.innerHTML = `<div class="col-span-full text-center py-8 font-mono text-xs text-slate-400 border border-dashed border-slate-800">No unit templates match the current filter.</div>`;
+      return;
+    }
+
+    grid.innerHTML = filteredTemplates.map(u => {
       const traitNames = (u.traits || []).map(tid => C.getTraitById ? C.getTraitById(tid)?.name : tid).filter(Boolean).join(', ');
       const purBonus = C.getUnitPursuitBonus ? C.getUnitPursuitBonus(u) : 0;
       const retBonus = C.getUnitRetreatBonus ? C.getUnitRetreatBonus(u) : 0;
@@ -1181,7 +1387,8 @@ window.IronDivision = window.IronDivision || {};
               <div>Def: <b class="text-white">${u.defense}</b></div>
               <div>Pierce: <b class="text-sky-300">${u.piercing}</b></div>
               <div>Hardness: <b class="text-amber-300">${u.hardness}</b></div>
-              <div>Pur/Ret: <b class="text-purple-300">${purBonus >= 0 ? '+' : ''}${purBonus}/${retBonus >= 0 ? '+' : ''}${retBonus}</b></div>
+              <div>Recovery: <b class="text-emerald-300">${u.recovery !== undefined && u.recovery !== null ? u.recovery : 50}%</b></div>
+              <div class="col-span-3">Pur/Ret: <b class="text-purple-300">${purBonus >= 0 ? '+' : ''}${purBonus}/${retBonus >= 0 ? '+' : ''}${retBonus}</b></div>
             </div>
             <div class="text-[11px] text-slate-400 mt-1.5">
               <b class="text-slate-300">Traits:</b> ${traitNames || 'None'}
@@ -1199,12 +1406,43 @@ window.IronDivision = window.IronDivision || {};
     }).join('');
   }
 
+  function setTraitsCategoryFilter(cat) {
+    uiState.traitsCategoryFilter = cat || 'all';
+    document.querySelectorAll('#traits-cat-pills .orbat-filter-pill').forEach(btn => {
+      btn.classList.toggle('is-active', btn.dataset.cat === uiState.traitsCategoryFilter);
+    });
+    renderTraitsTab();
+  }
+
+  function classifyTraitCategory(t) {
+    if (!t) return 'combat';
+    if (t.isMonster || t.isZombie || t.isSpecialForces || t.isUnbreakable || t.isInfiltrationSpec || t.isFortEngineer || t.isConcealSpec) return 'special';
+    if (t.supportType || t.aaType || t.isFieldMedic || t.isFirstAidKit || t.isRepairCrew || t.isSimpleEngineering || (t.supplyRegen || 0) > 0 || (t.supplySteal || 0) > 0 || t.id === 'recon_support' || t.id === 'engineering_support') return 'support';
+    return 'combat';
+  }
+
   function renderTraitsTab() {
     const state = ID.state;
     const container = document.getElementById('traits-list-container');
     if (!container || !state) return;
 
-    container.innerHTML = (state.traits || []).map(t => `
+    const activeCat = uiState.traitsCategoryFilter || 'all';
+    const searchQ = (document.getElementById('traits-dir-search')?.value || '').trim().toLowerCase();
+    const allTraits = state.traits || [];
+    const filteredTraits = allTraits.filter(t => {
+      if (activeCat !== 'all' && classifyTraitCategory(t) !== activeCat) return false;
+      if (searchQ && !(t.name || '').toLowerCase().includes(searchQ) && !(t.desc || '').toLowerCase().includes(searchQ)) return false;
+      return true;
+    });
+    const tCountEl = document.getElementById('traits-dir-count');
+    if (tCountEl) tCountEl.textContent = `${filteredTraits.length} / ${allTraits.length} TRAITS`;
+
+    if (filteredTraits.length === 0) {
+      container.innerHTML = `<div class="col-span-full text-center py-8 font-mono text-xs text-slate-400 border border-dashed border-slate-800">No traits match the current filter.</div>`;
+      return;
+    }
+
+    container.innerHTML = filteredTraits.map(t => `
       <div class="bg-slate-950 border border-slate-800 rounded-lg p-3 flex flex-col justify-between gap-2">
         <div>
           <div class="flex items-center justify-between">
@@ -1226,6 +1464,14 @@ window.IronDivision = window.IronDivision || {};
         </div>
       </div>
     `).join('');
+  }
+
+  function setCommandersFilter(cat) {
+    uiState.commandersFilter = cat || 'all';
+    document.querySelectorAll('#cmd-cat-pills .orbat-filter-pill').forEach(btn => {
+      btn.classList.toggle('is-active', btn.dataset.cat === uiState.commandersFilter);
+    });
+    renderCommandersTab();
   }
 
   function renderCommandersTab() {
@@ -1261,7 +1507,27 @@ window.IronDivision = window.IronDivision || {};
 
     const C = getCombat();
 
-    listContainer.innerHTML = (state.commanders || []).map(c => {
+    const activeDoc = uiState.commandersFilter || 'all';
+    const cmdQ = (document.getElementById('cmd-roster-search')?.value || '').trim().toLowerCase();
+    const allCmds = state.commanders || [];
+    const filteredCmds = allCmds.filter(c => {
+      if (activeDoc !== 'all' && (c.personality || 'Balanced') !== activeDoc) return false;
+      if (cmdQ) {
+        const rankTitle = (resolveOfficerRank(c)?.title || '').toLowerCase();
+        const hay = `${c.name || ''} ${c.personality || ''} ${rankTitle}`.toLowerCase();
+        if (!hay.includes(cmdQ)) return false;
+      }
+      return true;
+    });
+    const cCountEl = document.getElementById('cmd-roster-count');
+    if (cCountEl) cCountEl.textContent = `${filteredCmds.length} / ${allCmds.length} GENERALS`;
+
+    if (filteredCmds.length === 0) {
+      listContainer.innerHTML = `<div class="col-span-full text-center py-8 font-mono text-xs text-slate-400 border border-dashed border-slate-800">No commanders match the current filter.</div>`;
+      return;
+    }
+
+    listContainer.innerHTML = filteredCmds.map(c => {
       const traitNames = (c.traits || []).map(tid => C.getCommanderTraitById ? C.getCommanderTraitById(tid)?.name : tid).filter(Boolean).join(', ');
       const officerRank = resolveOfficerRank(c);
       return `
@@ -2627,6 +2893,10 @@ window.IronDivision = window.IronDivision || {};
     renderCombatLog,
     renderCombatRound,
     renderBattlefield,
+    setOrbatCategoryFilter,
+    setTraitsCategoryFilter,
+    setCommandersFilter,
+    renderTacticalSectorCanvas,
     renderUnitDesigner,
     renderTraitsTab,
     renderCommandersTab,
@@ -2665,6 +2935,12 @@ window.IronDivision = window.IronDivision || {};
   window.flipTacticsPage = flipTacticsPage;
   window.toggleTacticsTheme = toggleTacticsTheme;
   window.printCurrentTacticsPage = printCurrentTacticsPage;
+  window.setOrbatCategoryFilter = setOrbatCategoryFilter;
+  window.setTraitsCategoryFilter = setTraitsCategoryFilter;
+  window.setCommandersFilter = setCommandersFilter;
+  window.renderUnitDesigner = renderUnitDesigner;
+  window.renderTraitsTab = renderTraitsTab;
+  window.renderCommandersTab = renderCommandersTab;
   window.renderAll = renderAll;
 
 })(window.IronDivision);
