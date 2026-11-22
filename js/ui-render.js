@@ -2056,19 +2056,27 @@ window.IronDivision = window.IronDivision || {};
       acc.escaped += (u.escaped || 0);
       acc.armorStart += (u.originalMaxArmor || u.maxArmor || 0);
       acc.armorRem += (u.armor || 0);
-      acc.armorRec += (u.recoverableArmor || 0);
+      acc.armorRec += (u.recoverableArmor || 0) + (u.abandonedArmor || 0);
       acc.armorTowed += (u.towedArmor || 0);
       acc.armorUnrec += (u.unrecoverableArmor || 0);
       if (!u.isMonster && !u.isZombie) {
         acc.supplyMax += (u.maxSupply || 0);
         acc.supplyRem += Math.max(0, u.supply || 0);
       }
+      const st = u.stats || {};
+      acc.inflictedCas += (st.casualtiesInflicted || 0);
+      acc.inflictedAfv += (st.afvsDisabled || 0);
+      acc.inflictedAfvKo += (st.afvsDestroyed || 0);
+      acc.indirectCas += (st.indirectCasualtiesInflicted || 0);
+      acc.airCas += (st.airCasualtiesInflicted || 0);
+      acc.fieldRepairs += (st.fieldRepairs || 0);
       if (u.defeated) acc.defeatedCount += 1;
       return acc;
     }, {
       unitCount: 0, start: 0, rem: 0, dead: 0, wounded: 0, captured: 0, escaped: 0,
       armorStart: 0, armorRem: 0, armorRec: 0, armorTowed: 0, armorUnrec: 0,
-      supplyMax: 0, supplyRem: 0, defeatedCount: 0
+      supplyMax: 0, supplyRem: 0, defeatedCount: 0,
+      inflictedCas: 0, inflictedAfv: 0, inflictedAfvKo: 0, indirectCas: 0, airCas: 0, fieldRepairs: 0
     });
   }
 
@@ -2163,17 +2171,236 @@ window.IronDivision = window.IronDivision || {};
     };
   }
 
+  function formatUnitDisposition(u) {
+    if (!u) return 'OPERATIONAL';
+    if (!u.defeated) {
+      if (u.isRallying) return 'REAR RALLY';
+      if (u.isDismounted) return 'DISMOUNTED (OP)';
+      return 'OPERATIONAL';
+    }
+    const r = String(u.defeatReason || '').toLowerCase();
+    if (r.includes('unscreened artillery')) return 'WITHDRAWN (UNSCREENED)';
+    if (r.includes('combat-ready armor') || r.includes('0 combat-ready')) return 'WITHDRAWN (0 AFV)';
+    if (r.includes('all personnel eliminated')) return 'WIPED OUT';
+    if (r.includes('unbreakable')) return 'SHATTERED';
+    if (r.includes('permanently routed') || r.includes('organization broke')) return 'ROUTED';
+    if (r.includes('rally') || r.includes('dispersed') || r.includes('fumble') || r.includes('deserted')) return 'DISPERSED';
+    return 'OUT OF ACTION';
+  }
+
+  function buildWeatherTrail(logs = [], fallbackWeather = 'Clear', startClock = '') {
+    const shifts = [];
+    for (const l of (logs || [])) {
+      const txt = typeof l === 'string' ? l : (l.text || '');
+      if (!txt.includes('[Weather Shift]')) continue;
+      const m = txt.match(/shifts from ([^-]+?)\s*->\s*([^(!]+?)(?:\s*\([^)]*\))?!/i);
+      if (m) {
+        shifts.push({ from: m[1].trim(), to: m[2].trim(), clock: l.clock || '' });
+      }
+    }
+    if (shifts.length === 0) return fallbackWeather || 'Clear';
+    const trail = [`${shifts[0].from}${startClock ? ` (${startClock})` : ''}`];
+    for (const s of shifts) {
+      trail.push(`${s.to}${s.clock ? ` (${s.clock})` : ''}`);
+    }
+    return trail.join(' → ');
+  }
+
   function extractAARChronology(logs = []) {
     if (!logs || logs.length === 0) return [];
-    const keywords = [
-      'BATTLE OVER', 'AUTOMATIC OVERRUN', 'FIELD SALVAGE', 'BEAST RAMPAGE',
-      'NO QUARTER', 'Rallied to the Line', 'Rally Failed', 'Unbreakable Stand',
-      'Unbreakable Shattered', 'Rout & Scatter', 'Rout & Fallback', 'wiped out',
-      'permanently routed', 'AA Gun CRITICAL', 'MORTAR TRACK BLOWN', 'Decisive Breakthrough',
-      'Unscreened Artillery Withdrawal', 'withdraws from the sector'
+    const endgameKeys = ['BATTLE OVER', 'AUTOMATIC OVERRUN', 'FIELD SALVAGE', 'BEAST RAMPAGE', 'NO QUARTER'];
+    const majorKeys = [
+      '[Weather Shift]', 'Decisive Breakthrough', 'Unscreened Artillery Withdrawal',
+      'withdraws from the sector', 'withdraws to depot', 'wiped out',
+      'Unbreakable Stand', 'Unbreakable Shattered', 'AA Gun CRITICAL', 'MORTAR TRACK BLOWN'
     ];
-    const filtered = logs.filter(l => keywords.some(k => (l.text || '').includes(k)));
-    return filtered.slice(-18);
+    const secondaryKeys = [
+      'Rout & Scatter', 'Rout & Fallback', 'Rallied to the Line', 'Rally Failed', 'permanently routed'
+    ];
+    const allKeys = [...endgameKeys, ...majorKeys, ...secondaryKeys];
+
+    const matched = [];
+    logs.forEach((l, idx) => {
+      const txt = (l && l.text) ? l.text : '';
+      if (!allKeys.some(k => txt.includes(k))) return;
+      const tier = endgameKeys.some(k => txt.includes(k)) ? 3
+        : (majorKeys.some(k => txt.includes(k)) ? 2 : 1);
+      matched.push({ log: l, idx, round: Number(l.round || 1), tier });
+    });
+
+    const MAX_ITEMS = 18;
+    if (matched.length <= MAX_ITEMS) return matched.map(m => m.log);
+
+    const selectedIdx = new Set();
+    // 1. Always preserve endgame milestones
+    const endgameItems = matched.filter(m => m.tier === 3);
+    for (const m of endgameItems) selectedIdx.add(m.idx);
+
+    // 2. Always preserve the opening milestone
+    if (matched.length > 0) selectedIdx.add(matched[0].idx);
+
+    // 3. Distribute remaining budget evenly across Opening / Mid-Battle / Late phases
+    const remaining = matched.filter(m => !selectedIdx.has(m.idx));
+    const minRd = matched[0].round;
+    const maxRd = matched[matched.length - 1].round;
+    const span = Math.max(1, maxRd - minRd);
+    const t1 = minRd + span / 3;
+    const t2 = minRd + (2 * span) / 3;
+
+    const buckets = [
+      remaining.filter(m => m.round <= t1),
+      remaining.filter(m => m.round > t1 && m.round <= t2),
+      remaining.filter(m => m.round > t2)
+    ];
+
+    const budget = Math.max(0, MAX_ITEMS - selectedIdx.size);
+    const baseQuota = Math.floor(budget / 3);
+    let extra = budget - baseQuota * 3;
+
+    const pickFromBucket = (bucket, count) => {
+      if (count <= 0 || bucket.length === 0) return [];
+      // Prioritize tier 2 (major events / weather / withdrawals) over tier 1 (routs/rallies)
+      const majors = bucket.filter(m => m.tier === 2);
+      const minors = bucket.filter(m => m.tier === 1);
+      const chosen = [];
+      const addEvenly = (arr, limit) => {
+        if (arr.length <= limit) {
+          chosen.push(...arr);
+        } else if (limit > 0) {
+          const step = arr.length / limit;
+          for (let i = 0; i < limit; i++) {
+            chosen.push(arr[Math.min(arr.length - 1, Math.floor(i * step))]);
+          }
+        }
+      };
+      addEvenly(majors, count);
+      if (chosen.length < count) {
+        addEvenly(minors, count - chosen.length);
+      }
+      return chosen;
+    };
+
+    const leftovers = [];
+    for (let b = 0; b < 3; b++) {
+      const q = baseQuota + (extra > 0 ? 1 : 0);
+      if (extra > 0) extra--;
+      const picked = pickFromBucket(buckets[b], q);
+      for (const p of picked) selectedIdx.add(p.idx);
+      if (picked.length < q) {
+        extra += (q - picked.length);
+      }
+      for (const m of buckets[b]) {
+        if (!selectedIdx.has(m.idx)) leftovers.push(m);
+      }
+    }
+
+    // Fill any remaining slots if a bucket was sparse
+    if (selectedIdx.size < MAX_ITEMS && leftovers.length > 0) {
+      const need = MAX_ITEMS - selectedIdx.size;
+      const step = leftovers.length / need;
+      for (let i = 0; i < need && i < leftovers.length; i++) {
+        selectedIdx.add(leftovers[Math.min(leftovers.length - 1, Math.floor(i * step))].idx);
+      }
+    }
+
+    return matched.filter(m => selectedIdx.has(m.idx)).map(m => m.log);
+  }
+
+  function getSideLogisticsSnapshot(rep, sideKey) {
+    if (rep && rep.logistics && rep.logistics[sideKey]) return rep.logistics[sideKey];
+    const sideState = ID.state && ID.state.battle ? (sideKey === 'A' ? ID.state.battle.sideA : ID.state.battle.sideB) : null;
+    const units = sideKey === 'A' ? (rep.sideA || []) : (rep.sideB || []);
+    const living = units.filter(u => !u.isMonster && !u.isZombie);
+    const depotStart = Number(sideState?.maxSupplyDepot || 0);
+    const depotRem = Math.max(0, Number(sideState?.supplyDepot || 0));
+    const depotExpended = Math.max(0, depotStart - depotRem);
+    return {
+      depotStart,
+      depotRem,
+      depotExpended,
+      depotExpPct: depotStart > 0 ? Math.round((depotExpended / depotStart) * 100) : 0,
+      supplyRaided: Number(sideState?.supplyRaidedTotal || 0),
+      criticalSupplyCount: living.filter(u => u.supplyBelow20Triggered || (u.maxSupply > 0 && (u.supply / u.maxSupply) < 0.25)).length,
+      exhaustedCount: living.filter(u => u.maxSupply > 0 && u.supply <= 0).length,
+      depotCriticalClock: sideState?.depotCriticalClock || ""
+    };
+  }
+
+  function buildG3TelemetryFindings(rep, sumA, sumB, logA, logB, isPrintable) {
+    const findings = [];
+    const labelA = rep.sideAName || H.getSideName('A');
+    const labelB = rep.sideBName || H.getSideName('B');
+
+    // 1. Notable Formations (Top Casualty & Top Anti-Armor)
+    const findTop = (units, getter) => {
+      let best = null;
+      let bestVal = 0;
+      for (const u of (units || [])) {
+        const val = getter(u);
+        if (val > bestVal) { bestVal = val; best = u; }
+      }
+      return best ? { unit: best, val: bestVal } : null;
+    };
+
+    const winSide = rep.winner === 'B' ? 'B' : 'A';
+    const winUnits = winSide === 'B' ? (rep.sideB || []) : (rep.sideA || []);
+    const winName = winSide === 'B' ? labelB : labelA;
+    const topCasWin = findTop(winUnits, u => (u.stats?.casualtiesInflicted || 0));
+    const topAfvWin = findTop(winUnits, u => (u.stats?.afvsDisabled || 0));
+    const topRepWin = findTop(winUnits, u => (u.stats?.fieldRepairs || 0));
+
+    if (topCasWin && topCasWin.val >= 20) {
+      const sameUnit = topAfvWin && topAfvWin.unit === topCasWin.unit && topAfvWin.val >= 3;
+      if (sameUnit) {
+        findings.push(`Notable Formation (${winName}): ${stripEmojisForAAR(topCasWin.unit.name)} led combat output, inflicting ${topCasWin.val.toLocaleString()} enemy casualties and disabling ${topAfvWin.val} enemy armored vehicles (${topAfvWin.unit.stats?.afvsDestroyed || 0} destroyed).`);
+      } else {
+        findings.push(`Notable Formation (${winName}): ${stripEmojisForAAR(topCasWin.unit.name)} inflicted the highest enemy personnel losses (${topCasWin.val.toLocaleString()} casualties).`);
+        if (topAfvWin && topAfvWin.val >= 3) {
+          findings.push(`Anti-Armor Citation (${winName}): ${stripEmojisForAAR(topAfvWin.unit.name)} led anti-armor engagements with ${topAfvWin.val} enemy vehicles knocked out (${topAfvWin.unit.stats?.afvsDestroyed || 0} destroyed).`);
+        }
+      }
+    } else if (topAfvWin && topAfvWin.val >= 3) {
+      findings.push(`Anti-Armor Citation (${winName}): ${stripEmojisForAAR(topAfvWin.unit.name)} led anti-armor engagements with ${topAfvWin.val} enemy vehicles knocked out (${topAfvWin.unit.stats?.afvsDestroyed || 0} destroyed).`);
+    }
+
+    if (topRepWin && topRepWin.val >= 3) {
+      findings.push(`Field Maintenance: ${stripEmojisForAAR(topRepWin.unit.name)} organic recovery crews restored ${topRepWin.val} disabled armored vehicles back to operational status during the engagement.`);
+    }
+
+    // 2. Indirect Fire & Air Support Attribution
+    const enemyCasFromA = Math.max(1, sumA.inflictedCas || (sumB.dead + sumB.wounded));
+    const enemyCasFromB = Math.max(1, sumB.inflictedCas || (sumA.dead + sumA.wounded));
+    const indPctA = sumA.indirectCas > 0 ? Math.round((sumA.indirectCas / enemyCasFromA) * 100) : 0;
+    const indPctB = sumB.indirectCas > 0 ? Math.round((sumB.indirectCas / enemyCasFromB) * 100) : 0;
+    const airPctA = sumA.airCas > 0 ? Math.round((sumA.airCas / enemyCasFromA) * 100) : 0;
+    const airPctB = sumB.airCas > 0 ? Math.round((sumB.airCas / enemyCasFromB) * 100) : 0;
+
+    if (indPctA >= 12 || indPctB >= 12) {
+      const parts = [];
+      if (indPctA >= 12) parts.push(`${labelA} indirect fire accounted for ${indPctA}% of opposing combat casualties (${sumA.indirectCas.toLocaleString()})`);
+      if (indPctB >= 12) parts.push(`${labelB} indirect fire accounted for ${indPctB}% (${sumB.indirectCas.toLocaleString()})`);
+      findings.push(`Fire Support Impact: ${parts.join('; ')}.`);
+    }
+    if (airPctA >= 5 || airPctB >= 5) {
+      const parts = [];
+      if (airPctA >= 5) parts.push(`${labelA} close air support inflicted ${sumA.airCas.toLocaleString()} casualties (${airPctA}%)`);
+      if (airPctB >= 5) parts.push(`${labelB} close air support inflicted ${sumB.airCas.toLocaleString()} casualties (${airPctB}%)`);
+      findings.push(`Air Interdiction: ${parts.join('; ')}.`);
+    }
+
+    // 3. Logistics & Supply Strain
+    const logParts = [];
+    if (logA.depotStart > 0) {
+      logParts.push(`${labelA} expended ${logA.depotExpPct}% of theatre depot stocks (${logA.depotRem}/${logA.depotStart} remaining${logA.criticalSupplyCount > 0 ? `, ${logA.criticalSupplyCount} formation(s) hit critical supply` : ''}${logA.depotCriticalClock ? `, depot critical at ${logA.depotCriticalClock} HRS` : ''})`);
+    }
+    if (logB.depotStart > 0) {
+      logParts.push(`${labelB} expended ${logB.depotExpPct}% (${logB.depotRem}/${logB.depotStart} remaining${logB.criticalSupplyCount > 0 ? `, ${logB.criticalSupplyCount} formation(s) hit critical supply` : ''}${logB.depotCriticalClock ? `, depot critical at ${logB.depotCriticalClock} HRS` : ''})`);
+    }
+    if (logParts.length > 0) {
+      findings.push(`Logistics Expenditure: ${logParts.join('; ')}.`);
+    }
+
+    return findings;
   }
 
   function buildAARAssessment(rep, sumA, sumB, isOver, victoryInfo) {
@@ -2209,6 +2436,9 @@ window.IronDivision = window.IronDivision || {};
       notes.push(`Armored vehicle losses: ${labelA} ${totalArmorKoA} knocked out (${sumA.armorUnrec} total write-offs), ${labelB} ${totalArmorKoB} knocked out (${sumB.armorUnrec} total write-offs).`);
     }
 
+    const logA = getSideLogisticsSnapshot(rep, 'A');
+    const logB = getSideLogisticsSnapshot(rep, 'B');
+    notes.push(...buildG3TelemetryFindings(rep, sumA, sumB, logA, logB, false));
     if (isOver && rep.salvage && rep.salvage.abandoned > 0) {
       notes.push(`Field recovery teams secured ${rep.salvage.abandoned} abandoned enemy hulls (${rep.salvage.impressed} impressed into service, +${rep.salvage.supplyScrapped} depot supply stripped).`);
     }
@@ -2237,6 +2467,7 @@ window.IronDivision = window.IronDivision || {};
       terrain: state.environment.terrain,
       feature: state.environment.feature,
       weather: state.environment.weather,
+      weatherTrail: buildWeatherTrail(state.battle.logs, state.environment.weather, H.formatSimulatedClock ? H.formatSimulatedClock(H.getSimulatedBattleDate(1)) : ''),
       theatreAttackerSide: state.environment.theatreAttackerSide || 'A',
       sideAName: H.getSideName('A'),
       sideBName: H.getSideName('B'),
@@ -2309,19 +2540,21 @@ window.IronDivision = window.IronDivision || {};
                   <th class="text-right">Org</th>
                   <th class="text-right">KIA / WIA</th>
                   <th class="text-right">POW / ESC</th>
-                  <th class="text-right">AFV (Act/Rec/Tow/KO)</th>
+                  <th class="text-right">AFV (Start | Act/Rec/Tow/KO)</th>
+                  <th class="text-right">Inflicted (Cas/AFV)</th>
                 </tr>
               </thead>
               <tbody>
                 ${units.map(u => `
                   <tr>
                     <td class="font-bold">${escapeHtml(stripEmojisForAAR(u.name))}</td>
-                    <td class="uppercase text-[10px] font-bold ${u.defeated ? 'text-[#8b2e2a]' : (u.isRallying ? 'text-[#7c5b1e]' : 'text-[#2f5e2c]')}">${u.defeated ? 'OUT OF ACTION' : (u.isRallying ? 'REAR RALLY' : 'OPERATIONAL')}</td>
+                    <td class="uppercase text-[10px] font-bold ${u.defeated ? 'text-[#8b2e2a]' : (u.isRallying ? 'text-[#7c5b1e]' : 'text-[#2f5e2c]')}">${formatUnitDisposition(u)}</td>
                     <td class="text-right">${u.personnel}/${u.maxPersonnel}</td>
                     <td class="text-right">${(u.isMonster || u.isZombie) ? 'N/A' : `${u.org}/${u.maxOrg}`}</td>
                     <td class="text-right"><span class="text-[#8b2e2a] font-bold">${u.dead}</span> / <span class="text-[#7c5b1e]">${u.wounded}</span></td>
                     <td class="text-right"><span class="text-[#563d7c]">${u.captured || 0}</span> / <span class="text-[#2f5e2c]">${u.escaped || 0}</span></td>
-                    <td class="text-right">${(u.originalMaxArmor > 0 || u.maxArmor > 0) ? `${u.armor}/${u.recoverableArmor}/${u.towedArmor || 0}/${u.unrecoverableArmor}` : '—'}</td>
+                    <td class="text-right">${(u.originalMaxArmor > 0 || u.maxArmor > 0) ? `${u.originalMaxArmor || u.maxArmor} | ${u.armor}/${(u.recoverableArmor || 0) + (u.abandonedArmor || 0)}/${u.towedArmor || 0}/${u.unrecoverableArmor}` : '—'}</td>
+                    <td class="text-right">${(u.stats?.casualtiesInflicted || 0)} / ${(u.stats?.afvsDisabled || 0)}</td>
                   </tr>
                 `).join('')}
               </tbody>
@@ -2332,7 +2565,8 @@ window.IronDivision = window.IronDivision || {};
                   <td class="text-right">—</td>
                   <td class="text-right">${sum.dead} / ${sum.wounded}</td>
                   <td class="text-right">${sum.captured} / ${sum.escaped}</td>
-                  <td class="text-right">${sum.armorStart > 0 ? `${sum.armorRem}/${sum.armorRec}/${sum.armorTowed}/${sum.armorUnrec}` : '—'}</td>
+                  <td class="text-right">${sum.armorStart > 0 ? `${sum.armorStart} | ${sum.armorRem}/${sum.armorRec}/${sum.armorTowed}/${sum.armorUnrec}` : '—'}</td>
+                  <td class="text-right">${sum.inflictedCas} / ${sum.inflictedAfv}</td>
                 </tr>
               </tfoot>
             </table>
@@ -2378,7 +2612,7 @@ window.IronDivision = window.IronDivision || {};
           <span class="font-extrabold text-[#5e4411] uppercase tracking-wider block">SECTION 3 // BATTLEFIELD SALVAGE &amp; CAPTURED MATERIAL</span>
           <div>${escapeHtml(rep.winner === 'B' ? (rep.sideBName || H.getSideName('B')) : (rep.sideAName || H.getSideName('A')))} field recovery units secured <b>${salvage.abandoned}</b> abandoned enemy combat hulls:</div>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-[11px]">
-            <div class="p-2 bg-[#faf8f2] border border-[#bfb7a2]">IMPRESSED (BEUTEPANZER): <b class="text-[#2f5e2c]">${salvage.impressed}</b></div>
+            <div class="p-2 bg-[#faf8f2] border border-[#bfb7a2]">CAPTURED &amp; IMPRESSED: <b class="text-[#2f5e2c]">${salvage.impressed}</b></div>
             <div class="p-2 bg-[#faf8f2] border border-[#bfb7a2]">STRIPPED FOR DEPOT: <b class="text-[#1d486e]">+${salvage.supplyScrapped} SUP</b></div>
             <div class="p-2 bg-[#faf8f2] border border-[#bfb7a2]">SCUTTLED / WRITE-OFF: <b class="text-[#8b2e2a]">${salvage.scuttled}</b></div>
           </div>
@@ -2434,6 +2668,10 @@ window.IronDivision = window.IronDivision || {};
       .replace(/,\s*Org:\s*\d+\/\d+\.?/gi, '.')
       .replace(/,\s*-?\d+\s*Mobility Class!?/gi, ' (mobility degraded).')
       .replace(/\s*\(\+\d+\s*Supply\)/gi, ' for depot spares')
+      .replace(/Beutepanzers restored/gi, 'captured vehicles impressed')
+      .replace(/\[Weather Shift\]\s*Theatre weather shifts from ([^-]+?)\s*->\s*/gi, 'Weather shifted from $1 to ')
+      .replace(/gains\s+\+?\d+\s+Org\s+for\s+smashing/gi, 'bolstered unit cohesion after breaking')
+      .replace(/\[AA Gun CRITICAL\s+\d+!\]/gi, '[Anti-Aircraft Barrage]')
       .replace(/Ret \d+ vs Pur \d+\s*->\s*/gi, '')
       .replace(/Pur \d+ > Ret \d+\s*->\s*/gi, '')
       .replace(/\(\s*\)/g, '')
@@ -2476,6 +2714,9 @@ window.IronDivision = window.IronDivision || {};
     if (sumA.armorStart > 0 || sumB.armorStart > 0) {
       printAssessments.push(`Armored vehicle losses: ${sideAName} lost ${totalArmorKoA} vehicles (${sumA.armorUnrec} destroyed, ${sumA.armorRec} disabled); ${sideBName} lost ${totalArmorKoB} vehicles (${sumB.armorUnrec} destroyed, ${sumB.armorRec} disabled).`);
     }
+    const logA = getSideLogisticsSnapshot(rep, 'A');
+    const logB = getSideLogisticsSnapshot(rep, 'B');
+    printAssessments.push(...buildG3TelemetryFindings(rep, sumA, sumB, logA, logB, true));
     const salvageStrippedCount = (isOver && salvage)
       ? (salvage.scrapped !== undefined ? salvage.scrapped : Math.max(0, (salvage.abandoned || 0) - (salvage.impressed || 0) - (salvage.scuttled || 0)))
       : 0;
@@ -2499,7 +2740,8 @@ window.IronDivision = window.IronDivision || {};
             <th class="num">WIA</th>
             <th class="num">POW</th>
             <th class="num">ESC</th>
-            <th class="num">AFV (Act/Rec/Tow/KO)</th>
+            <th class="num">AFV (Start | Act/Rec/Tow/KO)</th>
+            <th class="num">Inflicted (Cas/AFV)</th>
           </tr>
         </thead>
         <tbody>
@@ -2507,14 +2749,15 @@ window.IronDivision = window.IronDivision || {};
             <tr>
               <td><strong>${escapeHtml(stripEmojisForAAR(u.name))}</strong></td>
               <td>${escapeHtml((u.category || '').replace(/_/g, ' ').toUpperCase())} / ${escapeHtml(u.experience || '')}</td>
-              <td>${u.defeated ? 'OUT OF ACTION' : (u.isRallying ? 'REAR RALLY' : 'OPERATIONAL')}</td>
+              <td>${formatUnitDisposition(u)}</td>
               <td class="num">${u.maxPersonnel}</td>
               <td class="num">${u.personnel}</td>
               <td class="num">${u.dead}</td>
               <td class="num">${u.wounded}</td>
               <td class="num">${u.captured || 0}</td>
               <td class="num">${u.escaped || 0}</td>
-              <td class="num">${(u.originalMaxArmor > 0 || u.maxArmor > 0) ? `${u.armor}/${u.recoverableArmor}/${u.towedArmor || 0}/${u.unrecoverableArmor}` : '—'}</td>
+              <td class="num">${(u.originalMaxArmor > 0 || u.maxArmor > 0) ? `${u.originalMaxArmor || u.maxArmor} | ${u.armor}/${(u.recoverableArmor || 0) + (u.abandonedArmor || 0)}/${u.towedArmor || 0}/${u.unrecoverableArmor}` : '—'}</td>
+              <td class="num">${(u.stats?.casualtiesInflicted || 0)} / ${(u.stats?.afvsDisabled || 0)}</td>
             </tr>
           `).join('')}
           <tr class="totals-row">
@@ -2525,7 +2768,8 @@ window.IronDivision = window.IronDivision || {};
             <td class="num"><strong>${sum.wounded}</strong></td>
             <td class="num"><strong>${sum.captured}</strong></td>
             <td class="num"><strong>${sum.escaped}</strong></td>
-            <td class="num"><strong>${sum.armorStart > 0 ? `${sum.armorRem}/${sum.armorRec}/${sum.armorTowed}/${sum.armorUnrec}` : '—'}</strong></td>
+            <td class="num"><strong>${sum.armorStart > 0 ? `${sum.armorStart} | ${sum.armorRem}/${sum.armorRec}/${sum.armorTowed}/${sum.armorUnrec}` : '—'}</strong></td>
+            <td class="num"><strong>${sum.inflictedCas} / ${sum.inflictedAfv}</strong></td>
           </tr>
         </tbody>
       </table>
@@ -2538,7 +2782,23 @@ window.IronDivision = window.IronDivision || {};
   <title>${escapeHtml(docTitle)}</title>
   <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
-    @page { size: A4; margin: 14mm; }
+    @page {
+      size: A4;
+      margin: 14mm 14mm 18mm 14mm;
+      @bottom-left {
+        content: "FORM DA-774 // ${escapeHtml(rep.docId || 'AAR-001')}";
+        font-family: 'IBM Plex Mono', 'Courier New', Courier, monospace;
+        font-size: 7.5pt;
+        color: #555555;
+      }
+      @bottom-right {
+        content: "PAGE " counter(page) " OF " counter(pages);
+        font-family: 'IBM Plex Mono', 'Courier New', Courier, monospace;
+        font-size: 7.5pt;
+        font-weight: bold;
+        color: #222222;
+      }
+    }
     * { box-sizing: border-box; }
     body {
       font-family: 'IBM Plex Mono', 'Courier New', Courier, monospace;
@@ -2598,17 +2858,21 @@ window.IronDivision = window.IronDivision || {};
       padding: 4px 8px;
       margin: 14px 0 8px 0;
       page-break-after: avoid;
+      break-after: avoid;
     }
     h3 {
       font-size: 10pt;
       text-transform: uppercase;
       margin: 10px 0 2px 0;
       page-break-after: avoid;
+      break-after: avoid;
     }
     .meta-sub {
       font-size: 8.8pt;
       margin-bottom: 5px;
       color: #333;
+      page-break-after: avoid;
+      break-after: avoid;
     }
     .kpi-grid {
       display: grid;
@@ -2651,11 +2915,13 @@ window.IronDivision = window.IronDivision || {};
       font-size: 9.2pt;
       break-inside: avoid;
     }
+    .box.chron-box { break-inside: auto; }
     .chron-item {
       font-size: 8.5pt;
       margin-bottom: 3px;
       border-left: 2px solid #555;
       padding-left: 6px;
+      break-inside: avoid;
     }
     ul { margin: 4px 0 0 18px; padding: 0; }
     li { margin-bottom: 4px; font-size: 9.2pt; }
@@ -2691,7 +2957,7 @@ window.IronDivision = window.IronDivision || {};
       <div><strong>TO:</strong> THEATRE OPERATIONS (G-3)</div>
       <div><strong>STATUS:</strong> ${isOver ? 'FINAL DEBRIEF' : 'INTERIM SITREP'}</div>
       <div><strong>SUBJECT:</strong> ${escapeHtml(rep.terrain.toUpperCase())} (${escapeHtml(rep.feature.toUpperCase())}) ENGAGEMENT</div>
-      <div><strong>METEO:</strong> ${escapeHtml(rep.weather.toUpperCase())}</div>
+      <div style="grid-column: 1 / -1;"><strong>METEO:</strong> ${escapeHtml((rep.weatherTrail || buildWeatherTrail(state?.battle?.logs || [], rep.weather, rep.simStartClock || '')).toUpperCase())}</div>
     </div>
   </div>
 
@@ -2715,6 +2981,48 @@ window.IronDivision = window.IronDivision || {};
     </div>
   </div>
 
+  <table style="margin-top: 6px;">
+    <thead>
+      <tr>
+        <th>Force Comparison Metric</th>
+        <th class="num">${escapeHtml(sideAName.toUpperCase())}</th>
+        <th class="num">${escapeHtml(sideBName.toUpperCase())}</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Personnel Attrition (KIA + WIA + POW)</strong></td>
+        <td class="num">${lossA.toLocaleString()} / ${sumA.start.toLocaleString()} (${sumA.start > 0 ? Math.round((lossA / sumA.start) * 100) : 0}%)</td>
+        <td class="num">${lossB.toLocaleString()} / ${sumB.start.toLocaleString()} (${sumB.start > 0 ? Math.round((lossB / sumB.start) * 100) : 0}%)</td>
+      </tr>
+      <tr>
+        <td><strong>KIA : WIA Ratio</strong></td>
+        <td class="num">${sumA.dead > 0 ? `1 : ${(sumA.wounded / sumA.dead).toFixed(1)}` : (sumA.wounded > 0 ? `0 : ${sumA.wounded}` : '—')}</td>
+        <td class="num">${sumB.dead > 0 ? `1 : ${(sumB.wounded / sumB.dead).toFixed(1)}` : (sumB.wounded > 0 ? `0 : ${sumB.wounded}` : '—')}</td>
+      </tr>
+      <tr>
+        <td><strong>AFV Losses (Disabled / Destroyed KO)</strong></td>
+        <td class="num">${sumA.armorStart > 0 ? `${totalArmorKoA} / ${sumA.armorStart} (${Math.round((totalArmorKoA / sumA.armorStart) * 100)}% — ${sumA.armorUnrec} KO)` : '—'}</td>
+        <td class="num">${sumB.armorStart > 0 ? `${totalArmorKoB} / ${sumB.armorStart} (${Math.round((totalArmorKoB / sumB.armorStart) * 100)}% — ${sumB.armorUnrec} KO)` : '—'}</td>
+      </tr>
+      <tr>
+        <td><strong>Formations Intact / Deployed</strong></td>
+        <td class="num">${rep.sideA.length - sumA.defeatedCount} / ${rep.sideA.length}</td>
+        <td class="num">${rep.sideB.length - sumB.defeatedCount} / ${rep.sideB.length}</td>
+      </tr>
+      <tr>
+        <td><strong>Theatre Depot Logistics (Rem / Start)</strong></td>
+        <td class="num">${logA.depotStart > 0 ? `${logA.depotRem} / ${logA.depotStart} (${logA.depotExpPct}% expended)` : '—'}</td>
+        <td class="num">${logB.depotStart > 0 ? `${logB.depotRem} / ${logB.depotStart} (${logB.depotExpPct}% expended)` : '—'}</td>
+      </tr>
+      <tr>
+        <td><strong>Formations Reaching Critical Supply</strong></td>
+        <td class="num">${logA.criticalSupplyCount} / ${rep.sideA.length}</td>
+        <td class="num">${logB.criticalSupplyCount} / ${rep.sideB.length}</td>
+      </tr>
+    </tbody>
+  </table>
+
   <h2>2. Order of Battle &amp; Casualty Ledger</h2>
   ${renderForceTable(`2A. ${(rep.sideAName || H.getSideName('A')).toUpperCase()}`, rep.commanderA || 'Autonomous Staff', rep.sideA, sumA)}
   ${renderForceTable(`2B. ${(rep.sideBName || H.getSideName('B')).toUpperCase()}`, rep.commanderB || 'Autonomous Staff', rep.sideB, sumB)}
@@ -2724,15 +3032,15 @@ window.IronDivision = window.IronDivision || {};
     ${isOver && salvage && salvage.abandoned > 0 ? `
       <div><strong>VICTOR FIELD POSSESSION (${escapeHtml(winName.toUpperCase())}):</strong> ${salvage.abandoned} abandoned enemy armored hulls secured on the objective.</div>
       <ul>
-        <li><strong>Repaired &amp; Impressed (Beutepanzers):</strong> ${salvage.impressed} vehicle(s)</li>
-        <li><strong>Stripped for Depot Logistics:</strong> ${salvageStrippedCount} vehicle(s) (+${salvage.supplyScrapped} Supply Points)</li>
+        <li><strong>Captured &amp; Impressed into Service:</strong> ${salvage.impressed} vehicle(s)</li>
+        <li><strong>Stripped for Depot Spares &amp; Munitions:</strong> ${salvageStrippedCount} vehicle(s)</li>
         <li><strong>Scuttled / Destroyed Write-Offs:</strong> ${salvage.scuttled} vehicle(s)</li>
       </ul>
     ` : `<div>No abandoned enemy armored vehicles were claimed during this reporting period.</div>`}
   </div>
 
   <h2>4. Significant Engagement Chronology</h2>
-  <div class="box">
+  <div class="box chron-box">
     ${chronology.length > 0
       ? chronology.map(l => `<div class="chron-item"><strong>[${escapeHtml(l.clock || '00:00')} HRS${l.dayLabel ? ` · ${escapeHtml(l.dayLabel)}` : ''}]</strong> ${escapeHtml(sanitizeForPrintableAAR(l.text))}</div>`).join('')
       : '<div>No major milestone events recorded in sitrep log.</div>'}

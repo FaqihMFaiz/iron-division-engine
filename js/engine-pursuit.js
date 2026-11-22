@@ -268,7 +268,7 @@ window.IronDivision = window.IronDivision || {};
         supplyScrapped = scrappedCount * 5;
 
         H.addLog('armor', `[AFV] [FIELD SALVAGE] ${H.getSideName(winnerSide)} (Roll ${salvageScore}) secured ${totalAbandonedHulls} abandoned hulls: ` +
-          `${impressedTanks} Beutepanzers restored, ${scrappedCount} stripped (+${supplyScrapped} Supply), ${scuttledHulls} scuttled/burned.`);
+          `${impressedTanks} captured hulls impressed, ${scrappedCount} stripped (+${supplyScrapped} Supply), ${scuttledHulls} scuttled/burned.`);
       }
     }
 
@@ -306,6 +306,25 @@ window.IronDivision = window.IronDivision || {};
       terrain: state.environment.terrain,
       feature: state.environment.feature,
       weather: state.environment.weather,
+      weatherTrail: (() => {
+        const logs = state.battle.logs || [];
+        const shifts = [];
+        for (const l of logs) {
+          const txt = typeof l === "string" ? l : (l.text || "");
+          if (!txt.includes("[Weather Shift]")) continue;
+          const m = txt.match(/shifts from ([^-]+?)\s*->\s*([^(!]+?)(?:\s*\([^)]*\))?!/i);
+          if (m) {
+            shifts.push({ from: m[1].trim(), to: m[2].trim(), clock: l.clock || "" });
+          }
+        }
+        if (shifts.length === 0) return state.environment.weather;
+        const startClk = H.formatSimulatedClock ? H.formatSimulatedClock(H.getSimulatedBattleDate(1)) : "";
+        const trail = [`${shifts[0].from}${startClk ? ` (${startClk})` : ""}`];
+        for (const s of shifts) {
+          trail.push(`${s.to}${s.clock ? ` (${s.clock})` : ""}`);
+        }
+        return trail.join(" → ");
+      })(),
       theatreAttackerSide: state.environment.theatreAttackerSide || 'A',
       sideAName: H.getSideName('A'),
       sideBName: H.getSideName('B'),
@@ -313,7 +332,43 @@ window.IronDivision = window.IronDivision || {};
       commanderB: getCmdName('B'),
       sideA: structuredClone(state.battle.sideA.units),
       sideB: structuredClone(state.battle.sideB.units),
-      salvage: state.battle.salvageReport ? structuredClone(state.battle.salvageReport) : null
+      salvage: state.battle.salvageReport ? structuredClone(state.battle.salvageReport) : null,
+      logistics: {
+        A: (() => {
+          const s = state.battle.sideA || {};
+          const us = (s.units || []).filter(u => !u.isMonster && !u.isZombie);
+          const depotStart = Number(s.maxSupplyDepot || 0);
+          const depotRem = Math.max(0, Number(s.supplyDepot || 0));
+          const depotExpended = Math.max(0, depotStart - depotRem);
+          return {
+            depotStart,
+            depotRem,
+            depotExpended,
+            depotExpPct: depotStart > 0 ? Math.round((depotExpended / depotStart) * 100) : 0,
+            supplyRaided: Number(s.supplyRaidedTotal || 0),
+            criticalSupplyCount: us.filter(u => u.supplyBelow20Triggered || (u.maxSupply > 0 && (u.supply / u.maxSupply) < 0.25)).length,
+            exhaustedCount: us.filter(u => u.maxSupply > 0 && u.supply <= 0).length,
+            depotCriticalClock: s.depotCriticalClock || ""
+          };
+        })(),
+        B: (() => {
+          const s = state.battle.sideB || {};
+          const us = (s.units || []).filter(u => !u.isMonster && !u.isZombie);
+          const depotStart = Number(s.maxSupplyDepot || 0);
+          const depotRem = Math.max(0, Number(s.supplyDepot || 0));
+          const depotExpended = Math.max(0, depotStart - depotRem);
+          return {
+            depotStart,
+            depotRem,
+            depotExpended,
+            depotExpPct: depotStart > 0 ? Math.round((depotExpended / depotStart) * 100) : 0,
+            supplyRaided: Number(s.supplyRaidedTotal || 0),
+            criticalSupplyCount: us.filter(u => u.supplyBelow20Triggered || (u.maxSupply > 0 && (u.supply / u.maxSupply) < 0.25)).length,
+            exhaustedCount: us.filter(u => u.maxSupply > 0 && u.supply <= 0).length,
+            depotCriticalClock: s.depotCriticalClock || ""
+          };
+        })()
+      }
     };
   }
 

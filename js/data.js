@@ -273,7 +273,7 @@ window.IronDivision = window.IronDivision || {};
     },
     {
       id: 'repair_crew', name: 'Repair Crew',
-      desc: 'Organic ARVs & mechanics: +12% Armor Recovery; every 2 rounds (if Supply >= 25%), spends 1+d2 Supply to field-repair up to d2–d5 recoverable vehicles back into combat.',
+      desc: 'Organic ARVs & mechanics: +12% Armor Recovery; every 4 rounds (if Supply >= 25% and not hit by anti-armor fire last round), spends 1+d2 Supply to field-repair 1–2 recoverable vehicles (up to 3 with Simple Engineering) back into combat.',
       atkPct: 0, atkFlat: 0, defPct: 0, defFlat: 0, softFlat: 0, hardFlat: 0, pierceFlat: 0, hardnessFlat: 0,
       vigilance: 0, orgRegen: 0, supplyRegen: 0, supplySteal: 0, recBonus: 0, armorRecBonus: 12,
       enemyDefMalus: 0, enemyHardMalus: 0, terrainTarget: '', terrainBonus: 0, antiCategory: '', antiBonus: 0,

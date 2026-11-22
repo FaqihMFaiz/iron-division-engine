@@ -107,6 +107,15 @@ window.IronDivision = window.IronDivision || {};
       ralliedOnce: false,
       unbreakableRoundsLeft: null,
       orgRecoveryBlockedRounds: 0,
+      lastArmorHitRound: -99,
+      stats: {
+        casualtiesInflicted: 0,
+        afvsDisabled: 0,
+        afvsDestroyed: 0,
+        fieldRepairs: 0,
+        indirectCasualtiesInflicted: 0,
+        airCasualtiesInflicted: 0
+      },
       roundTemp: {
         defMalus: 0,
         hardMalus: 0,
@@ -119,6 +128,21 @@ window.IronDivision = window.IronDivision || {};
         coverDenied: false
       }
     };
+  }
+
+  function ensureUnitStats(u) {
+    if (!u) return null;
+    if (!u.stats) {
+      u.stats = {
+        casualtiesInflicted: 0,
+        afvsDisabled: 0,
+        afvsDestroyed: 0,
+        fieldRepairs: 0,
+        indirectCasualtiesInflicted: 0,
+        airCasualtiesInflicted: 0
+      };
+    }
+    return u.stats;
   }
 
   function getTraitById(id) {
@@ -1324,32 +1348,45 @@ window.IronDivision = window.IronDivision || {};
         }
       }
 
-      // Field Repair Crew (revamped: every 2 rounds if Supply >= 25%)
-      if (ID.state.battle.round % 2 === 0 && !u.isDismounted && u.maxArmor > 0 && unitTraits.some(t => t.isRepairCrew) && u.recoverableArmor > 0) {
-        const hasSupplyToRepair = u.isMonster || u.isZombie || (u.supply >= u.maxSupply * 0.25);
-        if (hasSupplyToRepair) {
-          const hasSimpleEng = unitTraits.some(t => t.id === 'simple_engineering');
-          const repCostReduction = hasSimpleEng ? 1 : 0;
-          const extraRepairBonus = hasSimpleEng ? 1 : 0;
+      // Field Repair Crew (every 4 rounds if Supply >= 25% and not hit by anti-armor fire last round)
+      if (ID.state.battle.round % 4 === 0 && !u.isDismounted && u.maxArmor > 0 && unitTraits.some(t => t.isRepairCrew) && u.recoverableArmor > 0) {
+        const pinnedByRecentArmorHit = (u.lastArmorHitRound === ID.state.battle.round - 1);
+        if (pinnedByRecentArmorHit) {
+          H.addLog('armor', `[REP] [Field Repair Crew] ${u.name} mechanics pinned by recent anti-armor fire — mid-battle field repair delayed (${u.recoverableArmor} awaiting recovery).`);
+        } else {
+          const hasSupplyToRepair = u.isMonster || u.isZombie || (u.supply >= u.maxSupply * 0.25);
+          if (hasSupplyToRepair) {
+            const hasSimpleEng = unitTraits.some(t => t.id === 'simple_engineering');
+            const repCostReduction = hasSimpleEng ? 1 : 0;
+            const extraRepairBonus = hasSimpleEng ? 1 : 0;
 
-          const repDie = expObj.repairDie || 3;
-          const fieldCap = Math.max(1, Math.ceil(u.recoverableArmor * 0.5));
-          const repaired = Math.min(fieldCap, H.rollDie(repDie) + extraRepairBonus);
+            const repDie = expObj.repairDie || 3;
+            const rawRepRoll = H.rollDie(repDie);
+            const baseRepaired = Math.max(1, Math.ceil(rawRepRoll / 2));
+            const maxPerCycle = hasSimpleEng ? 3 : 2;
+            const fieldCap = Math.max(1, Math.ceil(u.recoverableArmor * 0.35));
+            const repaired = Math.min(u.recoverableArmor, fieldCap, maxPerCycle, baseRepaired + extraRepairBonus);
 
-          if (repaired > 0) {
-            const baseCost = 1 + H.rollDie(2);
-            const repSupCost = Math.max(0, baseCost - repCostReduction);
-            if (!u.isMonster && !u.isZombie) {
-              u.supply = Math.max(0, u.supply - repSupCost);
+            if (repaired > 0) {
+              const baseCost = 1 + H.rollDie(2);
+              const repSupCost = Math.max(0, baseCost - repCostReduction);
+              if (!u.isMonster && !u.isZombie) {
+                u.supply = Math.max(0, u.supply - repSupCost);
+              }
+              u.recoverableArmor -= repaired;
+              u.armor = Math.min(u.maxArmor, u.armor + repaired);
+              ensureUnitStats(u).fieldRepairs += repaired;
+              H.addLog('armor', `[REP] [Field Repair Crew] ${u.name} (${u.experience}, ceil(d${repDie}[${rawRepRoll}]/2)${extraRepairBonus ? '+1 SimpleEng' : ''}, Max ${maxPerCycle}, Cost ${repSupCost} Sup) restores ${repaired} armor in-field (${u.armor} active, ${u.recoverableArmor} awaiting post-battle recovery).`);
             }
-            u.recoverableArmor -= repaired;
-            u.armor = Math.min(u.maxArmor, u.armor + repaired);
-            H.addLog('armor', `[REP] [Field Repair Crew] ${u.name} (${u.experience}, d${repDie}${extraRepairBonus ? '+1 SimpleEng' : ''}, Cost ${repSupCost} Sup) restores ${repaired} armor in-field (${u.armor} active, ${u.recoverableArmor} awaiting post-battle recovery).`);
           }
         }
       }
 
       checkAndMarkUnitDefeat(u);
+    }
+
+    if (!sideState.depotCriticalClock && sideState.maxSupplyDepot > 0 && (sideState.supplyDepot / sideState.maxSupplyDepot) <= 0.20) {
+      sideState.depotCriticalClock = H.formatSimulatedClock ? H.formatSimulatedClock(H.getSimulatedBattleDate(ID.state.battle.round)) : "";
     }
 
     if (brigadeResupplyTotal > 0) {
@@ -1498,7 +1535,7 @@ window.IronDivision = window.IronDivision || {};
           target.roundTemp.defMalus += defRed;
           target.roundTemp.coverDenied = true;
           const cas = 1 + H.rollDie(4);
-          applySupportCasualtiesAndArmor(target, cas, 0, 'Mortar Fragmentation');
+          applySupportCasualtiesAndArmor(target, cas, 0, 'Mortar Fragmentation', u, 'indirect');
 
           let orgShock = 0;
           if (!target.isMonster && !target.isZombie) {
@@ -1519,7 +1556,7 @@ window.IronDivision = window.IronDivision || {};
             targetSideState.nextRoundVigMod -= 15;
             H.addLog('support', `[TGT] [Mortar Optics Hit!] ${u.name} -> ${target.name}: Periscopes shattered! Def -${defRed + 5}, -15 Vigilance next round.`);
           } else if (d6 === 6) {
-            processArmorLossAndCrewCasualties(target, 1, 'Mortar Track Hit', 'Mortar Mobility Hit');
+            processArmorLossAndCrewCasualties(target, 1, 'Mortar Track Hit', 'Mortar Mobility Hit', u, 'indirect');
             target.mobilityClassPenalty = (target.mobilityClassPenalty || 0) + 2;
             H.addLog('armor', `[BRCH] [MORTAR TRACK BLOWN!] ${u.name} lands direct shell on ${target.name}'s suspension! 1 vehicle immobilized, -2 Mobility Class!`);
           }
@@ -1550,7 +1587,7 @@ window.IronDivision = window.IronDivision || {};
           if (target.maxArmor > 0) armDis += 1 + H.rollDie(3);
         }
         if (cas > 0 || armDis > 0) {
-          applySupportCasualtiesAndArmor(target, cas, armDis, 'Heavy Artillery Barrage');
+          applySupportCasualtiesAndArmor(target, cas, armDis, 'Heavy Artillery Barrage', u, 'indirect');
         }
 
         const fireSourceLabel = u.category === 'artillery' ? 'Inherent Battery Barrage' : 'Off-Map Artillery Support';
@@ -1628,7 +1665,7 @@ window.IronDivision = window.IronDivision || {};
           cas = Math.max(0, Math.round(cas * airEff) - aaReduction);
           armDis = Math.max(0, Math.round(armDis * airEff));
           if (cas > 0 || armDis > 0) {
-            applySupportCasualtiesAndArmor(target, cas, armDis, 'Airstrike');
+            applySupportCasualtiesAndArmor(target, cas, armDis, 'Airstrike', u, 'air');
           }
           H.addLog('support', `[FS-AIR] [Air Support] ${u.name} -> ${target.name} (Roll d20=${d20}, Air Eff: ${airEffPct}%, AA Red: -${aaReduction}): Def -${defRed}, Hardness -${hardRed}, Cas: ${cas}, Armor Dis: ${armDis}`);
         }
@@ -1636,22 +1673,36 @@ window.IronDivision = window.IronDivision || {};
     }
   }
 
-  function processArmorLossAndCrewCasualties(target, disabledRoll, bracketDesc, sourceLabel) {
+  function processArmorLossAndCrewCasualties(target, disabledRoll, bracketDesc, sourceLabel, sourceUnit = null, channel = 'direct') {
     if (disabledRoll <= 0 || target.maxArmor <= 0 || target.armor <= 0) return;
     const actualDisabled = Math.min(target.armor, disabledRoll);
     target.armor -= actualDisabled;
+
+    target.lastArmorHitRound = ID.state.battle.round;
 
     const opMods = H.getTerrainOperationalMods(target.category);
     const baseArmorRec = (target.recovery !== undefined && target.recovery !== null) ? Number(target.recovery) : 50;
     const armorRecBonus = getUnitArmorRecoveryBonus(target) + opMods.vehicleRecMod;
     const rawD50 = H.rollDie(50);
     const recRoll = baseArmorRec + rawD50;
-    const totalRecPct = H.clamp(recRoll + armorRecBonus, 5, 95);
-    const recVehicles = Math.round(actualDisabled * (totalRecPct / 100));
+    const recCapRoll = H.rollDie(20);
+    const recCap = 80 + recCapRoll;
+    const totalRecPct = H.clamp(recRoll + armorRecBonus, 5, recCap);
+    const expectedRec = actualDisabled * (totalRecPct / 100);
+    let recVehicles = Math.floor(expectedRec);
+    if (Math.random() < (expectedRec - recVehicles)) {
+      recVehicles += 1;
+    }
+    recVehicles = H.clamp(recVehicles, 0, actualDisabled);
     const unrecVehicles = actualDisabled - recVehicles;
 
     target.recoverableArmor += recVehicles;
     target.unrecoverableArmor += unrecVehicles;
+    if (sourceUnit) {
+      const st = ensureUnitStats(sourceUnit);
+      st.afvsDisabled += actualDisabled;
+      st.afvsDestroyed += unrecVehicles;
+    }
 
     const hasToughChassis = (target.traits || []).some(tid => {
       const t = getTraitById(tid);
@@ -1680,22 +1731,22 @@ window.IronDivision = window.IronDivision || {};
 
     H.addLog(
       'armor',
-      `[AFV] [${sourceLabel} Armor Hit] ${target.name} (${bracketDesc}): ${actualDisabled} vehicles knocked out! Recovery (${baseArmorRec}+d50[${rawD50}])=${recRoll}${armorRecBonus >= 0 ? '+' : ''}${armorRecBonus}=${totalRecPct}% -> ` +
+      `[AFV] [${sourceLabel} Armor Hit] ${target.name} (${bracketDesc}): ${actualDisabled} vehicles knocked out! Recovery (${baseArmorRec}+d50[${rawD50}])=${recRoll}${armorRecBonus >= 0 ? '+' : ''}${armorRecBonus}=${totalRecPct}% (Cap 80+d20[${recCapRoll}]=${recCap}%) -> ` +
       `${recVehicles} Recoverable, ${unrecVehicles} Destroyed (${target.armor}/${target.maxArmor} active) | Crew Casualties: ${crewDowned} downed, -${vehOrgShock} Org shock!`
     );
 
     if (crewDowned > 0) {
-      applyPersonnelCasualties(target, crewDowned, true, false, `${sourceLabel} Crew Loss`);
+      applyPersonnelCasualties(target, crewDowned, true, false, `${sourceLabel} Crew Loss`, {}, {}, false, sourceUnit, channel);
     }
     checkAndMarkUnitDefeat(target);
   }
 
-  function applySupportCasualtiesAndArmor(target, casualties, armorDisabled, sourceLabel) {
+  function applySupportCasualtiesAndArmor(target, casualties, armorDisabled, sourceLabel, sourceUnit = null, channel = 'indirect') {
     if (casualties > 0) {
-      applyPersonnelCasualties(target, casualties, true, true, sourceLabel);
+      applyPersonnelCasualties(target, casualties, true, true, sourceLabel, {}, {}, false, sourceUnit, channel);
     }
     if (armorDisabled > 0 && target.maxArmor > 0 && target.armor > 0) {
-      processArmorLossAndCrewCasualties(target, armorDisabled, 'Support Strike', sourceLabel);
+      processArmorLossAndCrewCasualties(target, armorDisabled, 'Support Strike', sourceLabel, sourceUnit, channel);
     }
   }
 
@@ -1957,7 +2008,7 @@ window.IronDivision = window.IronDivision || {};
         }
       }
       if (finalDisabled > 0) {
-        processArmorLossAndCrewCasualties(defender, finalDisabled, finalBracket, isOverwatch ? 'Overwatch' : 'Main Attack');
+        processArmorLossAndCrewCasualties(defender, finalDisabled, finalBracket, isOverwatch ? 'Overwatch' : 'Main Attack', attacker, attacker.category === 'artillery' ? 'indirect' : 'direct');
         if (defender.defeated || defender.isRallying) return;
       }
     }
@@ -2006,6 +2057,8 @@ window.IronDivision = window.IronDivision || {};
           const wasBelow50 = (defender.supply / Math.max(1, defender.maxSupply)) < 0.50;
           defender.supply -= stolen;
           attacker.supply = Math.min(attacker.maxSupply, attacker.supply + stolen);
+          const atkSideObj = attacker.side === 'A' ? ID.state.battle.sideA : ID.state.battle.sideB;
+          atkSideObj.supplyRaidedTotal = (atkSideObj.supplyRaidedTotal || 0) + stolen;
           H.addLog('support', `[RAID] [Supply Stolen] ${attacker.name} steals ${stolen} Supply from ${defender.name}!`);
 
           if (hasRaiders && wasBelow50) {
@@ -2024,7 +2077,7 @@ window.IronDivision = window.IronDivision || {};
         const bRoll = H.rollDie(6);
         if (bRoll >= 5) {
           const extraCas = H.rollDie(6);
-          applyPersonnelCasualties(defender, extraCas, false, true, 'Street-by-Street Barrage');
+          applyPersonnelCasualties(defender, extraCas, false, true, 'Street-by-Street Barrage', {}, {}, false, attacker, 'direct');
         }
       }
     } else {
@@ -2034,7 +2087,7 @@ window.IronDivision = window.IronDivision || {};
         H.addLog('rolls', `[DEF] [COMPLETELY IMMUNE] ${defender.name} holds the line (${defTotals.finalValue} vs ${atkTotals.finalValue}): ${grazeResult.reason} (0 casualties)!`);
       } else {
         H.addLog('damage', `[DEF] [Grazing Fire] ${defender.name} repels breakthrough (${defTotals.finalValue} vs ${atkTotals.finalValue}), but suffers ${grazeResult.casualties} grazing casualties (${grazeResult.reason})!`);
-        applyPersonnelCasualties(defender, grazeResult.casualties, false, false, 'Grazing Fire', atkTactic, defTactic);
+        applyPersonnelCasualties(defender, grazeResult.casualties, false, false, 'Grazing Fire', atkTactic, defTactic, false, attacker, attacker.category === 'artillery' ? 'indirect' : 'direct');
       }
 
       if (defTactic.id === 'def_delay') {
@@ -2166,7 +2219,7 @@ window.IronDivision = window.IronDivision || {};
           }
         }
         if (finalRetDisabled > 0) {
-          processArmorLossAndCrewCasualties(attacker, finalRetDisabled, finalRetBracket, 'Return Fire');
+          processArmorLossAndCrewCasualties(attacker, finalRetDisabled, finalRetBracket, 'Return Fire', defender, defender.category === 'artillery' ? 'indirect' : 'direct');
         }
         if (attacker.defeated || attacker.isRallying) return;
       }
@@ -2184,7 +2237,7 @@ window.IronDivision = window.IronDivision || {};
         if (defTactic.id === 'urb_def_ambush') {
           const ambRoll = H.rollDie(6);
           if (ambRoll >= 5) {
-            applyPersonnelCasualties(attacker, H.rollDie(6), false, false, 'Urban Ambush Bonus');
+            applyPersonnelCasualties(attacker, H.rollDie(6), false, false, 'Urban Ambush Bonus', {}, {}, false, defender, 'direct');
           }
         }
       } else {
@@ -2194,7 +2247,7 @@ window.IronDivision = window.IronDivision || {};
           H.addLog('rolls', `[RET] [BREAKTHROUGH IMMUNE] ${attacker.name}'s Breakthrough (${atkBreakTotals.finalValue}) deflects ${defender.name}'s Return Fire (${defRetAtkTotals.finalValue}): ${retGrazeResult.reason} (0 casualties)!`);
         } else {
           H.addLog('damage', `[RET] [Grazing Return Fire] ${attacker.name}'s Breakthrough (${atkBreakTotals.finalValue}) holds vs ${defender.name} (${defRetAtkTotals.finalValue}), but takes ${retGrazeResult.casualties} suppressing casualties (${retGrazeResult.reason})!`);
-          applyPersonnelCasualties(attacker, retGrazeResult.casualties, false, false, 'Grazing Return Fire', defTactic, atkTactic);
+          applyPersonnelCasualties(attacker, retGrazeResult.casualties, false, false, 'Grazing Return Fire', defTactic, atkTactic, false, defender, defender.category === 'artillery' ? 'indirect' : 'direct');
         }
       }
     } else {
@@ -2453,12 +2506,19 @@ window.IronDivision = window.IronDivision || {};
     );
 
     const armorHeldHeavy = !pierced && defender.maxArmor > 0 && defender.armor > 0 && ['heavy', 'super'].includes(defender.armorTier);
-    applyPersonnelCasualties(defender, rawDowned, hasHighCal && !armorHeldMitigation, hasExplosive && !armorHeldMitigation, phaseLabel, atkTactic, defTactic, armorHeldHeavy);
+    applyPersonnelCasualties(defender, rawDowned, hasHighCal && !armorHeldMitigation, hasExplosive && !armorHeldMitigation, phaseLabel, atkTactic, defTactic, armorHeldHeavy, attacker, attacker.category === 'artillery' ? 'indirect' : 'direct');
   }
 
-  function applyPersonnelCasualties(defender, rawDowned, hasHighCal, hasExplosive, phaseLabel, atkTactic = {}, defTactic = {}, armorHeldHeavy = false) {
+  function applyPersonnelCasualties(defender, rawDowned, hasHighCal, hasExplosive, phaseLabel, atkTactic = {}, defTactic = {}, armorHeldHeavy = false, sourceUnit = null, channel = 'direct') {
     const actualDowned = Math.min(defender.personnel, Math.max(0, rawDowned));
     if (actualDowned <= 0) return;
+
+    if (sourceUnit) {
+      const st = ensureUnitStats(sourceUnit);
+      st.casualtiesInflicted += actualDowned;
+      if (channel === 'indirect') st.indirectCasualtiesInflicted += actualDowned;
+      else if (channel === 'air') st.airCasualtiesInflicted += actualDowned;
+    }
 
     defender.personnel -= actualDowned;
 
