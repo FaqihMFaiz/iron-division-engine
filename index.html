@@ -59,7 +59,8 @@
       <div class="flex items-center justify-center md:justify-end gap-1.5">
         <button type="button" onclick="exportPresetsJSON()" class="mil-btn px-2.5 py-1 bg-[#181e19] hover:bg-[#242d26] border border-[#3a453c] text-[#c8a24b] text-[10px] font-mono font-semibold">EXPORT JSON</button>
         <button type="button" onclick="triggerImportPresetsJSON()" class="mil-btn px-2.5 py-1 bg-[#181e19] hover:bg-[#242d26] border border-[#3a453c] text-[#8ec0e8] text-[10px] font-mono font-semibold">IMPORT JSON</button>
-        <button type="button" onclick="openBattleSummaryModal()" class="mil-btn px-2.5 py-1 bg-[#252218] hover:bg-[#332e1e] border border-[#6e5c2c] text-[#e6c873] text-[10px] font-mono font-bold">AAR</button>
+        <button type="button" id="btn-header-tour" onclick="startUITutorial()" class="mil-btn px-2.5 py-1 bg-[#1b291f] hover:bg-[#253a2b] border border-[#4c7548] text-[#a7d6a2] text-[10px] font-mono font-bold" title="Launch interactive guided UI tutorial">UI TOUR</button>
+        <button type="button" id="btn-header-aar" onclick="openBattleSummaryModal()" class="mil-btn px-2.5 py-1 bg-[#252218] hover:bg-[#332e1e] border border-[#6e5c2c] text-[#e6c873] text-[10px] font-mono font-bold">AAR</button>
         <input type="file" id="preset-import-input" accept=".json,application/json" onchange="importPresetsJSON(event)" class="hidden">
       </div>
     </div>
@@ -230,7 +231,7 @@
       </div>
 
       <!-- 3-Column Battlefield Layout -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
 
         <!-- SIDE A COLUMN (BLUEFOR) -->
         <div class="lg:col-span-4 space-y-4">
@@ -250,7 +251,9 @@
                 <div id="sideA-cmd-rank-badge" class="flex items-center gap-1.5 font-mono text-[10px] text-[#dde3da]"></div>
               </div>
               <div class="flex items-center gap-2 min-w-0">
-                <select id="sideA-commander" onchange="updateSideConfig('A')" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white"></select>
+                <div class="mil-cmd-plate-wrap">
+                  <select id="sideA-commander" onchange="updateSideConfig('A')" class="mil-cmd-plate-select"></select>
+                </div>
               </div>
               <div id="sideA-cmd-dossier" class="pt-1.5 border-t border-[#242c25] space-y-1.5 text-[10px] font-mono"></div>
             </div>
@@ -270,6 +273,9 @@
               <button type="button" onclick="deployUnitToSide('A')" class="mil-btn px-2.5 py-1.5 bg-[#234563] hover:bg-[#2d587d] border border-[#4e8ec4] text-[#d9ecfc] font-semibold text-[11px] shrink-0 whitespace-nowrap">
                 + DEPLOY
               </button>
+              <button type="button" id="btn-compact-cards-a" onclick="toggleCompactUnitCards()" class="mil-btn px-2 py-1.5 bg-[#1c221d] hover:bg-[#272f29] border border-[#3a453c] text-[#c8d1c7] font-mono text-[10px] font-bold shrink-0 whitespace-nowrap" title="Toggle Compact / Full unit cards">
+                COMPACT
+              </button>
             </div>
 
             <!-- Deployed Units Roster -->
@@ -279,33 +285,38 @@
 
         <!-- CENTER COLUMN: TELEMETRY & LOG -->
         <div class="lg:col-span-4 space-y-3 flex flex-col">
-          <!-- Unified Tactical Telemetry Monitor (OP Status + Y-Axis Rangefinder) -->
-          <div class="mil-monitor-frame p-3 space-y-2.5">
+          <!-- Sticky Operational Status Command Block (Collapsible to Compact Sticky Strip) -->
+          <div id="center-command-sticky" class="lg:sticky lg:top-[68px] z-20 mil-monitor-frame p-2.5 shadow-xl">
             <!-- Round Telemetry, Primary Command Execution & Force Ratio -->
-            <div class="bg-slate-950 border border-slate-800 p-3.5 space-y-3">
-              <div class="flex items-start justify-between gap-2 border-b border-slate-800 pb-2.5">
+            <div class="op-status-inner bg-slate-950 border border-slate-800 p-3.5 space-y-3">
+              <div class="op-status-collapsible flex items-start justify-between gap-2 border-b border-slate-800 pb-2.5">
                 <div>
                   <span class="text-[9.5px] font-mono uppercase tracking-[0.14em] text-[#7c877b] block">OPERATIONAL STATUS</span>
                   <div class="text-xl sm:text-2xl font-bold text-[#d4b054] tracking-wider leading-tight" style="font-family:'Chakra Petch',sans-serif;" id="round-counter-display">RD-01 // STANDBY</div>
                   <div id="op-clock-display" class="text-[10.5px] font-mono text-[#9ca69a] mt-0.5">06 JUN 1944 · 06:00 HRS · 1ST DAY</div>
                 </div>
-                <div class="text-right">
-                  <span class="text-[9.5px] font-mono uppercase tracking-[0.14em] text-[#7c877b] block">INITIATIVE VECTOR</span>
-                  <div class="text-xs font-mono font-semibold text-[#e7ece4] mt-0.5" id="phase-indicator">BLUEFOR ATK → OPFOR DEF</div>
+                <div class="text-right flex flex-col items-end gap-1">
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-[9.5px] font-mono uppercase tracking-[0.14em] text-[#7c877b]">INITIATIVE VECTOR</span>
+                    <button type="button" id="btn-toggle-op-status" onclick="toggleOpStatusCollapse()" class="mil-btn px-1.5 py-0.5 bg-[#1c221d] hover:bg-[#272f29] border border-[#3a453c] text-[#c8d1c7] font-mono text-[9.5px] font-bold" title="Collapse Operational Status to compact sticky strip">▲</button>
+                  </div>
+                  <div class="text-xs font-mono font-semibold text-[#e7ece4]" id="phase-indicator">BLUEFOR ATK → OPFOR DEF</div>
                 </div>
               </div>
 
               <!-- Focal Primary Command Action Bar -->
               <div class="space-y-2">
-                <div class="flex items-stretch gap-2">
-                  <button type="button" onclick="runSingleRound()" id="btn-next-round" class="mil-btn mil-cta-primary flex-1 py-2.5 px-4 bg-[#c8a24b] hover:bg-[#d8b45c] text-[#0d100d] font-bold text-sm tracking-[0.12em] border border-[#e6c873] flex items-center justify-center gap-2">
+                <div class="flex items-stretch gap-1.5">
+                  <span id="op-status-mini-rd" class="op-status-mini-only hidden items-center px-2 bg-[#141915] border border-[#4d4224] font-mono text-[10.5px] font-bold text-[#d4b054] shrink-0">RD-01</span>
+                  <button type="button" onclick="runSingleRound()" id="btn-next-round" class="mil-btn mil-cta-primary flex-1 py-2 px-3 bg-[#c8a24b] hover:bg-[#d8b45c] text-[#0d100d] font-bold text-xs sm:text-sm tracking-[0.1em] border border-[#e6c873] flex items-center justify-center gap-1.5">
                     <span>▶ EXECUTE ROUND</span>
                   </button>
-                  <button type="button" onclick="toggleAutoRun()" id="btn-auto-run" class="mil-btn px-3.5 py-2.5 bg-[#2d472b] hover:bg-[#385936] text-[#d9ead7] font-bold text-xs tracking-wider border border-[#4c7548] shrink-0">
+                  <button type="button" onclick="toggleAutoRun()" id="btn-auto-run" class="mil-btn px-3 py-2 bg-[#2d472b] hover:bg-[#385936] text-[#d9ead7] font-bold text-xs tracking-wider border border-[#4c7548] shrink-0">
                     AUTO-OPS
                   </button>
+                  <button type="button" onclick="toggleOpStatusCollapse()" class="op-status-mini-only hidden items-center justify-center mil-btn px-2 py-1 bg-[#1c221d] hover:bg-[#272f29] border border-[#3a453c] text-[#c8d1c7] font-mono text-[10px] font-bold shrink-0" title="Expand Operational Status">▼</button>
                 </div>
-                <div class="grid grid-cols-4 gap-1.5">
+                <div class="op-status-collapsible grid grid-cols-4 gap-1.5">
                   <button type="button" onclick="toggleGMMode()" id="btn-gm-mode" class="mil-btn py-1.5 px-2 bg-[#1c221d] hover:bg-[#272f29] border border-[#3a453c] text-[#c8a24b] font-semibold text-[10.5px]" title="Toggle GM Live Controls &amp; 1-Round Undo">
                     GM LIVE
                   </button>
@@ -332,7 +343,7 @@
                   <div id="force-ratio-bar-a" class="bg-[#4e8ec4] h-full bar-fill" style="width: 50%"></div>
                   <div id="force-ratio-bar-b" class="bg-[#c2524c] h-full bar-fill" style="width: 50%"></div>
                 </div>
-                <div class="flex flex-wrap items-center justify-end gap-1.5 pt-1">
+                <div class="op-status-collapsible flex flex-wrap items-center justify-end gap-1.5 pt-1">
                   <span class="font-mono text-[9.5px] uppercase tracking-wider text-[#6e7a6d]">SCENARIOS:</span>
                   <button type="button" onclick="loadArracourtScenario()" class="font-mono text-[10px] uppercase tracking-wider text-[#e6c46d] hover:text-white px-2 py-0.5 bg-[#1c231c] border border-[#4a5a44]" title="Load Battle of Arracourt (18 SEP 1944) — Default">
                     ARRACOURT (1944)
@@ -344,6 +355,10 @@
               </div>
             </div>
 
+          </div>
+
+          <!-- Tactical Map & Y-Axis Rangefinder Frame -->
+          <div class="mil-monitor-frame p-3 space-y-2.5">
             <!-- Collapsible 2D Tactical Sector Map Canvas -->
             <div id="tactical-sector-panel" class="bg-slate-950 border border-slate-800 p-2.5">
               <div class="flex items-center justify-between gap-2 pb-1.5 border-b border-slate-800">
@@ -420,7 +435,9 @@
                 <div id="sideB-cmd-rank-badge" class="flex items-center gap-1.5 font-mono text-[10px] text-[#dde3da]"></div>
               </div>
               <div class="flex items-center gap-2 min-w-0">
-                <select id="sideB-commander" onchange="updateSideConfig('B')" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white"></select>
+                <div class="mil-cmd-plate-wrap">
+                  <select id="sideB-commander" onchange="updateSideConfig('B')" class="mil-cmd-plate-select"></select>
+                </div>
               </div>
               <div id="sideB-cmd-dossier" class="pt-1.5 border-t border-[#242c25] space-y-1.5 text-[10px] font-mono"></div>
             </div>
@@ -439,6 +456,9 @@
               <select id="sideB-add-select" class="flex-1 min-w-0 w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white truncate"></select>
               <button type="button" onclick="deployUnitToSide('B')" class="mil-btn px-2.5 py-1.5 bg-[#5c2522] hover:bg-[#732f2b] border border-[#c2524c] text-[#fce0de] font-semibold text-[11px] shrink-0 whitespace-nowrap">
                 + DEPLOY
+              </button>
+              <button type="button" id="btn-compact-cards-b" onclick="toggleCompactUnitCards()" class="mil-btn px-2 py-1.5 bg-[#1c221d] hover:bg-[#272f29] border border-[#3a453c] text-[#c8d1c7] font-mono text-[10px] font-bold shrink-0 whitespace-nowrap" title="Toggle Compact / Full unit cards">
+                COMPACT
               </button>
             </div>
 
@@ -894,7 +914,7 @@
     </section>
 
     <!-- ==================== COMMANDER TRAIT CUSTOMIZER MODAL ==================== -->
-    <div id="cmd-trait-modal" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm hidden items-center justify-center p-3 sm:p-4">
+    <div id="cmd-trait-modal" onclick="if(event.target===this) closeCmdTraitModal()" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm hidden items-center justify-center p-3 sm:p-4">
       <div class="bg-slate-900 border border-amber-500/50 rounded-2xl max-w-3xl w-full max-h-[92vh] overflow-y-auto custom-scroll p-4 sm:p-5 shadow-2xl space-y-3">
         <div class="flex items-center justify-between border-b border-slate-800 pb-2.5">
           <div>
@@ -1246,6 +1266,9 @@
           <button type="button" onclick="closeWelcomeModal(false)" class="paper-sitrep-btn paper-sitrep-btn-muted px-3 py-1.5">
             PROCEED TO BATTLEFIELD
           </button>
+          <button type="button" onclick="closeWelcomeModal(false); startUITutorial();" class="mil-btn px-3.5 py-1.5 bg-[#2d472b] hover:bg-[#385936] border border-[#4c7548] text-[#d9ead7] font-bold text-xs tracking-wider">
+            START UI TOUR
+          </button>
           <button type="button" onclick="closeWelcomeModal(true)" class="mil-btn px-4 py-1.5 bg-[#c8a24b] hover:bg-[#d8b45c] border border-[#8a6d20] text-[#0d100d] font-bold text-xs tracking-wider">
             READ THE FIELD MANUAL
           </button>
@@ -1283,7 +1306,7 @@
     </div>
   </div>
 
-  <div id="battle-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
+  <div id="battle-modal" onclick="if(event.target===this) closeBattleSummaryModal()" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
     <div class="tradoc-aar-card max-w-4xl w-full max-h-[90vh] overflow-y-auto custom-scroll p-5 sm:p-6">
       <div class="tradoc-aar-header flex items-start justify-between gap-3">
         <div>
@@ -1339,5 +1362,31 @@
   <!-- 8. Application State & Controller Bootstrap (Namespace state, facade bridge) -->
   <script src="js/app.js"></script>
 
+
+  <!-- ==================== INTERACTIVE GUIDED UI TUTORIAL OVERLAY ==================== -->
+  <div id="ui-tour-overlay" onclick="if(event.target===this) endUITutorial()" class="ui-tour-overlay hidden" role="dialog" aria-modal="true" aria-label="Interactive UI Tutorial">
+    <div id="ui-tour-spotlight" class="ui-tour-spotlight"></div>
+    <div id="ui-tour-card" class="ui-tour-card space-y-2.5">
+      <div class="flex items-start justify-between gap-2 border-b border-[#2c352d] pb-2">
+        <div>
+          <span id="ui-tour-step-badge" class="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-[#c8a24b] block">ORIENTATION // STEP 01 / 10</span>
+          <h3 id="ui-tour-title" class="text-sm sm:text-base font-bold uppercase tracking-wide text-[#f0f4ee] mt-0.5" style="font-family:'Chakra Petch',sans-serif;">UI TOUR</h3>
+        </div>
+        <button type="button" onclick="endUITutorial()" class="text-[#8b968a] hover:text-[#e69894] font-mono text-xs px-1.5 py-0.5 border border-[#323c33] bg-[#141915]" title="Close tutorial (Esc)">[X]</button>
+      </div>
+      <p id="ui-tour-body" class="text-xs leading-relaxed text-[#cfd6ce] font-sans"></p>
+      <div id="ui-tour-tip" class="p-2 bg-[#141915] border-l-2 border-[#c8a24b] font-mono text-[10.5px] leading-snug text-[#d9c382]"></div>
+      <div class="ui-tour-progress-track">
+        <div id="ui-tour-progress" class="ui-tour-progress-fill" style="width: 10%"></div>
+      </div>
+      <div class="flex items-center justify-between gap-2 pt-1">
+        <button type="button" onclick="endUITutorial()" class="font-mono text-[10px] uppercase tracking-wider text-[#8b968a] hover:text-[#e7ece4] px-2 py-1">SKIP TOUR</button>
+        <div class="flex items-center gap-1.5">
+          <button type="button" id="ui-tour-prev" onclick="prevUITutorialStep()" class="mil-btn px-2.5 py-1 bg-[#1c221d] hover:bg-[#272f29] border border-[#3a453c] text-[#c8d1c7] font-mono text-[10.5px] font-bold">◄ BACK</button>
+          <button type="button" id="ui-tour-next" onclick="nextUITutorialStep()" class="mil-btn px-3 py-1 bg-[#c8a24b] hover:bg-[#d8b45c] border border-[#e6c873] text-[#0d100d] font-mono text-[10.5px] font-bold">NEXT ►</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

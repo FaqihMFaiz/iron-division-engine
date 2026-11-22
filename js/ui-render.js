@@ -698,13 +698,20 @@ window.IronDivision = window.IronDivision || {};
       const retBonus = C.getUnitRetreatBonus ? C.getUnitRetreatBonus(u) : 0;
       const entrenchCap = H.getUnitMaxEntrenchmentCap ? H.getUnitMaxEntrenchmentCap(u) : 3;
 
+      const isInactiveStatus = !!(u.defeated || u.isRallying);
+      const isStrainedStatus = !isInactiveStatus && !u.isMonster && !u.isZombie && (orgPct < 30 || supPct < 30);
+      const statusAccentCls = isInactiveStatus
+        ? 'unit-status-inactive'
+        : (isStrainedStatus ? 'unit-status-strained' : (side === 'A' ? 'unit-status-ok-a' : 'unit-status-ok-b'));
+
       return `
-        <div class="unit-dossier ${u.defeated ? 'unit-dossier-defeated' : (side === 'A' ? 'unit-dossier-a' : 'unit-dossier-b')} p-2.5 space-y-2" data-unit-id="${u.instanceId}">
+        <div class="unit-dossier ${u.defeated ? 'unit-dossier-defeated' : (side === 'A' ? 'unit-dossier-a' : 'unit-dossier-b')} ${statusAccentCls} p-2.5 space-y-2" data-unit-id="${u.instanceId}" onmouseenter="highlightMapCounter('${u.instanceId}', true)" onmouseleave="highlightMapCounter('${u.instanceId}', false)">
           <div class="flex items-start justify-between gap-2">
             <div class="flex items-center gap-1.5 flex-wrap min-w-0">
               <span class="${side === 'A' ? 'text-[#8ec0e8]' : 'text-[#e69894]'} shrink-0" title="${escapeHtml(u.category.toUpperCase())} NATO Symbol">${ID.Icons ? ID.Icons.get(u.category) : ''}</span>
               <span class="mil-dogtag" title="${escapeHtml(u.name)}"><span class="mil-dogtag-text">${escapeHtml(u.name)}</span></span>
               <span class="mil-rank-patch inline-flex items-center justify-center w-[22px] h-[22px] bg-[#1c2017] border border-[#594b27] text-[#d4b054] shrink-0" title="${escapeHtml(u.experience)} Rank Insignia">${ID.Icons && ID.Icons.getRank ? ID.Icons.getRank(u.experience) : escapeHtml(u.experience)}</span>
+              <span class="unit-compact-dist-pill hidden items-center px-1.5 py-0.5 bg-[#121613] border border-[#2c3a47] font-mono text-[9.5px] font-bold text-[#8ec0e8]" title="Y-Axis Distance">DIST ${unitPos}</span>
             </div>
             <button type="button" onclick="removeUnitFromSide('${side}', '${u.instanceId}')" class="text-[#667065] hover:text-[#d46a64] font-mono text-xs px-1 shrink-0" title="Remove unit">[X]</button>
           </div>
@@ -719,6 +726,32 @@ window.IronDivision = window.IronDivision || {};
               <div class="flex items-center justify-between font-mono text-[9.5px] uppercase px-1.5 py-0.5 bg-[#1b211c] border border-[#2f3930]">
                 <span class="text-[#7c877b]">EXPERIENCE TIER</span>
                 <span class="text-[#c8a24b] font-bold">${escapeHtml(u.experience)}</span>
+              </div>
+              <div class="unit-tooltip-compact-extra space-y-1.5 pt-0.5 border-t border-[#29312b]">
+                <div class="grid grid-cols-3 gap-1 font-mono text-[9.5px] text-center">
+                  <div class="px-1.5 py-0.5 bg-[#181d19] border border-[#29312b]"><span class="text-[#7c877b] block text-[8.5px]">TV</span><span class="text-[#7cb377] font-bold">${tv}</span></div>
+                  <div class="px-1.5 py-0.5 bg-[#181d19] border border-[#29312b]"><span class="text-[#7c877b] block text-[8.5px]">DIG-IN</span><span class="text-[#c8a24b] font-bold">${u.entrenchmentLevel || 0}/${entrenchCap}</span></div>
+                  <div class="px-1.5 py-0.5 bg-[#181d19] border border-[#29312b]"><span class="text-[#7c877b] block text-[8.5px]">DIST</span><span class="text-[#8ec0e8] font-bold">${side === 'A' ? 'A-' : 'B-'}${unitPos}</span></div>
+                </div>
+                <div class="grid grid-cols-2 gap-1 font-mono text-[9.5px]">
+                  <div class="px-1.5 py-0.5 bg-[#181d19] border border-[#29312b] flex justify-between">
+                    <span class="text-[#7c877b]">KIA/WIA</span>
+                    <span><b class="text-[#d46a64]">${u.dead}</b>/<b class="text-[#c8a24b]">${u.wounded}</b>${lossMalus < 0 ? ` <span class="text-[#d46a64]">[${lossMalus}%]</span>` : ''}</span>
+                  </div>
+                  <div class="px-1.5 py-0.5 bg-[#181d19] border border-[#29312b] flex justify-between">
+                    <span class="text-[#7c877b]">CLASS</span>
+                    <span class="text-[#dde3da] font-bold">${escapeHtml(u.armorTier.toUpperCase())}${orgMalus < 0 ? ` <span class="text-[#d46a64]">[${orgMalus}%]</span>` : ''}</span>
+                  </div>
+                  ${u.maxArmor > 0 ? `
+                  <div class="col-span-2 px-1.5 py-0.5 bg-[#181d19] border border-[#29312b] flex justify-between">
+                    <span class="text-[#7c877b]">AFV RECOV / KO</span>
+                    <span><b class="text-[#89b884]">${u.recoverableArmor}</b> RECOV | <b class="text-[#d46a64]">${u.unrecoverableArmor}</b> KO</span>
+                  </div>` : ''}
+                  ${supMalus < 0 ? `
+                  <div class="col-span-2 px-1.5 py-0.5 bg-[#291716] border border-[#6e3532] text-[#e69894] font-bold text-center">
+                    SUPPLY DEFICIT [${supMalus}%]
+                  </div>` : ''}
+                </div>
               </div>
               <div class="unit-stat-grid">
                 <div class="unit-stat-cell"><span class="unit-stat-label">Soft</span><span class="unit-stat-val">${u.softAttack}</span></div>
@@ -767,7 +800,7 @@ window.IronDivision = window.IronDivision || {};
               <div class="w-full h-2 bar-track mt-0.5">
                 <div class="bg-[#5e8f59] h-full bar-fill" style="width: ${persPct}%"></div>
               </div>
-              <div class="text-[9.5px] text-[#7c877b] mt-0.5">KIA <span class="text-[#d46a64]">${u.dead}</span> | WIA <span class="text-[#c8a24b]">${u.wounded}</span>${lossMalus < 0 ? ` <span class="text-[#d46a64]">[${lossMalus}%]</span>` : ''}</div>
+              <div class="unit-card-secondary text-[9.5px] text-[#7c877b] mt-0.5">KIA <span class="text-[#d46a64]">${u.dead}</span> | WIA <span class="text-[#c8a24b]">${u.wounded}</span>${lossMalus < 0 ? ` <span class="text-[#d46a64]">[${lossMalus}%]</span>` : ''}</div>
             </div>
 
             <div>
@@ -778,7 +811,7 @@ window.IronDivision = window.IronDivision || {};
               <div class="w-full h-2 bar-track mt-0.5">
                 <div class="bg-[#4e8ec4] h-full bar-fill" style="width: ${orgPct}%"></div>
               </div>
-              <div class="text-[9.5px] text-[#7c877b] mt-0.5">CLASS <span class="text-[#b8c2b6]">${escapeHtml(u.armorTier.toUpperCase())}</span>${orgMalus < 0 ? ` <span class="text-[#d46a64]">[${orgMalus}%]</span>` : ''}</div>
+              <div class="unit-card-secondary text-[9.5px] text-[#7c877b] mt-0.5">CLASS <span class="text-[#b8c2b6]">${escapeHtml(u.armorTier.toUpperCase())}</span>${orgMalus < 0 ? ` <span class="text-[#d46a64]">[${orgMalus}%]</span>` : ''}</div>
             </div>
           </div>
 
@@ -791,7 +824,7 @@ window.IronDivision = window.IronDivision || {};
               <div class="w-full h-1.5 bar-track mt-0.5">
                 <div class="bg-[#c8a24b] h-full bar-fill" style="width: ${supPct}%"></div>
               </div>
-              ${supMalus < 0 ? `<div class="text-[9.5px] text-[#d46a64] mt-0.5">SUPPLY DEFICIT [${supMalus}%]</div>` : ''}
+              ${supMalus < 0 ? `<div class="unit-card-secondary text-[9.5px] text-[#d46a64] mt-0.5">SUPPLY DEFICIT [${supMalus}%]</div>` : ''}
             </div>
 
             ${u.maxArmor > 0 ? `
@@ -803,7 +836,7 @@ window.IronDivision = window.IronDivision || {};
               <div class="w-full h-1.5 bar-track mt-0.5">
                 <div class="bg-[#c27a34] h-full bar-fill" style="width: ${armorPct}%"></div>
               </div>
-              <div class="text-[9.5px] text-[#7c877b] mt-0.5">RECOV <span class="text-[#89b884]">${u.recoverableArmor}</span> | KO <span class="text-[#d46a64]">${u.unrecoverableArmor}</span></div>
+              <div class="unit-card-secondary text-[9.5px] text-[#7c877b] mt-0.5">RECOV <span class="text-[#89b884]">${u.recoverableArmor}</span> | KO <span class="text-[#d46a64]">${u.unrecoverableArmor}</span></div>
             </div>
             ` : `<div class="text-[9.5px] font-mono uppercase text-[#667065] flex items-center">UNARMORED // FOOT ELEMENT</div>`}
           </div>
@@ -842,6 +875,12 @@ window.IronDivision = window.IronDivision || {};
       rdEl.textContent = state.battle.isOver
         ? `BATTLE CONCLUDED (RD ${state.battle.round})`
         : `ROUND ${state.battle.round}`;
+    }
+    const miniRdEl = document.getElementById('op-status-mini-rd');
+    if (miniRdEl) {
+      miniRdEl.textContent = state.battle.isOver
+        ? `END · R${state.battle.round}`
+        : `RD-${String(state.battle.round).padStart(2, '0')}`;
     }
     const nameA = H.getSideName('A');
     const nameB = H.getSideName('B');
@@ -1019,8 +1058,9 @@ window.IronDivision = window.IronDivision || {};
       const dash = isRear ? ' stroke-dasharray="2 2"' : '';
       const tip = `${escapeHtml(u.name)} (${u.category.toUpperCase()}) | PERS ${u.personnel}/${u.maxPersonnel} | ORG ${u.org}/${u.maxOrg} | POS ${u.pos ?? 2}`;
       return `
-        <g opacity="${opacity}">
-          <title>${tip}</title>
+        <g class="sector-counter" data-unit-id="${u.instanceId}" opacity="${opacity}" onclick="focusUnitCard('${u.instanceId}')">
+          <title>${tip} — Click to locate card</title>
+          <rect class="sector-counter-halo" x="${(x0 - 2.5).toFixed(1)}" y="${(y0 - 2.5).toFixed(1)}" width="${w + 5}" height="${h + 5}" rx="2" fill="none" stroke="#e6c46d" stroke-width="2" opacity="0"/>
           <rect x="${x0.toFixed(1)}" y="${y0.toFixed(1)}" width="${w}" height="${h}" fill="${fillCol}" stroke="${strokeCol}" stroke-width="1.3"${dash}/>
           ${sym}
           <rect x="${x0.toFixed(1)}" y="${(y0+h+1.5).toFixed(1)}" width="${w}" height="2" fill="#1b221c"/>
@@ -1586,9 +1626,9 @@ window.IronDivision = window.IronDivision || {};
             <div class="flex items-center justify-between gap-2">
               <div class="flex items-center gap-2 min-w-0">
                 ${officerRank.svg ? `<span class="inline-flex items-center justify-center px-1.5 py-0.5 bg-[#191f1a] border border-[#4a4128] shrink-0" title="${escapeHtml(officerRank.title)} (Total Stats: ${officerRank.total})">${officerRank.svg}</span>` : ''}
-                <div class="min-w-0">
-                  <span class="font-bold text-sm text-white block truncate">${escapeHtml(c.name)}</span>
-                  <span class="text-[10px] font-mono text-[#c8a24b] uppercase tracking-wider">${escapeHtml(officerRank.title)} · TOTAL ${officerRank.total}</span>
+                <div class="min-w-0 space-y-1">
+                  <span class="mil-cmd-plate" title="${escapeHtml(c.name)}"><span class="mil-cmd-plate-text">${escapeHtml(c.name)}</span></span>
+                  <span class="text-[10px] font-mono text-[#c8a24b] uppercase tracking-wider block">${escapeHtml(officerRank.title)} · TOTAL ${officerRank.total}</span>
                 </div>
               </div>
               <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 shrink-0">${c.personality}</span>
@@ -3269,6 +3309,280 @@ window.IronDivision = window.IronDivision || {};
   // Public Module API
   // --------------------------------------------------------------------------
 
+  function focusUnitCard(instanceId) {
+    if (!instanceId) return;
+    const card = document.querySelector(`.unit-dossier[data-unit-id="${instanceId}"]`);
+    if (!card) return;
+    if (typeof card.scrollIntoView === 'function') {
+      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    card.classList.remove('unit-card-flash');
+    void card.offsetWidth;
+    card.classList.add('unit-card-flash');
+    setTimeout(() => card.classList.remove('unit-card-flash'), 1300);
+  }
+
+  function highlightMapCounter(instanceId, active) {
+    if (!instanceId) return;
+    const counter = document.querySelector(`#tactical-sector-canvas .sector-counter[data-unit-id="${instanceId}"]`);
+    if (!counter) return;
+    counter.classList.toggle('is-highlighted', !!active);
+  }
+
+  function toggleCompactUnitCards() {
+    const bf = document.getElementById('view-battlefield');
+    if (!bf) return;
+    const isCompact = bf.classList.toggle('compact-unit-cards');
+    if (document.body && document.body.classList) {
+      document.body.classList.toggle('compact-unit-cards', isCompact);
+    }
+    ['btn-compact-cards-a', 'btn-compact-cards-b'].forEach(id => {
+      const btn = document.getElementById(id);
+      if (btn) {
+        btn.textContent = isCompact ? 'FULL' : 'COMPACT';
+        btn.classList.toggle('text-[#e0be6a]', isCompact);
+        btn.classList.toggle('border-[#594b27]', isCompact);
+      }
+    });
+  }
+
+  function toggleOpStatusCollapse() {
+    const box = document.getElementById('center-command-sticky');
+    if (!box) return;
+    const collapsed = box.classList.toggle('op-status-collapsed');
+    const btn = document.getElementById('btn-toggle-op-status');
+    if (btn) {
+      btn.textContent = collapsed ? '▼' : '▲';
+    }
+  }
+
+  // ==========================================================================
+  // INTERACTIVE GUIDED UI TUTORIAL (10-STEP SPOTLIGHT WALKTHROUGH)
+  // ==========================================================================
+  const UI_TOUR_STEPS = [
+    {
+      tab: 'battlefield',
+      selector: '#theatre-bar-header',
+      title: 'Theatre Command & Environment Ticker',
+      body: 'This top ticker displays the live 24-hour operational clock, terrain, and weather at a glance while staying compact above the fold. Click ▼ EXPAND anytime to change Terrain, Features, Climate-Aware Dynamic Weather, Round Length, or set any historical/fictional year from -270000 BCE to +270000.',
+      tip: 'TIP: Morning Fog and Night automatically clamp visibility range and slash Close Air Support efficiency.'
+    },
+    {
+      tab: 'battlefield',
+      selector: '#sideA-commander-box',
+      title: 'Faction Plates, Brass Commanders & Tactics',
+      body: 'Each flank has a clickable steel faction nameplate (type any custom faction name), an engraved brass Commander nameplate dropdown with 10-tier Officer Rank Insignia, and a Tactic selector. Commanders grant +2.5% army-wide per ATK/DEF/CMD/LOG level plus unique traits.',
+      tip: 'TIP: Leave Tactic on Auto-AI to let the general pick doctrines matching their personality, or override manually each round.'
+    },
+    {
+      tab: 'battlefield',
+      selector: '#sideA-summary',
+      title: 'Force Strength & Shared Supply Depot',
+      body: 'Track active formations, effective personnel, combat-ready AFVs, and total KIA+WIA losses here. Below sits your shared Theatre Supply Depot — frontline units draw refills from it every round, and running dry cripples combat stats.',
+      tip: 'TIP: Watch the depot bar! Below 30% it turns amber, and at 0% your divisions cannot resupply.'
+    },
+    {
+      tab: 'battlefield',
+      selector: '#btn-compact-cards-a',
+      title: 'Deploying Units & Compact Card Mode',
+      body: 'Pick any unit template from the dropdown and click + DEPLOY to reinforce a flank. Use the COMPACT / FULL toggle right next to it to shrink unit cards down to Name, DIST, and the 4 core stat bars (PERS, ORG, SUP, AFV) when commanding large divisions.',
+      tip: 'TIP: In Compact mode, hovering any unit card automatically surfaces all hidden details (TV, Dig-In, KIA/WIA, Class, AFV Recov/KO) inside the floating tooltip.'
+    },
+    {
+      tab: 'battlefield',
+      selector: '#sideA-units-list',
+      title: 'Unit Dossier Cards & Status Accents',
+      body: 'Every battalion card has a 3px left-edge status bar: solid Blue/Red when combat-effective, muted Amber when ORG or SUP drops below 30%, and a diagonal hatch overlay when routed or out of action. Hover a card for deep combat stats and to light up its counter on the map.',
+      tip: 'TIP: Battles are won by breaking enemy Organization (blue bar) and Supply (yellow bar), not killing every last soldier.'
+    },
+    {
+      tab: 'battlefield',
+      selector: '#center-command-sticky',
+      title: 'Sticky Operational Status & Turn Controls',
+      body: 'This center console stays pinned as you scroll down through flanks. Hit ▶ EXECUTE ROUND to advance one turn, AUTO-OPS to run continuously, GM LIVE for 1-round Undo and live edits, or click ▲ to collapse it into a razor-thin sticky bar showing only Execute, Auto-Ops, and the Force Ratio gauge.',
+      tip: 'TIP: Quick-load Arracourt (1944) or San Marino (1944) anytime from the Scenarios buttons inside this panel.'
+    },
+    {
+      tab: 'battlefield',
+      selector: '#tactical-sector-panel',
+      title: '2D Tactical Sector & Two-Way Map Linking',
+      body: 'Watch formations advance toward CONTACT LINE (0) in real time. Infantry and standard Armored Vehicles engage at Distance <= 2, Tanks and Tank Destroyers at <= 3, and Artillery up to <= 6. Click any NATO counter on the map to scroll straight to its unit card and flash it in amber.',
+      tip: 'TIP: Hover the Y-Axis triangles right below the map to inspect stacked units at any distance coordinate.'
+    },
+    {
+      tab: 'battlefield',
+      selector: '#combat-log-container',
+      title: 'SITREP Operational Logbook (Form DA-1594)',
+      body: 'Every vigilance roll, fire-support volley, armor penetration check, field repair, and rout is recorded here in real time. Filter by category (Damage, Armor, Support, Rolls), click EXPAND for a full-screen searchable logbook, or COPY to paste into your TTRPG notes.',
+      tip: 'TIP: Click anywhere outside any pop-up modal — or press Esc — to close it instantly.'
+    },
+    {
+      tab: 'battlefield',
+      selector: 'nav.mil-nav-dock',
+      title: '7-Slot Command Navigation Dock',
+      body: 'Switch across all 7 workspaces from this dock: Battlefield, ORBAT (custom unit designer), Traits, Command HQ (custom generals), Terrain (color-coded modifier matrix), Doctrines (25-page tactic manual), and FM Manual (Drill Sergeant & Technical manuals).',
+      tip: 'TIP: Every custom unit, trait, general, and terrain auto-saves in your browser.'
+    },
+    {
+      tab: 'battlefield',
+      selector: '#btn-header-aar',
+      title: 'Form DA-774 After-Action Report & JSON Backup',
+      body: 'Click AAR anytime for an interim SITREP or post-battle debrief complete with per-unit kills, depot logistics, weather trail, and printable A4 Form DA-774 PDF export. Use EXPORT / IMPORT JSON next to it to save or share your custom armies, and click UI TOUR anytime to replay this guide.',
+      tip: 'DISMISSED, COMMANDER — hit ▶ EXECUTE ROUND to kick off the Battle of Arracourt!'
+    }
+  ];
+
+  let uiTourIndex = -1;
+  let uiTourKeyHandler = null;
+  let uiTourRepositionHandler = null;
+
+  function positionUITutorialStep() {
+    if (uiTourIndex < 0 || uiTourIndex >= UI_TOUR_STEPS.length) return;
+    const step = UI_TOUR_STEPS[uiTourIndex];
+    const spot = document.getElementById('ui-tour-spotlight');
+    const card = document.getElementById('ui-tour-card');
+    if (!spot || !card) return;
+
+    const target = document.querySelector(step.selector);
+    const vw = window.innerWidth || 1280;
+    const vh = window.innerHeight || 800;
+
+    if (!target || typeof target.getBoundingClientRect !== 'function') {
+      spot.style.top = '50%';
+      spot.style.left = '50%';
+      spot.style.width = '0px';
+      spot.style.height = '0px';
+      card.style.top = `${Math.max(16, Math.round((vh - 260) / 2))}px`;
+      card.style.left = `${Math.max(12, Math.round((vw - Math.min(390, vw - 24)) / 2))}px`;
+      return;
+    }
+
+    const rect = target.getBoundingClientRect();
+    const pad = 6;
+    const top = Math.max(4, rect.top - pad);
+    const left = Math.max(4, rect.left - pad);
+    const width = Math.min(vw - 8, Math.max(24, rect.width + pad * 2));
+    const height = Math.min(vh - 8, Math.max(24, rect.height + pad * 2));
+
+    spot.style.top = `${top}px`;
+    spot.style.left = `${left}px`;
+    spot.style.width = `${width}px`;
+    spot.style.height = `${height}px`;
+
+    const cardRect = card.getBoundingClientRect();
+    const cardW = cardRect.width || Math.min(390, vw - 24);
+    const cardH = cardRect.height || 240;
+    const gap = 14;
+
+    let cardTop = top + height + gap;
+    if (cardTop + cardH > vh - 12) {
+      cardTop = top - cardH - gap;
+    }
+    if (cardTop < 12) {
+      cardTop = Math.max(12, Math.min(vh - cardH - 12, top + 12));
+    }
+
+    let cardLeft = left + (width / 2) - (cardW / 2);
+    cardLeft = Math.max(12, Math.min(vw - cardW - 12, cardLeft));
+
+    card.style.top = `${Math.round(cardTop)}px`;
+    card.style.left = `${Math.round(cardLeft)}px`;
+  }
+
+  function renderUITutorialStep() {
+    const overlay = document.getElementById('ui-tour-overlay');
+    if (!overlay || uiTourIndex < 0 || uiTourIndex >= UI_TOUR_STEPS.length) return;
+
+    const step = UI_TOUR_STEPS[uiTourIndex];
+    if (step.tab && typeof switchTab === 'function') {
+      switchTab(step.tab);
+    }
+
+    const badgeEl = document.getElementById('ui-tour-step-badge');
+    const titleEl = document.getElementById('ui-tour-title');
+    const bodyEl = document.getElementById('ui-tour-body');
+    const tipEl = document.getElementById('ui-tour-tip');
+    const progEl = document.getElementById('ui-tour-progress');
+    const prevBtn = document.getElementById('ui-tour-prev');
+    const nextBtn = document.getElementById('ui-tour-next');
+
+    const total = UI_TOUR_STEPS.length;
+    if (badgeEl) badgeEl.textContent = `ORIENTATION // STEP ${String(uiTourIndex + 1).padStart(2, '0')} / ${String(total).padStart(2, '0')}`;
+    if (titleEl) titleEl.textContent = step.title;
+    if (bodyEl) bodyEl.textContent = step.body;
+    if (tipEl) tipEl.textContent = step.tip;
+    if (progEl) progEl.style.width = `${Math.round(((uiTourIndex + 1) / total) * 100)}%`;
+    if (prevBtn) {
+      prevBtn.disabled = uiTourIndex === 0;
+      prevBtn.style.opacity = uiTourIndex === 0 ? '0.45' : '1';
+    }
+    if (nextBtn) {
+      nextBtn.textContent = uiTourIndex === total - 1 ? 'FINISH ✓' : 'NEXT ►';
+    }
+
+    const target = document.querySelector(step.selector);
+    if (target && typeof target.scrollIntoView === 'function') {
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    positionUITutorialStep();
+    setTimeout(positionUITutorialStep, 260);
+  }
+
+  function startUITutorial(startIdx = 0) {
+    const overlay = document.getElementById('ui-tour-overlay');
+    if (!overlay) return;
+    uiTourIndex = Math.max(0, Math.min(UI_TOUR_STEPS.length - 1, Number(startIdx) || 0));
+    overlay.classList.remove('hidden');
+
+    if (!uiTourKeyHandler) {
+      uiTourKeyHandler = (e) => {
+        if (uiTourIndex < 0) return;
+        if (e.key === 'Escape') { endUITutorial(); }
+        else if (e.key === 'ArrowRight' || e.key === 'Enter') { e.preventDefault(); nextUITutorialStep(); }
+        else if (e.key === 'ArrowLeft') { e.preventDefault(); prevUITutorialStep(); }
+      };
+      window.addEventListener('keydown', uiTourKeyHandler);
+    }
+    if (!uiTourRepositionHandler) {
+      uiTourRepositionHandler = () => positionUITutorialStep();
+      window.addEventListener('resize', uiTourRepositionHandler);
+      window.addEventListener('scroll', uiTourRepositionHandler, true);
+    }
+
+    renderUITutorialStep();
+  }
+
+  function nextUITutorialStep() {
+    if (uiTourIndex < 0) return;
+    if (uiTourIndex >= UI_TOUR_STEPS.length - 1) {
+      endUITutorial();
+      return;
+    }
+    uiTourIndex += 1;
+    renderUITutorialStep();
+  }
+
+  function prevUITutorialStep() {
+    if (uiTourIndex <= 0) return;
+    uiTourIndex -= 1;
+    renderUITutorialStep();
+  }
+
+  function endUITutorial() {
+    uiTourIndex = -1;
+    const overlay = document.getElementById('ui-tour-overlay');
+    if (overlay) overlay.classList.add('hidden');
+    if (uiTourKeyHandler) {
+      window.removeEventListener('keydown', uiTourKeyHandler);
+      uiTourKeyHandler = null;
+    }
+    if (uiTourRepositionHandler) {
+      window.removeEventListener('resize', uiTourRepositionHandler);
+      window.removeEventListener('scroll', uiTourRepositionHandler, true);
+      uiTourRepositionHandler = null;
+    }
+  }
+
   ID.UI = {
     markTabDirty,
     switchTab,
@@ -3305,6 +3619,14 @@ window.IronDivision = window.IronDivision || {};
     renderExpandedCombatLog,
     openBattleSummaryModal,
     closeBattleSummaryModal,
+    focusUnitCard,
+    highlightMapCounter,
+    toggleCompactUnitCards,
+    toggleOpStatusCollapse,
+    startUITutorial,
+    nextUITutorialStep,
+    prevUITutorialStep,
+    endUITutorial,
     buildPrintableAARHtml,
     exportAARToPDF,
     renderAll
@@ -3322,6 +3644,14 @@ window.IronDivision = window.IronDivision || {};
   window.renderExpandedCombatLog = renderExpandedCombatLog;
   window.openBattleSummaryModal = openBattleSummaryModal;
   window.closeBattleSummaryModal = closeBattleSummaryModal;
+  window.focusUnitCard = focusUnitCard;
+  window.highlightMapCounter = highlightMapCounter;
+  window.toggleCompactUnitCards = toggleCompactUnitCards;
+  window.toggleOpStatusCollapse = toggleOpStatusCollapse;
+  window.startUITutorial = startUITutorial;
+  window.nextUITutorialStep = nextUITutorialStep;
+  window.prevUITutorialStep = prevUITutorialStep;
+  window.endUITutorial = endUITutorial;
   window.exportAARToPDF = exportAARToPDF;
   window.goToTacticsPage = goToTacticsPage;
   window.flipTacticsPage = flipTacticsPage;

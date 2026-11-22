@@ -71,7 +71,7 @@ window.IronDivision = window.IronDivision || {};
                 Listen up, recruit! Never played a grand-strategy wargame or Hearts of Iron in your life? Good — at least you don't have bad habits yet. This manual explains every single button, number, armor rule, logistics trap, and dirty trick in Iron Division, and more importantly, <strong>what real-world battlefield reality each rule translates from</strong>.
               </p>
             </div>
-            <div class="tradoc-mono text-[11px] bg-[#faf8f2] border border-[#b5ad98] p-3 text-right shrink-0 space-y-1 text-[#1c211d]">
+            <div class="tradoc-mono text-[11px] bg-[#dfd7c2] border border-[#b5ad98] p-3 text-right shrink-0 space-y-1 text-[#1c211d]">
               <div><strong>PUB NO:</strong> FM 100-5-BOOT</div>
               <div><strong>AUTHOR:</strong> SGM IRONCLAD (RET.)</div>
               <div><strong>ENGINE:</strong> IRON DIVISION v3.5</div>
@@ -83,13 +83,13 @@ window.IronDivision = window.IronDivision || {};
 
           <!-- Quick Jump Table of Contents -->
           <div class="mt-4 pt-3 border-t border-[#c9c1ab] flex flex-wrap gap-2 tradoc-mono text-[10.5px]">
-            <a href="#fm-ch1" class="px-2 py-1 bg-[#f0ead9] border border-[#bfb7a1] text-[#1c211d] hover:bg-[#e5dcc5] font-bold">01. WHAT IS THIS?</a>
-            <a href="#fm-ch2" class="px-2 py-1 bg-[#f0ead9] border border-[#bfb7a1] text-[#1c211d] hover:bg-[#e5dcc5] font-bold">02. THEATRE &amp; CLIMATE</a>
-            <a href="#fm-ch3" class="px-2 py-1 bg-[#f0ead9] border border-[#bfb7a1] text-[#1c211d] hover:bg-[#e5dcc5] font-bold">03. STATS &amp; ARMOR MATH</a>
-            <a href="#fm-ch4" class="px-2 py-1 bg-[#f0ead9] border border-[#bfb7a1] text-[#1c211d] hover:bg-[#e5dcc5] font-bold">04. HOW A ROUND WORKS</a>
-            <a href="#fm-ch5" class="px-2 py-1 bg-[#f0ead9] border border-[#bfb7a1] text-[#1c211d] hover:bg-[#e5dcc5] font-bold">05. RANGE, ROUT &amp; REPAIRS</a>
-            <a href="#fm-ch6" class="px-2 py-1 bg-[#f0ead9] border border-[#bfb7a1] text-[#1c211d] hover:bg-[#e5dcc5] font-bold">06. FORM DA-774 AAR</a>
-            <a href="#fm-ch7" class="px-2 py-1 bg-[#f0ead9] border border-[#bfb7a1] text-[#1c211d] hover:bg-[#e5dcc5] font-bold">07. CUSTOMIZING YOUR WAR</a>
+            <a href="#fm-ch1" class="px-2 py-1 bg-[#c8bfa8] border border-[#bfb7a1] text-[#1c211d] hover:bg-[#bdb39a] font-bold">01. WHAT IS THIS?</a>
+            <a href="#fm-ch2" class="px-2 py-1 bg-[#c8bfa8] border border-[#bfb7a1] text-[#1c211d] hover:bg-[#bdb39a] font-bold">02. THEATRE &amp; CLIMATE</a>
+            <a href="#fm-ch3" class="px-2 py-1 bg-[#c8bfa8] border border-[#bfb7a1] text-[#1c211d] hover:bg-[#bdb39a] font-bold">03. STATS &amp; ARMOR MATH</a>
+            <a href="#fm-ch4" class="px-2 py-1 bg-[#c8bfa8] border border-[#bfb7a1] text-[#1c211d] hover:bg-[#bdb39a] font-bold">04. HOW A ROUND WORKS</a>
+            <a href="#fm-ch5" class="px-2 py-1 bg-[#c8bfa8] border border-[#bfb7a1] text-[#1c211d] hover:bg-[#bdb39a] font-bold">05. RANGE, ROUT &amp; REPAIRS</a>
+            <a href="#fm-ch6" class="px-2 py-1 bg-[#c8bfa8] border border-[#bfb7a1] text-[#1c211d] hover:bg-[#bdb39a] font-bold">06. FORM DA-774 AAR</a>
+            <a href="#fm-ch7" class="px-2 py-1 bg-[#c8bfa8] border border-[#bfb7a1] text-[#1c211d] hover:bg-[#bdb39a] font-bold">07. CUSTOMIZING YOUR WAR</a>
           </div>
         </header>
 
@@ -376,7 +376,7 @@ window.IronDivision = window.IronDivision || {};
                 Authoritative technical reference for combat formulas, armor penetration &amp; knockout gating, dynamic recovery &amp; field repair cadence, climate-aware weather, arbitrary-era calendars, telemetry pipelines, and Form DA-774 AAR generation.
               </p>
             </div>
-            <div class="tradoc-mono text-[11px] bg-[#faf8f2] border border-[#b5ad98] p-3 text-right shrink-0 space-y-0.5 text-[#1c211d]">
+            <div class="tradoc-mono text-[11px] bg-[#dfd7c2] border border-[#b5ad98] p-3 text-right shrink-0 space-y-0.5 text-[#1c211d]">
               <div><strong>PUB NO:</strong> TM 9-1005-TECH</div>
               <div><strong>RUNTIME:</strong> VANILLA ES6 (ZERO-BUILD)</div>
               <div><strong>STORAGE:</strong> LOCALSTORAGE + JSON I/O</div>

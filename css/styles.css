@@ -578,7 +578,7 @@ body.mil-ui ::selection {
    8. TRADOC Field Manual Document Theme (Tab 7: Simulation Guide)
    -------------------------------------------------------------------------- */
 .tradoc-doc {
-  background-color: #f4f1e6;
+  background-color: #d4cbb5;
   color: #181c19;
   border: 1px solid #bfb7a2;
   border-left: 6px solid #2f3b2e;
@@ -720,7 +720,7 @@ body.mil-ui ::selection {
 }
 
 .tradoc-doc .tradoc-formula {
-  background-color: #ebe5d5;
+  background-color: #c8bfa8;
   border: 1px solid #b5ad98;
   border-left: 4px solid #2f3b2e;
   padding: 10px 14px;
@@ -783,7 +783,7 @@ body.mil-ui ::selection {
 }
 
 .tradoc-doc .tradoc-card {
-  background-color: #faf8f2;
+  background-color: #dcd4c0;
   border: 1px solid #c4bca8;
   padding: 10px 12px;
 }
@@ -1371,7 +1371,7 @@ body.mil-ui ::selection {
   position: relative;
   max-width: 980px;
   margin: 0 auto 14px auto;
-  background-color: #f4f1e6;
+  background-color: #d4cbb5;
   color: #181c19;
   border: 2px solid #2f3b2e;
   border-left: 8px solid #262f25;
@@ -1423,7 +1423,7 @@ body.mil-ui ::selection {
   justify-content: space-between;
   gap: 8px;
   padding: 6px 10px;
-  background-color: #faf8f2;
+  background-color: #dcd4c0;
   border: 1px solid #cbc3ae;
   color: #181c19;
   font-family: 'IBM Plex Mono', monospace;
@@ -1462,7 +1462,7 @@ body.mil-ui ::selection {
   flex-wrap: wrap;
   gap: 6px;
   padding: 10px 12px;
-  background-color: #ebe5d5;
+  background-color: #c8bfa8;
   border: 1px solid #b5ad98;
   border-left: 4px solid #2f3b2e;
   font-family: 'IBM Plex Mono', monospace;
@@ -1471,7 +1471,7 @@ body.mil-ui ::selection {
 
 .tactics-mod-chip {
   padding: 2px 7px;
-  background-color: #faf8f2;
+  background-color: #dcd4c0;
   border: 1px solid #9e9682;
   color: #181c19;
   font-weight: 700;
@@ -1490,7 +1490,7 @@ body.mil-ui ::selection {
 }
 
 .tactics-sec-block {
-  background-color: #faf8f2;
+  background-color: #dcd4c0;
   border: 1px solid #c4bca8;
   padding: 14px 16px;
 }
@@ -1508,7 +1508,7 @@ body.mil-ui ::selection {
 }
 
 .tactics-book-footer {
-  background-color: #e8e2d1;
+  background-color: #c6bca4;
   border-top: 2px solid #2f3b2e;
   padding: 12px 24px;
   display: flex;
@@ -2132,4 +2132,255 @@ body.mil-ui ::selection {
   background-color: #c8a24b !important;
   border-color: #e6c873 !important;
   color: #0d100d !important;
+}
+
+
+/* --------------------------------------------------------------------------
+   Status-Driven Unit Card Accents, Compact Mode & Two-Way Map Linking
+   -------------------------------------------------------------------------- */
+.unit-dossier.unit-status-ok-a {
+  border-left: 3px solid #5ba0d9 !important;
+}
+.unit-dossier.unit-status-ok-b {
+  border-left: 3px solid #d4605a !important;
+}
+.unit-dossier.unit-status-strained {
+  border-left: 3px solid #c8a24b !important;
+}
+.unit-dossier.unit-status-inactive {
+  border-left: 3px solid #6e766d !important;
+  filter: saturate(0.5);
+  overflow: hidden;
+}
+.unit-dossier.unit-status-inactive::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(12, 16, 13, 0.30) 0px,
+    rgba(12, 16, 13, 0.30) 5px,
+    transparent 5px,
+    transparent 10px
+  );
+}
+
+@keyframes unit-card-amber-flash {
+  0%   { box-shadow: 0 0 0 2px #e6c46d, 0 0 18px rgba(230, 196, 109, 0.65); border-color: #e6c46d !important; }
+  70%  { box-shadow: 0 0 0 2px #c8a24b, 0 0 12px rgba(200, 162, 75, 0.40); border-color: #c8a24b !important; }
+  100% { box-shadow: none; }
+}
+.unit-dossier.unit-card-flash {
+  animation: unit-card-amber-flash 1.25s ease-out;
+}
+
+.sector-counter {
+  cursor: pointer;
+  transition: opacity 0.14s ease, filter 0.14s ease;
+}
+.sector-counter:hover .sector-counter-halo,
+.sector-counter.is-highlighted .sector-counter-halo {
+  opacity: 1 !important;
+}
+.sector-counter.is-highlighted {
+  opacity: 1 !important;
+  filter: drop-shadow(0 0 4px rgba(230, 196, 109, 0.85));
+}
+
+/* Compact Unit Card Mode */
+#view-battlefield.compact-unit-cards .unit-card-secondary {
+  display: none !important;
+}
+#view-battlefield.compact-unit-cards .unit-dossier {
+  padding: 0.45rem 0.55rem !important;
+  gap: 0.35rem;
+}
+#view-battlefield.compact-unit-cards .unit-stat-grid-3 {
+  display: none !important;
+}
+#view-battlefield.compact-unit-cards .unit-compact-dist-pill {
+  display: inline-flex !important;
+}
+
+
+/* --------------------------------------------------------------------------
+   Military Officer Nameplates (Battlefield Dropdown & Command HQ Roster)
+   -------------------------------------------------------------------------- */
+.mil-cmd-plate {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 3px 16px;
+  background: linear-gradient(180deg, #2c3328 0%, #1d221b 52%, #151914 100%);
+  border: 1.5px solid #9f823c;
+  box-shadow:
+    inset 0 0 0 1px #0f120e,
+    inset 0 1px 0 rgba(235, 204, 120, 0.28),
+    0 2px 6px rgba(0, 0, 0, 0.5);
+  border-radius: 2px;
+}
+.mil-cmd-plate::before,
+.mil-cmd-plate::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 4px;
+  height: 4px;
+  margin-top: -2px;
+  border-radius: 9999px;
+  background: radial-gradient(circle at 35% 35%, #ecd084, #7a6125);
+  box-shadow: 0 0 0 1px #0e110d;
+}
+.mil-cmd-plate::before { left: 5px; }
+.mil-cmd-plate::after  { right: 5px; }
+
+.mil-cmd-plate-text {
+  font-family: "Chakra Petch", "IBM Plex Mono", sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #f0e3be;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mil-cmd-plate-wrap {
+  position: relative;
+  width: 100%;
+  border-radius: 2px;
+}
+.mil-cmd-plate-wrap::before,
+.mil-cmd-plate-wrap::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 4px;
+  height: 4px;
+  margin-top: -2px;
+  border-radius: 9999px;
+  background: radial-gradient(circle at 35% 35%, #ecd084, #7a6125);
+  box-shadow: 0 0 0 1px #0e110d;
+  pointer-events: none;
+  z-index: 2;
+}
+.mil-cmd-plate-wrap::before { left: 6px; }
+.mil-cmd-plate-wrap::after  { right: 24px; }
+
+.mil-ui select.mil-cmd-plate-select {
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 5px 32px 5px 16px !important;
+  border-radius: 2px !important;
+  background-color: #1e241c !important;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none' stroke='%23d8b65c' stroke-width='1.8' stroke-linecap='square'%3E%3Cpath d='M2.5 4.25L6 7.75L9.5 4.25'/%3E%3C/svg%3E"),
+    linear-gradient(180deg, #2d3429 0%, #1d221b 52%, #151914 100%) !important;
+  background-repeat: no-repeat, repeat !important;
+  background-position: right 8px center, 0 0 !important;
+  background-size: 11px 11px, 100% 100% !important;
+  border: 1.5px solid #9f823c !important;
+  box-shadow:
+    inset 0 0 0 1px #0f120e,
+    inset 0 1px 0 rgba(235, 204, 120, 0.28),
+    0 2px 6px rgba(0, 0, 0, 0.45) !important;
+  font-family: "Chakra Petch", "IBM Plex Mono", sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.07em !important;
+  text-transform: uppercase !important;
+  color: #f0e3be !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
+  cursor: pointer;
+}
+.mil-ui select.mil-cmd-plate-select:hover,
+.mil-ui select.mil-cmd-plate-select:focus {
+  border-color: #e0be6a !important;
+  color: #fff6dc !important;
+  box-shadow:
+    inset 0 0 0 1px #141913,
+    0 0 0 1px rgba(224, 190, 106, 0.35),
+    0 2px 8px rgba(0, 0, 0, 0.55) !important;
+}
+.mil-ui select.mil-cmd-plate-select option {
+  background-color: #181d17;
+  color: #efe2bd;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 11px;
+  text-transform: none;
+}
+
+/* Collapsible Operational Status Sticky Box */
+#center-command-sticky.op-status-collapsed .op-status-collapsible {
+  display: none !important;
+}
+#center-command-sticky.op-status-collapsed .op-status-mini-only {
+  display: inline-flex !important;
+}
+#center-command-sticky.op-status-collapsed .op-status-inner {
+  padding: 0.5rem 0.65rem !important;
+  gap: 0.5rem !important;
+}
+#center-command-sticky.op-status-collapsed .op-status-inner > * + * {
+  margin-top: 0.45rem !important;
+}
+
+/* Compact Mode Tooltip Extra Section */
+.unit-tooltip-compact-extra {
+  display: none;
+}
+body.compact-unit-cards .unit-tooltip-compact-extra {
+  display: block;
+}
+
+
+/* --------------------------------------------------------------------------
+   Interactive Guided UI Tutorial Spotlight & Briefing Card
+   -------------------------------------------------------------------------- */
+.ui-tour-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9990;
+}
+.ui-tour-spotlight {
+  position: fixed;
+  z-index: 9991;
+  pointer-events: none;
+  border: 2px solid #e0be6a;
+  border-radius: 3px;
+  box-shadow:
+    0 0 0 9999px rgba(6, 9, 7, 0.78),
+    0 0 0 3px rgba(224, 190, 106, 0.28),
+    0 0 22px rgba(224, 190, 106, 0.45);
+  transition: top 0.22s ease, left 0.22s ease, width 0.22s ease, height 0.22s ease;
+}
+.ui-tour-card {
+  position: fixed;
+  z-index: 9995;
+  width: min(390px, calc(100vw - 24px));
+  background: linear-gradient(180deg, #1b221c 0%, #131814 100%);
+  color: #e7ece4;
+  border: 1.5px solid #9f823c;
+  box-shadow:
+    inset 0 0 0 1px #0c100d,
+    0 14px 36px rgba(0, 0, 0, 0.72);
+  padding: 14px 16px;
+  transition: top 0.22s ease, left 0.22s ease;
+}
+.ui-tour-progress-track {
+  width: 100%;
+  height: 3px;
+  background: #232b24;
+  margin-top: 8px;
+  overflow: hidden;
+}
+.ui-tour-progress-fill {
+  height: 100%;
+  background: #c8a24b;
+  transition: width 0.2s ease;
 }
