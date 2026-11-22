@@ -205,6 +205,7 @@ window.IronDivision = window.IronDivision || {};
     }
 
     if (state.battle.round === 1 && !state.battle.initialSnapshot) {
+      state.battle.attackerSide = (state.environment.theatreAttackerSide === 'B') ? 'B' : 'A';
       [...state.battle.sideA.units, ...state.battle.sideB.units].forEach(u => {
         u.pos = H.getUnitStartingPosition ? H.getUnitStartingPosition(u) : 2;
       });
@@ -269,6 +270,12 @@ window.IronDivision = window.IronDivision || {};
 
     const dynChk = document.getElementById('bf-dynamic-weather');
     if (dynChk) dynChk.checked = !!state.environment.dynamicWeather;
+
+    const thSel = document.getElementById('bf-theatre-atk');
+    if (thSel) thSel.value = state.environment.theatreAttackerSide || 'A';
+
+    const uChk = document.getElementById('bf-unexpected');
+    if (uChk) uChk.checked = !!state.environment.unexpectedInitiative;
 
     const dyEl = document.getElementById('bf-date-day');
     const moEl = document.getElementById('bf-date-month');
