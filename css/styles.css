@@ -2026,3 +2026,87 @@ body.mil-ui ::selection {
   white-space: nowrap;
   display: block;
 }
+
+
+/* --------------------------------------------------------------------------
+   Protruding Manila File Folder Tabs for Field & Technical Manuals
+   -------------------------------------------------------------------------- */
+.manila-folder-shell {
+  position: relative;
+}
+
+.manila-tabs-bar {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  padding-left: 16px;
+  position: relative;
+  z-index: 2;
+}
+
+.mil-ui button.manila-folder-tab {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  padding: 8px 22px 7px 16px;
+  margin-bottom: -1px;
+  border-radius: 7px 14px 0 0 !important;
+  border: 1px solid #9e957c !important;
+  border-bottom: 1px solid #a89f87 !important;
+  background-color: #d6cdb5 !important;
+  background-image: linear-gradient(180deg, #dfd7c2 0%, #cfc5ab 100%) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
+  color: #3f453d !important;
+  cursor: pointer;
+  transform: none !important;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.mil-ui button.manila-folder-tab:hover {
+  background-color: #e4dcc6 !important;
+  background-image: linear-gradient(180deg, #ebe4d1 0%, #dcd3ba 100%) !important;
+  color: #181c19 !important;
+}
+
+.mil-ui button.manila-folder-tab.is-active {
+  z-index: 4;
+  padding-top: 10px;
+  padding-bottom: 9px;
+  background-color: #f4efe1 !important;
+  background-image: none !important;
+  border-color: #9e957c !important;
+  border-bottom: 2px solid #f4efe1 !important;
+  box-shadow: inset 0 2px 0 #c8a24b, 0 -2px 6px rgba(0, 0, 0, 0.28) !important;
+  color: #141815 !important;
+}
+
+.manila-tab-code {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #6b5723;
+}
+
+.manila-tab-label {
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.manila-folder-body {
+  position: relative;
+  z-index: 3;
+  border-top: 1px solid #9e957c;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
+}
+
+.manila-folder-body .tradoc-doc {
+  margin-top: 0 !important;
+  border-top: none !important;
+}

@@ -1,5 +1,5 @@
 /* ==========================================================================
-   IRON DIVISION ENGINE — DRILL SERGEANT BOOT CAMP FIELD MANUAL
+   IRON DIVISION ENGINE — MANILA FOLDER FIELD & TECHNICAL MANUALS
    File: js/guide.js
    ========================================================================== */
 
@@ -8,12 +8,49 @@ window.IronDivision = window.IronDivision || {};
 (function (ID) {
   'use strict';
 
+  let activeGuidePage = 'boot';
+
+  function switchGuidePage(pageKey) {
+    activeGuidePage = pageKey === 'tech' ? 'tech' : 'boot';
+    const bootPane = document.getElementById('guide-pane-boot');
+    const techPane = document.getElementById('guide-pane-tech');
+    const bootTab = document.getElementById('guide-tab-boot');
+    const techTab = document.getElementById('guide-tab-tech');
+
+    if (bootPane) bootPane.classList.toggle('hidden', activeGuidePage !== 'boot');
+    if (techPane) techPane.classList.toggle('hidden', activeGuidePage !== 'tech');
+    if (bootTab) {
+      bootTab.classList.toggle('is-active', activeGuidePage === 'boot');
+      bootTab.setAttribute('aria-selected', activeGuidePage === 'boot' ? 'true' : 'false');
+    }
+    if (techTab) {
+      techTab.classList.toggle('is-active', activeGuidePage === 'tech');
+      techTab.setAttribute('aria-selected', activeGuidePage === 'tech' ? 'true' : 'false');
+    }
+  }
+
   function renderSimulationGuide() {
     const container = document.getElementById('view-guide');
     if (!container) return;
 
     container.innerHTML = `
-      <article class="tradoc-doc" aria-label="Iron Division Drill Sergeant Field Manual FM 100-5-BOOT">
+      <div class="manila-folder-shell max-w-[1060px] mx-auto">
+        <!-- Protruding Manila File Folder Tabs -->
+        <div class="manila-tabs-bar" role="tablist" aria-label="Manual Dossier Folder Tabs">
+          <button type="button" id="guide-tab-boot" role="tab" aria-selected="${activeGuidePage === 'boot' ? 'true' : 'false'}" onclick="switchGuidePage('boot')" class="manila-folder-tab ${activeGuidePage === 'boot' ? 'is-active' : ''}">
+            <span class="manila-tab-code">TAB A // FM 100-5-BOOT</span>
+            <span class="manila-tab-label">DRILL SERGEANT GUIDE</span>
+          </button>
+          <button type="button" id="guide-tab-tech" role="tab" aria-selected="${activeGuidePage === 'tech' ? 'true' : 'false'}" onclick="switchGuidePage('tech')" class="manila-folder-tab ${activeGuidePage === 'tech' ? 'is-active' : ''}">
+            <span class="manila-tab-code">TAB B // TM 9-1005-TECH</span>
+            <span class="manila-tab-label">TECHNICAL MANUAL</span>
+          </button>
+        </div>
+
+        <!-- Folder Body -->
+        <div class="manila-folder-body">
+          <div id="guide-pane-boot" class="${activeGuidePage === 'boot' ? '' : 'hidden'}">
+            <article class="tradoc-doc" aria-label="Iron Division Drill Sergeant Field Manual FM 100-5-BOOT">
         <!-- Top Classification & Distribution Banner -->
         <div class="tradoc-class-strip">
           <span>UNCLASSIFIED // MANDATORY READING FOR NEW RECRUITS &amp; GAME MASTERS</span>
@@ -272,15 +309,160 @@ window.IronDivision = window.IronDivision || {};
           <span>FM 100-5-BOOT // IRON DIVISION TRAINING COMMAND</span>
         </footer>
       </article>
+          </div>
+          <div id="guide-pane-tech" class="${activeGuidePage === 'tech' ? '' : 'hidden'}">
+            <article class="tradoc-doc" aria-label="Iron Division Technical Manual TM 9-1005-TECH">
+        <div class="tradoc-class-strip">
+          <span>UNCLASSIFIED // ENGINE REFERENCE &amp; MATHEMATICAL SPECIFICATION</span>
+          <span>TRADOC PUB // TM 9-1005-TECH (REV 3.0)</span>
+        </div>
+
+        <header class="tradoc-header">
+          <div class="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <div class="tradoc-mono text-[11px] font-bold uppercase tracking-widest text-[#3a4738]">
+                IRON DIVISION SYSTEMS ENGINEERING // TECHNICAL MANUAL
+              </div>
+              <h2 class="text-2xl sm:text-3xl font-black uppercase tracking-tight text-[#141815] mt-1">
+                TM 9-1005-TECH: Simulation Rules &amp; Architecture
+              </h2>
+              <p class="text-sm text-[#323a33] max-w-3xl mt-1">
+                Concise technical reference for combat formulas, penetration checks, spatial range caps, compound environment rules, officer rank scaling, and client-side data persistence.
+              </p>
+            </div>
+            <div class="tradoc-mono text-[11px] bg-[#faf8f2] border border-[#b5ad98] p-3 text-right shrink-0 space-y-0.5 text-[#1c211d]">
+              <div><strong>PUB NO:</strong> TM 9-1005-TECH</div>
+              <div><strong>RUNTIME:</strong> VANILLA ES6 (ZERO-BUILD)</div>
+              <div><strong>STORAGE:</strong> LOCALSTORAGE + JSON I/O</div>
+            </div>
+          </div>
+        </header>
+
+        <div class="tradoc-body space-y-5">
+
+          <section class="tradoc-chapter">
+            <h3 class="tradoc-chapter-title">1. COMBAT RESOLUTION &amp; PENETRATION MATH</h3>
+            <table class="tradoc-table">
+              <thead>
+                <tr>
+                  <th>Subsystem</th>
+                  <th>Exact Formula / Rule</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Combat Dice</strong></td>
+                  <td><code>Infantry: d12</code> &middot; <code>Armored Vehicle: d16</code> &middot; <code>Tank: d20</code> &middot; <code>Artillery: d20 (Atk) / d8 (Def)</code>.</td>
+                </tr>
+                <tr>
+                  <td><strong>Vigilance (Recon)</strong></td>
+                  <td><code>1d100 + Terrain + Feature + Weather + Time-of-Day + Tactic + Avg Unit Traits + Commander</code>. Winner gains <code>floor(|diff| / 10)</code> stat bonus.</td>
+                </tr>
+                <tr>
+                  <td><strong>Soft vs. Hard Mix</strong></td>
+                  <td>Unarmored targets receive <code>Soft Attack</code>; armored targets (<code>armor &gt; 0</code>) use <code>Hard Attack</code> + kinetic penetration check.</td>
+                </tr>
+                <tr>
+                  <td><strong>Piercing vs. Hardness</strong></td>
+                  <td>If <code>Piercing &gt;= Hardness</code>: full armor penetration. If <code>Piercing &lt; Hardness</code>: mitigated damage (unpierced sealed Medium/Heavy/Super-Heavy hulls are immune to Zombie swarms).</td>
+                </tr>
+                <tr>
+                  <td><strong>Outnumbering Bonus</strong></td>
+                  <td>Force Power = <code>Personnel + (Armor * 15)</code>. Grants <code>+20%</code> Atk/Def per <code>+50%</code> advantage, capped by active terrain's <code>outnumberCap</code> (Plains <code>100%</code>, Urban <code>40%</code>, Mountain <code>35%</code>; <code>-15%</code> for Fort/River/Amphib, min <code>25%</code>).</td>
+                </tr>
+                <tr>
+                  <td><strong>Org &amp; Supply Maluses</strong></td>
+                  <td>Org &lt;=70/50/30/10% imposes <code>-5/-10/-20/-40%</code> stats (halved if Unbreakable). Supply &lt;50/20/0% imposes <code>-10/-20/-50%</code> stats plus Org shock.</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="tradoc-chapter">
+            <h3 class="tradoc-chapter-title">2. SPATIAL RANGE, ENVIRONMENT &amp; COMPOUND HAZARDS</h3>
+            <table class="tradoc-table">
+              <thead>
+                <tr>
+                  <th>Mechanic</th>
+                  <th>Technical Specification</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Y-Axis Range</strong></td>
+                  <td><code>Total Distance = posA + posB</code>. Base ranges: <code>Infantry/AV &lt;= 2</code>, <code>Tank &lt;= 3</code>, <code>Artillery &lt;= 6</code>, <code>Zombie &lt;= 1</code>. Pre-contact approach pauses base ammo drain.</td>
+                </tr>
+                <tr>
+                  <td><strong>24-Hour Clock &amp; Lighting</strong></td>
+                  <td><code>05:00-06:59</code> Dawn (<code>-10 Vig, -15% Air, VisCap 6</code>) &middot; <code>07:00-17:59</code> Daylight &middot; <code>18:00-19:59</code> Dusk &middot; <code>20:00-04:59</code> Night (<code>-25 Vig, -40% Air, VisCap 4, +15 Ambush</code>). Ordinal Day increments after <code>24:00</code>.</td>
+                </tr>
+                <tr>
+                  <td><strong>Air Support Weather</strong></td>
+                  <td>Damage/suppression scales by <code>airEfficiency = clamp(1 + (weather.airMod + tod.airMod)/100, 0.10, 1.20)</code>. At <code>&lt;= -50%</code>, strike rolls abort/grounding check (<code>min(75%, |mod|)</code>) with 0 supply spent.</td>
+                </tr>
+                <tr>
+                  <td><strong>Compound Hazards</strong></td>
+                  <td><strong>Mud/Rasputitsa</strong> (<code>-1/-2</code> AFV speed, <code>+2</code> Sup, <code>-15</code> Veh Rec) &middot; <strong>Zero Visibility</strong> (<code>VisCap 3-4</code>, <code>-15</code> Vig w/o Recon) &middot; <strong>Deep Freeze</strong> (<code>+3%</code> DOW, <code>+1</code> Sup, <code>15%</code> cold AFV stall &lt;30% Sup) &middot; <strong>Heatstroke/Dust</strong> (<code>+2</code> Inf Sup, <code>-2</code> Inf Org/rd, <code>-15</code> Armor/Art Vig).</td>
+                </tr>
+                <tr>
+                  <td><strong>Entrenchment Cap</strong></td>
+                  <td><code>base = terrain.maxEntrench + (Fort ? 2 : 0)</code> (clamped <code>1-8</code>), plus <code>+1</code> per unit with <code>Fortification Engineer</code>.</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="tradoc-chapter">
+            <h3 class="tradoc-chapter-title">3. COMMANDERS, RECOVERY &amp; POST-BATTLE PIPELINE</h3>
+            <ul class="list-disc pl-6 space-y-1 text-sm text-[#232a24]">
+              <li><strong>Commander Stat Scaling:</strong> Each level (<code>0-10</code>) of <code>ATK</code>, <code>DEF</code>, <code>CMD</code>, and <code>LOG</code> grants <code>+2.5%</code> army-wide bonus. Officer Rank Insignia steps every <code>4</code> total points (<code>0-3</code> 1LT up to <code>36+</code> 5-Star General of the Army).</li>
+              <li><strong>Casualty &amp; Armor Recovery:</strong> Personnel recovery uses <code>50 + d50 + Modifiers</code> (split into KIA/WIA); Died of Wounds (DOW) triggers from Round 4+ when supply is low or in freezing/marsh/heat conditions. Armor recovery uses <code>50 + d50 + ArmorRecBonus</code> (recoverable vs. write-off).</li>
+              <li><strong>Pursuit &amp; Salvage:</strong> On victory, average effective mobility determines POW capture vs. escape, recovery tractors tow repairable hulls (deducted from field salvage), and victors roll salvage on abandoned enemy hulls (<code>Beutepanzers</code> restored, stripped for <code>+5</code> Supply/hull, or scuttled).</li>
+              <li><strong>GM Undo Stack:</strong> Every round pushes a deep clone of battle + environment state into <code>battle.history</code> (FIFO max <code>15</code> rounds).</li>
+            </ul>
+          </section>
+
+          <section class="tradoc-chapter">
+            <h3 class="tradoc-chapter-title">4. MODULE ARCHITECTURE &amp; DATA PERSISTENCE</h3>
+            <table class="tradoc-table">
+              <thead>
+                <tr>
+                  <th>File</th>
+                  <th>Responsibility</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td><code>js/data.js</code></td><td>Static registries: Terrains, Features, Weather, Time-of-Day, Compound Hazards, 32 Traits, 10 Commander Traits, Commanders, 25 Tactics, Unit Templates.</td></tr>
+                <tr><td><code>js/engine-helpers.js</code></td><td>Dice RNG, simulated 24H clock/ordinal day, environment &amp; visibility resolver, NATO &amp; 10-tier Officer SVG icons, combat log buffer.</td></tr>
+                <tr><td><code>js/engine-combat.js</code></td><td>Round orchestration, undo snapshots, supply/dig-in/rallying, vigilance, fire support + AA/weather grounding, maneuver, firefight, armor &amp; DOW.</td></tr>
+                <tr><td><code>js/engine-pursuit.js</code></td><td>Victory checks, mobility pursuit/POWs, recovery towing, field salvage, and Form DA-774 AAR snapshot builder.</td></tr>
+                <tr><td><code>js/ui-render.js</code></td><td>DOM rendering, searchable black-diamond dropdowns, floating unit tooltip, expanded logs modal, flippable Tactics Manual, and printable A4 AAR.</td></tr>
+                <tr><td><code>js/app.js</code></td><td>Global <code>IronDivision.state</code>, <code>localStorage</code> persistence, Preset JSON Export/Import, GM Live overrides, and event controllers.</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+        </div>
+
+        <footer class="tradoc-footer">
+          <span>IRON DIVISION SYSTEMS ENGINEERING // TECHNICAL SPECIFICATION</span>
+          <span>TM 9-1005-TECH // END OF DOCUMENT</span>
+        </footer>
+      </article>
+          </div>
+        </div>
+      </div>
     `;
   }
 
   // Attach to IronDivision namespace
   ID.Guide = {
-    renderSimulationGuide
+    renderSimulationGuide,
+    switchGuidePage
   };
 
-  // Backwards-compatible binding on window
+  // Backwards-compatible bindings on window
   window.renderSimulationGuide = renderSimulationGuide;
+  window.switchGuidePage = switchGuidePage;
 
 })(window.IronDivision);
