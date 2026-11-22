@@ -98,6 +98,59 @@ window.IronDivision = window.IronDivision || {};
     return { key: 'Night', phase: 'Night', label: 'NIGHT' };
   }
 
+  function getSeasonLabel(month) {
+    const m = Number(month) || 9;
+    if (m === 12 || m <= 2) return 'Winter';
+    if (m >= 3 && m <= 5) return 'Spring';
+    if (m >= 6 && m <= 8) return 'Summer';
+    return 'Autumn';
+  }
+
+  function isWeatherAllowedInClimate(weatherKey, terrainKey, month, todPhase = 'Daylight') {
+    const m = Number(month) || 9;
+    const isSummer = (m >= 6 && m <= 8);
+    const isColdSeason = (m === 11 || m === 12 || m <= 3);
+    const isAlpineSnowSeason = (m >= 10 || m <= 4);
+    const isDesertWarmSeason = (m >= 4 && m <= 10);
+    const isNight = (todPhase === 'Night');
+
+    if (terrainKey === 'Desert') {
+      if (['Snowy', 'HeavyRain', 'Foggy'].includes(weatherKey)) return false;
+      if (weatherKey === 'LightRain' && isSummer) return false;
+      if (weatherKey === 'HeatWaves' && (!isDesertWarmSeason || isNight)) return false;
+      return true;
+    }
+    if (terrainKey === 'Jungle') {
+      if (weatherKey === 'Snowy') return false;
+      if (weatherKey === 'HeatWaves' && isNight) return false;
+      return true;
+    }
+    if (terrainKey === 'Mountain') {
+      if (weatherKey === 'HeatWaves') return false;
+      if (weatherKey === 'Snowy' && !isAlpineSnowSeason) return false;
+      return true;
+    }
+    // Temperate terrains (Plains, Forest, Hills, Marsh, Urban, etc.)
+    if (weatherKey === 'HeatWaves' && (!isSummer || isNight)) return false;
+    if (weatherKey === 'Snowy' && !isColdSeason) return false;
+    return true;
+  }
+
+  function getClimateWeatherCandidates(currentWeather, terrainKey, month, todPhase = 'Daylight') {
+    const D = ID.Data || {};
+    const curW = currentWeather || 'Sunny';
+    const raw = (D.WEATHER_TRANSITIONS && D.WEATHER_TRANSITIONS[curW]) ? D.WEATHER_TRANSITIONS[curW] : ['Sunny', 'Overcast'];
+    let candidates = raw.filter(w => w !== curW && isWeatherAllowedInClimate(w, terrainKey, month, todPhase));
+    if (candidates.length === 0) {
+      const allWeathers = Object.keys(D.WEATHER_TYPES || { Sunny: 1, Overcast: 1, Windy: 1 });
+      candidates = allWeathers.filter(w => w !== curW && isWeatherAllowedInClimate(w, terrainKey, month, todPhase));
+    }
+    if (candidates.length === 0) {
+      candidates = ['Sunny', 'Overcast', 'Windy'].filter(w => w !== curW);
+    }
+    return candidates;
+  }
+
   function getRoundDurationLabel() {
     const env = ID.state?.environment || {};
     const durVal = Math.max(1, Number(env.roundDurationValue) || 30);
@@ -441,7 +494,7 @@ window.IronDivision = window.IronDivision || {};
     if (u.isZombie || (u.traits && u.traits.includes('zombie_unit'))) return 1;
     let baseRange = 2;
     if (u.category === 'artillery') baseRange = 6;
-    else if (u.category === 'tank') baseRange = 3;
+    else if (u.category === 'tank' || (u.category === 'armored_vehicle' && (u.traits || []).includes('anti_tank'))) baseRange = 3;
     else if (u.category === 'infantry' || u.category === 'armored_vehicle') baseRange = 2;
 
     const envFx = getActiveEnvironmentEffects();
@@ -620,11 +673,71 @@ window.IronDivision = window.IronDivision || {};
     return RANK_SVGS[exp] || RANK_SVGS.Regular;
   }
 
+  // 10-Tier Officer Rank Insignia (steps every 4 total commander stat points: 0..36+)
+  const OFFICER_RANKS = [
+    {
+      tier: 0, title: 'First Lieutenant', abbr: '1LT',
+      svg: '<svg width="24" height="18" viewBox="0 0 24 18" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="9.5" y="2" width="5" height="14" fill="#d8dee4" stroke="#6f7882" stroke-width="1"/></svg>'
+    },
+    {
+      tier: 1, title: 'Captain', abbr: 'CPT',
+      svg: '<svg width="24" height="18" viewBox="0 0 24 18" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="4.5" y="2" width="4.5" height="14" fill="#d8dee4" stroke="#6f7882" stroke-width="0.9"/><rect x="15" y="2" width="4.5" height="14" fill="#d8dee4" stroke="#6f7882" stroke-width="0.9"/><line x1="9" y1="6" x2="15" y2="6" stroke="#c5ccd4" stroke-width="1.3"/><line x1="9" y1="12" x2="15" y2="12" stroke="#c5ccd4" stroke-width="1.3"/></svg>'
+    },
+    {
+      tier: 2, title: 'Major', abbr: 'MAJ',
+      svg: '<svg width="24" height="18" viewBox="0 0 24 18" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14 5.5L18 4.5L16 8.5L19 11L15 12L14.5 14.5L12 13.5L9.5 14.5L9 12L5 11L8 8.5L6 4.5L10 5.5L12 2Z" fill="#d4af37" stroke="#7d6418" stroke-width="0.9"/><line x1="12" y1="13.5" x2="12" y2="16.5" stroke="#d4af37" stroke-width="1.5"/></svg>'
+    },
+    {
+      tier: 3, title: 'Lieutenant Colonel', abbr: 'LTC',
+      svg: '<svg width="24" height="18" viewBox="0 0 24 18" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L14 5.5L18 4.5L16 8.5L19 11L15 12L14.5 14.5L12 13.5L9.5 14.5L9 12L5 11L8 8.5L6 4.5L10 5.5L12 2Z" fill="#d8dee4" stroke="#6f7882" stroke-width="0.9"/><line x1="12" y1="13.5" x2="12" y2="16.5" stroke="#d8dee4" stroke-width="1.5"/></svg>'
+    },
+    {
+      tier: 4, title: 'Colonel', abbr: 'COL',
+      svg: '<svg width="26" height="18" viewBox="0 0 26 18" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13 3L14.5 5.5L23 4.5L20 9.5L16 9.5L15.5 14.5L13 13L10.5 14.5L10 9.5L6 9.5L3 4.5L11.5 5.5L13 3Z" fill="#d8dee4" stroke="#6f7882" stroke-width="0.9"/></svg>'
+    },
+    {
+      tier: 5, title: 'Brigadier General', abbr: 'BG',
+      svg: '<svg width="24" height="18" viewBox="0 0 24 18" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="12,2 13.7,6.8 18.8,6.8 14.7,9.8 16.2,14.6 12,11.7 7.8,14.6 9.3,9.8 5.2,6.8 10.3,6.8" fill="#e4e9ee" stroke="#76808a" stroke-width="0.8"/></svg>'
+    },
+    {
+      tier: 6, title: 'Major General', abbr: 'MG',
+      svg: '<svg width="28" height="18" viewBox="0 0 28 18" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="8,3 9.3,6.8 13.2,6.8 10,9.1 11.2,13 8,10.7 4.8,13 6,9.1 2.8,6.8 6.7,6.8" fill="#e4e9ee" stroke="#76808a" stroke-width="0.7"/><polygon points="20,3 21.3,6.8 25.2,6.8 22,9.1 23.2,13 20,10.7 16.8,13 18,9.1 14.8,6.8 18.7,6.8" fill="#e4e9ee" stroke="#76808a" stroke-width="0.7"/></svg>'
+    },
+    {
+      tier: 7, title: 'Lieutenant General', abbr: 'LTG',
+      svg: '<svg width="34" height="18" viewBox="0 0 34 18" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="6.5,4 7.6,7.1 10.8,7.1 8.2,9 9.2,12.2 6.5,10.3 3.8,12.2 4.8,9 2.2,7.1 5.4,7.1" fill="#e4e9ee" stroke="#76808a" stroke-width="0.6"/><polygon points="17,4 18.1,7.1 21.3,7.1 18.7,9 19.7,12.2 17,10.3 14.3,12.2 15.3,9 12.7,7.1 15.9,7.1" fill="#e4e9ee" stroke="#76808a" stroke-width="0.6"/><polygon points="27.5,4 28.6,7.1 31.8,7.1 29.2,9 30.2,12.2 27.5,10.3 24.8,12.2 25.8,9 23.2,7.1 26.4,7.1" fill="#e4e9ee" stroke="#76808a" stroke-width="0.6"/></svg>'
+    },
+    {
+      tier: 8, title: 'General', abbr: 'GEN',
+      svg: '<svg width="38" height="18" viewBox="0 0 38 18" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="5.5,4.5 6.4,7.2 9.2,7.2 7,8.8 7.8,11.5 5.5,9.9 3.2,11.5 4,8.8 1.8,7.2 4.6,7.2" fill="#e4e9ee" stroke="#76808a" stroke-width="0.55"/><polygon points="14.5,4.5 15.4,7.2 18.2,7.2 16,8.8 16.8,11.5 14.5,9.9 12.2,11.5 13,8.8 10.8,7.2 13.6,7.2" fill="#e4e9ee" stroke="#76808a" stroke-width="0.55"/><polygon points="23.5,4.5 24.4,7.2 27.2,7.2 25,8.8 25.8,11.5 23.5,9.9 21.2,11.5 22,8.8 19.8,7.2 22.6,7.2" fill="#e4e9ee" stroke="#76808a" stroke-width="0.55"/><polygon points="32.5,4.5 33.4,7.2 36.2,7.2 34,8.8 34.8,11.5 32.5,9.9 30.2,11.5 31,8.8 28.8,7.2 31.6,7.2" fill="#e4e9ee" stroke="#76808a" stroke-width="0.55"/></svg>'
+    },
+    {
+      tier: 9, title: 'General of the Army', abbr: 'GA',
+      svg: '<svg width="26" height="22" viewBox="0 0 26 22" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="13,1.5 13.8,3.9 16.3,3.9 14.3,5.4 15,7.8 13,6.3 11,7.8 11.7,5.4 9.7,3.9 12.2,3.9" fill="#f0d27a" stroke="#8a6d20" stroke-width="0.5"/><polygon points="20.5,6.8 21.3,9.2 23.8,9.2 21.8,10.7 22.5,13.1 20.5,11.6 18.5,13.1 19.2,10.7 17.2,9.2 19.7,9.2" fill="#f0d27a" stroke="#8a6d20" stroke-width="0.5"/><polygon points="17.8,14.5 18.6,16.9 21.1,16.9 19.1,18.4 19.8,20.8 17.8,19.3 15.8,20.8 16.5,18.4 14.5,16.9 17,16.9" fill="#f0d27a" stroke="#8a6d20" stroke-width="0.5"/><polygon points="8.2,14.5 9,16.9 11.5,16.9 9.5,18.4 10.2,20.8 8.2,19.3 6.2,20.8 6.9,18.4 4.9,16.9 7.4,16.9" fill="#f0d27a" stroke="#8a6d20" stroke-width="0.5"/><polygon points="5.5,6.8 6.3,9.2 8.8,9.2 6.8,10.7 7.5,13.1 5.5,11.6 3.5,13.1 4.2,10.7 2.2,9.2 4.7,9.2" fill="#f0d27a" stroke="#8a6d20" stroke-width="0.5"/></svg>'
+    }
+  ];
+
+  function getOfficerRankInfo(cmd) {
+    if (!cmd || cmd.id === 'cmd_none') {
+      return { tier: -1, total: 0, title: 'Autonomous Staff', abbr: 'HQ', svg: '' };
+    }
+    const total = (Number(cmd.attackLevel) || 0) + (Number(cmd.defenseLevel) || 0) + (Number(cmd.commandLevel) || 0) + (Number(cmd.logisticsLevel) || 0);
+    const tier = clamp(Math.floor(total / 4), 0, OFFICER_RANKS.length - 1);
+    return { ...OFFICER_RANKS[tier], total };
+  }
+
+  function getOfficerRankIcon(cmd) {
+    return getOfficerRankInfo(cmd).svg;
+  }
+
   ID.Icons = {
     SVGS: MIL_SVGS,
     RANKS: RANK_SVGS,
+    OFFICER_RANKS,
     get: getIcon,
     getRank: getRankIcon,
+    getOfficerRankInfo,
+    getOfficerRank: getOfficerRankIcon,
     getForLog: getIconForLog
   };
 
@@ -643,6 +756,9 @@ window.IronDivision = window.IronDivision || {};
     formatSimulatedClock,
     getClockTimeOfDay,
     getRoundDurationLabel,
+    getSeasonLabel,
+    isWeatherAllowedInClimate,
+    getClimateWeatherCandidates,
     getTraitById,
     addLog,
     showToast,

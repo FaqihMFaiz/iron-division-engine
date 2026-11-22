@@ -125,8 +125,14 @@ window.IronDivision = window.IronDivision || {};
 
     for (const u of loseState.units) {
       if (u.personnel <= 0) {
-        u.captured = (u.captured || 0) + (u.wounded || 0);
-        // Do not overwrite u.escaped — preserve troops that scattered earlier!
+        u.personnel = 0;
+        if (victorIsMonstersOrZombies && (u.wounded || 0) > 0) {
+          const slaughteredWia = u.wounded || 0;
+          u.dead += slaughteredWia;
+          u.wounded = 0;
+          H.addLog('damage', `[KIA] [Devoured / Slaughtered] ${u.name}: ${slaughteredWia} wounded left on the field are devoured by the horde (Converted to KIA)!`);
+        }
+        // Preserve u.escaped from earlier scatter and keep WIA in WIA (no double-counting into POW)
         continue;
       }
 
@@ -187,8 +193,9 @@ window.IronDivision = window.IronDivision || {};
         }
       }
 
-      // ACCUMULATE: Add newly escaping troops to troops that scattered during the rout
+      // ACCUMULATE: Partition remaining active personnel cleanly into ESC + POW (REM becomes 0)
       u.escaped = (u.escaped || 0) + escapedActive;
+      u.personnel = 0;
 
       // RULE 3: No Prisoners Rule for Monsters and Zombies
       if (victorIsMonstersOrZombies) {
@@ -200,7 +207,8 @@ window.IronDivision = window.IronDivision || {};
           H.addLog('damage', `[KIA] [Devoured / Slaughtered] ${u.name}: ${slaughtered} captured & wounded troops are devoured by the horde (Converted to KIA)!`);
         }
       } else {
-        u.captured = (u.captured || 0) + capturedActive + (u.wounded || 0);
+        // Keep WIA recorded as WIA (do not double-count wounded into POW) so START === REM + KIA + WIA + POW + ESC
+        u.captured = (u.captured || 0) + capturedActive;
       }
 
       // RULE 4: Vehicle Towing
@@ -220,6 +228,7 @@ window.IronDivision = window.IronDivision || {};
 
     // RULE 5: Proportional Battlefield Salvage for the Victor
     let impressedTanks = 0;
+    let scrappedHulls = 0;
     let supplyScrapped = 0;
     let scuttledHulls = 0;
 
@@ -254,6 +263,7 @@ window.IronDivision = window.IronDivision || {};
 
         impressedTanks = Math.floor(totalAbandonedHulls * impressedPct);
         const scrappedCount = Math.floor(totalAbandonedHulls * scrapPct);
+        scrappedHulls = scrappedCount;
         scuttledHulls = totalAbandonedHulls - impressedTanks - scrappedCount;
         supplyScrapped = scrappedCount * 5;
 
@@ -265,6 +275,7 @@ window.IronDivision = window.IronDivision || {};
     state.battle.salvageReport = {
       abandoned: totalAbandonedHulls,
       impressed: impressedTanks,
+      scrapped: scrappedHulls,
       supplyScrapped: supplyScrapped,
       scuttled: scuttledHulls
     };

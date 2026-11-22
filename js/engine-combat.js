@@ -220,6 +220,13 @@ window.IronDivision = window.IronDivision || {};
     u.entrenchmentLevel = 0;
   }
 
+  function canUnitDismountAsInfantry(u) {
+    if (!u || u.category !== 'armored_vehicle') return false;
+    // Tank Destroyers / Panzerjaeger do not carry dismounted rifle infantry
+    if ((u.traits || []).includes('anti_tank')) return false;
+    return true;
+  }
+
   function checkAndMarkUnitDefeat(u) {
     if (u.defeated) return true;
     if (u.isRallying) return false;
@@ -238,25 +245,27 @@ window.IronDivision = window.IronDivision || {};
       u.armor = 0;
       const orgRatio = u.org / Math.max(1, u.maxOrg);
       const persRatio = u.personnel / Math.max(1, u.maxPersonnel);
-      if (u.category === 'armored_vehicle' && orgRatio >= 0.20 && persRatio >= 0.50) {
-        u.isDismounted = true;
-        u.category = 'infantry';
-        u.armorTier = 'unarmored';
-        u.hardness = Math.min(u.hardness || 2, 2);
-        const dismountShock = 4 + H.rollDie(6);
-        u.org = Math.max(1, u.org - dismountShock);
-        H.addLog('armor', `[AFV] [Dismounted on Foot] ${u.name} lost all transports, but holds cohesion (${u.personnel}/${u.maxPersonnel} pers, -${dismountShock} Org shock -> ${u.org}/${u.maxOrg}) and fights on as dismounted Infantry!`);
-        return false;
+      if (canUnitDismountAsInfantry(u)) {
+        if (orgRatio >= 0.20 && persRatio >= 0.50) {
+          u.isDismounted = true;
+          u.category = 'infantry';
+          u.armorTier = 'unarmored';
+          u.hardness = Math.min(u.hardness || 2, 2);
+          const dismountShock = 4 + H.rollDie(6);
+          u.org = Math.max(1, u.org - dismountShock);
+          H.addLog('armor', `[AFV] [Dismounted on Foot] ${u.name} lost all transports, but holds cohesion (${u.personnel}/${u.maxPersonnel} pers, -${dismountShock} Org shock -> ${u.org}/${u.maxOrg}) and fights on as dismounted Infantry!`);
+          return false;
+        }
+        if (!u.ralliedOnce && u.personnel >= minRallyPersonnel) {
+          triggerUnitRally(u, 'All combat-ready transports disabled');
+          return false;
+        }
       }
-      if (!u.ralliedOnce && u.personnel >= minRallyPersonnel) {
-        triggerUnitRally(u, 'All combat-ready armor disabled');
-        return false;
-      } else {
-        u.defeated = true;
-        u.defeatReason = 'All combat-ready armor destroyed/disabled';
-        H.addLog('armor', `[BRK] [${H.getSideName(u.side)}] ${u.name} has 0 combat-ready armor remaining and is defeated!`);
-        return true;
-      }
+      // Pure Tank, SP Artillery, and Tank Destroyer formations retire when 0 combat vehicles remain
+      u.defeated = true;
+      u.defeatReason = 'All combat-ready armor destroyed/disabled';
+      H.addLog('armor', `[BRK] [${H.getSideName(u.side)}] ${u.name} has 0 combat-ready vehicles remaining and withdraws from the sector!`);
+      return true;
     }
 
     const hasUnbreakable = u.traits.some(tid => {
@@ -656,21 +665,19 @@ window.IronDivision = window.IronDivision || {};
         if (ID.state.environment.dynamicWeather && Math.random() < 0.45) {
           const curW = ID.state.environment.weather || 'Sunny';
           const terrK = ID.state.environment.terrain || 'Plains';
-          let candidates = (D.WEATHER_TRANSITIONS?.[curW] || ['Sunny', 'Overcast']).filter(w => w !== curW);
-          if (terrK === 'Desert') {
-            candidates = candidates.filter(w => !['Snowy', 'HeavyRain', 'Foggy'].includes(w));
-            if (candidates.length === 0) candidates = ['Sunny', 'Windy', 'HeatWaves'].filter(w => w !== curW);
-          } else if (terrK === 'Jungle') {
-            candidates = candidates.filter(w => w !== 'Snowy');
-          } else if (terrK === 'Mountain') {
-            candidates = candidates.filter(w => w !== 'HeatWaves');
-          }
+          const curDate = H.getSimulatedBattleDate ? H.getSimulatedBattleDate(rd) : null;
+          const curMonth = curDate ? (curDate.getUTCMonth() + 1) : (Number(ID.state.environment.battleMonth) || 9);
+          const curTodPhase = (H.getClockTimeOfDay && curDate) ? H.getClockTimeOfDay(curDate).phase : 'Daylight';
+          const candidates = H.getClimateWeatherCandidates
+            ? H.getClimateWeatherCandidates(curW, terrK, curMonth, curTodPhase)
+            : (D.WEATHER_TRANSITIONS?.[curW] || ['Sunny', 'Overcast']).filter(w => w !== curW);
           if (candidates.length > 0) {
             const nextW = candidates[Math.floor(Math.random() * candidates.length)];
             const prevName = D.WEATHER_TYPES?.[curW]?.name || curW;
             const nextName = D.WEATHER_TYPES?.[nextW]?.name || nextW;
+            const seasonLabel = H.getSeasonLabel ? H.getSeasonLabel(curMonth) : '';
             ID.state.environment.weather = nextW;
-            H.addLog('support', `[WTH] [Weather Shift] Theatre weather shifts from ${prevName} -> ${nextName}!`);
+            H.addLog('support', `[WTH] [Weather Shift] Theatre weather shifts from ${prevName} -> ${nextName}${seasonLabel ? ` (${terrK} · ${seasonLabel})` : ''}!`);
           }
         }
       }
@@ -736,8 +743,8 @@ window.IronDivision = window.IronDivision || {};
       const isPreContact = !anyUnitInRange;
 
       // 2. Supply Upkeep, DOW & Rallying
-      processSupplyAndStartOfRoundTraits('A', tacA, isPreContact);
-      processSupplyAndStartOfRoundTraits('B', tacB, isPreContact);
+      processSupplyAndStartOfRoundTraits('A', tacA, isPreContact, tacB);
+      processSupplyAndStartOfRoundTraits('B', tacB, isPreContact, tacA);
 
       const isBattleOver = ID.Pursuit ? ID.Pursuit.checkBattleEndCondition() : false;
       if (isBattleOver) {
@@ -913,7 +920,7 @@ window.IronDivision = window.IronDivision || {};
   // 6. Logistics, Upkeep, DOW & Rally Engine
   // --------------------------------------------------------------------------
 
-  function processSupplyAndStartOfRoundTraits(side, chosenTactic, isPreContact = false) {
+  function processSupplyAndStartOfRoundTraits(side, chosenTactic, isPreContact = false, enemyChosenTactic = null) {
     const sideState = side === 'A' ? ID.state.battle.sideA : ID.state.battle.sideB;
     const enemyState = side === 'A' ? ID.state.battle.sideB : ID.state.battle.sideA;
     const cmd = getSideCommander(side);
@@ -1028,22 +1035,31 @@ window.IronDivision = window.IronDivision || {};
 
             const rawD10 = H.rollDie(10);
             const strengthBonus = manpowerRatio >= 0.75 ? 5 : 0;
-            u.org = H.clamp(u.org + rawD10 + strengthBonus + extraOrgBonus, 10, u.maxOrg);
+            const minRallyOrg = Math.min(u.maxOrg, Math.max(18, Math.ceil(u.maxOrg * 0.35)));
+            u.org = H.clamp(u.org + rawD10 + strengthBonus + extraOrgBonus, minRallyOrg, u.maxOrg);
 
             u.name = u.name.includes('(Rallied)') ? u.name : `${u.name} (Rallied)`;
 
             if (u.originalMaxArmor > 0 && !u.isDismounted && u.armor > 0) {
               H.addLog('rolls', `[RLY] [Rallied to the Line] ${u.name} PASSED Rally Check (${breakdownStr} vs DC ${rallyDC})! Intact column returned with ${u.personnel} personnel, ${u.armor} active vehicles, Org: ${u.org}/${u.maxOrg}.`);
+            } else if (u.originalMaxArmor > 0 && !canUnitDismountAsInfantry(u) && u.category !== 'infantry') {
+              u.defeated = true;
+              u.defeatReason = 'All combat-ready armor destroyed/disabled';
+              H.addLog('armor', `[BRK] [${H.getSideName(u.side)}] ${u.name} has 0 combat-ready vehicles remaining and withdraws to depot for refit!`);
             } else {
+              const wasMechanized = u.originalMaxArmor > 0;
               u.category = 'infantry';
               u.armorTier = 'unarmored';
               u.armor = 0;
               u.maxArmor = 0;
-              u.isDismounted = true;
-              u.hardAttack = 6;
-              u.piercing = 5;
-              u.hardness = 2;
-              H.addLog('rolls', `[RLY] [Rallied to the Line] ${u.name} PASSED Rally Check (${breakdownStr} vs DC ${rallyDC})! Reformed as infantry with ${u.personnel} personnel, Org: ${u.org}/${u.maxOrg}.`);
+              u.isDismounted = wasMechanized;
+              if (wasMechanized) {
+                u.hardAttack = 6;
+                u.piercing = 5;
+                u.hardness = 2;
+              }
+              const rallyVerb = wasMechanized ? 'Reformed as infantry' : 'Returned to the line';
+              H.addLog('rolls', `[RLY] [Rallied to the Line] ${u.name} PASSED Rally Check (${breakdownStr} vs DC ${rallyDC})! ${rallyVerb} with ${u.personnel} personnel, Org: ${u.org}/${u.maxOrg}.`);
             }
           } else {
             if (manpowerRatio >= 0.60 && !isCriticalFumble) {
@@ -1064,7 +1080,8 @@ window.IronDivision = window.IronDivision || {};
     }
 
     // 2. Frontline Attrition & Consumption
-    const enemyActiveCount = enemyState.units.filter(isUnitActive).length;
+    const enemyActiveUnits = enemyState.units.filter(isUnitActive);
+    const enemyActiveCount = enemyActiveUnits.length;
     const isUncontestedFrontline = (enemyActiveCount === 0);
 
     let sideRollD3 = 0;
@@ -1198,20 +1215,34 @@ window.IronDivision = window.IronDivision || {};
           H.addLog('support', `[HOLD] [Blitz Disrupted] ${u.name} cannot recover Organization this round due to Blitz shock!`);
         }
 
+        const unitInEngagementRange = !isUncontestedFrontline && !isPreContact && (
+          enemyActiveUnits.some(e => H.canUnitEngageTarget(u, e, chosenTactic)) ||
+          enemyActiveUnits.some(e => H.canUnitEngageTarget(e, u, enemyChosenTactic))
+        );
+        const wouldHaveFatigue = !isUncontestedFrontline && ID.state.battle.round > 5;
+        const fatiguePausedOutOfRange = wouldHaveFatigue && !unitInEngagementRange;
+
         let fatigueLoss = 0;
-        if (!isUncontestedFrontline) {
+        if (!isUncontestedFrontline && unitInEngagementRange) {
           if (ID.state.battle.round > 12) fatigueLoss = 2;
           else if (ID.state.battle.round > 5) fatigueLoss = 1;
         }
 
-        const netOrgChange = isUncontestedFrontline ? Math.max(0, orgDelta) : (orgDelta - fatigueLoss);
+        const effectiveOrgDelta = (!isUncontestedFrontline && !unitInEngagementRange) ? Math.max(0, orgDelta) : orgDelta;
+        const netOrgChange = isUncontestedFrontline ? Math.max(0, orgDelta) : (effectiveOrgDelta - fatigueLoss);
 
         if (netOrgChange !== 0) {
           u.org = H.clamp(u.org + netOrgChange, 0, u.maxOrg);
           if (netOrgChange > 0) {
-            H.addLog('support', `[ORG+] [${u.name}] Net Organization +${netOrgChange} (Regen ${orgDelta >= 0 ? '+' : ''}${orgDelta}${isUncontestedFrontline ? ', Frontline Rest' : `, Fatigue -${fatigueLoss}`} -> ${u.org}/${u.maxOrg}).`);
+            const fatigueTag = isUncontestedFrontline
+              ? ', Frontline Rest'
+              : (fatiguePausedOutOfRange ? ', Fatigue Paused (Out of Range)' : `, Fatigue -${fatigueLoss}`);
+            H.addLog('support', `[ORG+] [${u.name}] Net Organization +${netOrgChange} (Regen ${orgDelta >= 0 ? '+' : ''}${orgDelta}${fatigueTag} -> ${u.org}/${u.maxOrg}).`);
           } else {
-            H.addLog('support', `[ORG-] [${u.name}] Net Organization ${netOrgChange} (Regen ${orgDelta >= 0 ? '+' : ''}${orgDelta}, Combat Fatigue -${fatigueLoss} -> ${u.org}/${u.maxOrg}).`);
+            const fatigueTag = fatiguePausedOutOfRange
+              ? ', Fatigue Paused (Out of Range)'
+              : `, Combat Fatigue -${fatigueLoss}`;
+            H.addLog('support', `[ORG-] [${u.name}] Net Organization ${netOrgChange} (Regen ${orgDelta >= 0 ? '+' : ''}${orgDelta}${fatigueTag} -> ${u.org}/${u.maxOrg}).`);
           }
         }
       }
@@ -1841,17 +1872,17 @@ window.IronDivision = window.IronDivision || {};
         rawDisabled = H.rollDie(3);
         bracketDesc = '<= 1/4 Hardness (d3)';
       } else if (ratio <= 0.50) {
-        rawDisabled = 1 + H.rollDie(6);
-        bracketDesc = '1/4 to 2/4 Hardness (1+d6)';
+        rawDisabled = 1 + H.rollDie(4);
+        bracketDesc = '1/4 to 2/4 Hardness (1+d4)';
       } else if (ratio <= 0.75) {
-        rawDisabled = 3 + H.rollDie(8);
-        bracketDesc = '2/4 to 3/4 Hardness (3+d8)';
+        rawDisabled = 2 + H.rollDie(6);
+        bracketDesc = '2/4 to 3/4 Hardness (2+d6)';
       } else {
-        rawDisabled = 6 + H.rollDie(12);
-        bracketDesc = '> 3/4 Hardness (6+d12)';
+        rawDisabled = 3 + H.rollDie(8);
+        bracketDesc = '> 3/4 Hardness (3+d8)';
       }
 
-      const fleetCap = Math.max(2, Math.ceil(defender.maxArmor * 0.25));
+      const fleetCap = Math.max(2, Math.ceil(defender.maxArmor * 0.15));
       const cappedDisabled = Math.min(rawDisabled, fleetCap);
       if (cappedDisabled < rawDisabled) {
         bracketDesc += `, Fleet Cap ${fleetCap}`;
@@ -1917,11 +1948,18 @@ window.IronDivision = window.IronDivision || {};
       let finalDisabled = pendingArmorHit.disabledRoll;
       let finalBracket = pendingArmorHit.bracketDesc;
       if (!mainClashWon) {
-        finalDisabled = Math.max(1, Math.floor(finalDisabled * 0.5));
-        finalBracket += ', Clash Deflected ×0.5';
+        const clashPressure = atkTotals.finalValue / Math.max(1, defTotals.finalValue);
+        if (clashPressure < 0.70) {
+          finalDisabled = 0;
+        } else {
+          finalDisabled = Math.min(2, Math.max(1, Math.floor(finalDisabled * 0.5)));
+          finalBracket += ', Clash Deflected (Max 2)';
+        }
       }
-      processArmorLossAndCrewCasualties(defender, finalDisabled, finalBracket, isOverwatch ? 'Overwatch' : 'Main Attack');
-      if (defender.defeated || defender.isRallying) return;
+      if (finalDisabled > 0) {
+        processArmorLossAndCrewCasualties(defender, finalDisabled, finalBracket, isOverwatch ? 'Overwatch' : 'Main Attack');
+        if (defender.defeated || defender.isRallying) return;
+      }
     }
 
     const prevDefPersonnel = defender.personnel;
@@ -1959,7 +1997,8 @@ window.IronDivision = window.IronDivision || {};
       const hasRaiders = atkTraits.some(t => t.id === 'supply_raiders');
       const stealTrait = atkTraits.find(t => t.supplySteal > 0);
 
-      if (hasRaiders || stealTrait || atkTactic.id === 'def_guerrilla') {
+      const raidTotalDist = H.getTotalDistance(attacker, defender);
+      if (attacker.category !== 'artillery' && raidTotalDist <= 2 && (hasRaiders || stealTrait || atkTactic.id === 'def_guerrilla')) {
         const rollAmount = hasRaiders ? (2 + H.rollDie(4)) : (1 + H.rollDie(3));
         const stolen = Math.min(defender.supply, rollAmount);
 
@@ -2064,17 +2103,17 @@ window.IronDivision = window.IronDivision || {};
           rawRetDisabled = H.rollDie(3);
           retBracketDesc = '<= 1/4 Hardness (d3)';
         } else if (retRatio <= 0.50) {
-          rawRetDisabled = 1 + H.rollDie(6);
-          retBracketDesc = '1/4 to 2/4 Hardness (1+d6)';
+          rawRetDisabled = 1 + H.rollDie(4);
+          retBracketDesc = '1/4 to 2/4 Hardness (1+d4)';
         } else if (retRatio <= 0.75) {
-          rawRetDisabled = 3 + H.rollDie(8);
-          retBracketDesc = '2/4 to 3/4 Hardness (3+d8)';
+          rawRetDisabled = 2 + H.rollDie(6);
+          retBracketDesc = '2/4 to 3/4 Hardness (2+d6)';
         } else {
-          rawRetDisabled = 6 + H.rollDie(12);
-          retBracketDesc = '> 3/4 Hardness (6+d12)';
+          rawRetDisabled = 3 + H.rollDie(8);
+          retBracketDesc = '> 3/4 Hardness (3+d8)';
         }
 
-        const retFleetCap = Math.max(2, Math.ceil(attacker.maxArmor * 0.25));
+        const retFleetCap = Math.max(2, Math.ceil(attacker.maxArmor * 0.15));
         const cappedRetDisabled = Math.min(rawRetDisabled, retFleetCap);
         if (cappedRetDisabled < rawRetDisabled) {
           retBracketDesc += `, Fleet Cap ${retFleetCap}`;
@@ -2118,10 +2157,17 @@ window.IronDivision = window.IronDivision || {};
         let finalRetDisabled = pendingRetArmorHit.disabledRoll;
         let finalRetBracket = pendingRetArmorHit.bracketDesc;
         if (!retClashWon) {
-          finalRetDisabled = Math.max(1, Math.floor(finalRetDisabled * 0.5));
-          finalRetBracket += ', Clash Deflected ×0.5';
+          const retPressure = defRetAtkTotals.finalValue / Math.max(1, atkBreakTotals.finalValue);
+          if (retPressure < 0.70) {
+            finalRetDisabled = 0;
+          } else {
+            finalRetDisabled = Math.min(2, Math.max(1, Math.floor(finalRetDisabled * 0.5)));
+            finalRetBracket += ', Clash Deflected (Max 2)';
+          }
         }
-        processArmorLossAndCrewCasualties(attacker, finalRetDisabled, finalRetBracket, 'Return Fire');
+        if (finalRetDisabled > 0) {
+          processArmorLossAndCrewCasualties(attacker, finalRetDisabled, finalRetBracket, 'Return Fire');
+        }
         if (attacker.defeated || attacker.isRallying) return;
       }
       if (retSealedArmorBlocked) {
@@ -2406,10 +2452,11 @@ window.IronDivision = window.IronDivision || {};
       ` = ${rawDowned} personnel downed!`
     );
 
-    applyPersonnelCasualties(defender, rawDowned, hasHighCal && !armorHeldMitigation, hasExplosive && !armorHeldMitigation, phaseLabel, atkTactic, defTactic);
+    const armorHeldHeavy = !pierced && defender.maxArmor > 0 && defender.armor > 0 && ['heavy', 'super'].includes(defender.armorTier);
+    applyPersonnelCasualties(defender, rawDowned, hasHighCal && !armorHeldMitigation, hasExplosive && !armorHeldMitigation, phaseLabel, atkTactic, defTactic, armorHeldHeavy);
   }
 
-  function applyPersonnelCasualties(defender, rawDowned, hasHighCal, hasExplosive, phaseLabel, atkTactic = {}, defTactic = {}) {
+  function applyPersonnelCasualties(defender, rawDowned, hasHighCal, hasExplosive, phaseLabel, atkTactic = {}, defTactic = {}, armorHeldHeavy = false) {
     const actualDowned = Math.min(defender.personnel, Math.max(0, rawDowned));
     if (actualDowned <= 0) return;
 
@@ -2530,6 +2577,10 @@ window.IronDivision = window.IronDivision || {};
       if (orgDmg > 1 && woundedCount > 0 && defTraits.some(t => t.isFieldMedic || t.id === 'field_medic')) {
         orgDmg -= 1;
         orgReasons.push('Field Medic Triage (-1)');
+      }
+      if (armorHeldHeavy && orgDmg > 1) {
+        orgDmg = 1;
+        orgReasons.push('Heavy Armor Deflected (Cap -1)');
       }
       defender.org = Math.max(0, defender.org - orgDmg);
       H.addLog('damage', `[ORG] [Org Damage] ${defender.name} loses -${orgDmg} Organization (${orgReasons.join(', ')}) -> ${defender.org}/${defender.maxOrg} Org remaining.`);

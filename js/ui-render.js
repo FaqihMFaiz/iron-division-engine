@@ -2169,7 +2169,8 @@ window.IronDivision = window.IronDivision || {};
       'BATTLE OVER', 'AUTOMATIC OVERRUN', 'FIELD SALVAGE', 'BEAST RAMPAGE',
       'NO QUARTER', 'Rallied to the Line', 'Rally Failed', 'Unbreakable Stand',
       'Unbreakable Shattered', 'Rout & Scatter', 'Rout & Fallback', 'wiped out',
-      'permanently routed', 'AA Gun CRITICAL', 'MORTAR TRACK BLOWN', 'Decisive Breakthrough'
+      'permanently routed', 'AA Gun CRITICAL', 'MORTAR TRACK BLOWN', 'Decisive Breakthrough',
+      'Unscreened Artillery Withdrawal', 'withdraws from the sector'
     ];
     const filtered = logs.filter(l => keywords.some(k => (l.text || '').includes(k)));
     return filtered.slice(-18);
@@ -2413,12 +2414,32 @@ window.IronDivision = window.IronDivision || {};
    */
   function sanitizeForPrintableAAR(text) {
     return stripEmojisForAAR(text)
+      // Remove leading engine category tags like [RLY], [ROUT], [MOV], [BRCH], [VIC], [AFV], [KIA], [POW], [BRK], [CRIT], [SHK], [SYS], [CAS], [NO-QTR]
+      .replace(/^\s*(?:\[(?:RLY|ROUT|MOV|BRCH|VIC|AFV|KIA|POW|BRK|CRIT|SHK|SYS|CAS|NO-QTR|OP|LOG|TAC|HOLD|WARN|MED|ENTR|WTH|ENV)\]\s*)+/gi, '')
+      // Remove dice formulas, roll results, and DC comparisons
+      .replace(/\(d\d+\[[^\]]*\][\s\S]*?vs DC \d+(?:\s*\[[^\]]*\])?\)/gi, '')
+      .replace(/\(d\d+\[[^\]]*\][^)]*\)/gi, '')
       .replace(/\(Roll[^)]*\)/gi, '')
       .replace(/\(Avg Speed:[^)]*\)/gi, '')
       .replace(/\(50\+d50\[[^\]]*\]\)=[^:]*:/gi, ':')
       .replace(/\(d100\[[^\]]*\]\)[^:]*:/gi, ':')
+      // Remove round timers and round indices
+      .replace(/\s*\(\+?\d+\s*(?:rds?|rounds?)\s*(?:to rally|delay)?\)/gi, '')
       .replace(/\s+in Round \d+/gi, '')
       .replace(/\[RD-\d+\]/gi, '')
+      // Translate game-engine stats into in-universe military phrasing
+      .replace(/reached 0 Organization!\s*Cohesion broke and the unit is permanently routed!/gi, 'lost combat cohesion and routed from the sector.')
+      .replace(/PASSED Rally Check\s*!/gi, 'rallied and returned to the line:')
+      .replace(/FAILED Rally Check\s*!/gi, 'failed to reform and dispersed:')
+      .replace(/,\s*Org:\s*\d+\/\d+\.?/gi, '.')
+      .replace(/,\s*-?\d+\s*Mobility Class!?/gi, ' (mobility degraded).')
+      .replace(/\s*\(\+\d+\s*Supply\)/gi, ' for depot spares')
+      .replace(/Ret \d+ vs Pur \d+\s*->\s*/gi, '')
+      .replace(/Pur \d+ > Ret \d+\s*->\s*/gi, '')
+      .replace(/\(\s*\)/g, '')
+      .replace(/\.\s*\./g, '.')
+      .replace(/!\s*\./g, '!')
+      .replace(/\s+([,.;:!?])/g, '$1')
       .replace(/\s{2,}/g, ' ')
       .trim();
   }
@@ -2455,8 +2476,11 @@ window.IronDivision = window.IronDivision || {};
     if (sumA.armorStart > 0 || sumB.armorStart > 0) {
       printAssessments.push(`Armored vehicle losses: ${sideAName} lost ${totalArmorKoA} vehicles (${sumA.armorUnrec} destroyed, ${sumA.armorRec} disabled); ${sideBName} lost ${totalArmorKoB} vehicles (${sumB.armorUnrec} destroyed, ${sumB.armorRec} disabled).`);
     }
+    const salvageStrippedCount = (isOver && salvage)
+      ? (salvage.scrapped !== undefined ? salvage.scrapped : Math.max(0, (salvage.abandoned || 0) - (salvage.impressed || 0) - (salvage.scuttled || 0)))
+      : 0;
     if (isOver && salvage && salvage.abandoned > 0) {
-      printAssessments.push(`Field recovery units under ${winName} secured ${salvage.abandoned} abandoned enemy armored vehicles (${salvage.impressed} restored to service, ${salvage.scuttled} written off).`);
+      printAssessments.push(`Field recovery units under ${winName} secured ${salvage.abandoned} abandoned enemy armored vehicles (${salvage.impressed} restored to service, ${salvageStrippedCount} stripped for spares, ${salvage.scuttled} written off).`);
     }
     const docTitle = `Iron_Division_AAR_${rep.docId || 'REPORT'}_${rep.terrain}`;
 
@@ -2482,7 +2506,7 @@ window.IronDivision = window.IronDivision || {};
           ${units.map(u => `
             <tr>
               <td><strong>${escapeHtml(stripEmojisForAAR(u.name))}</strong></td>
-              <td>${escapeHtml((u.category || '').toUpperCase())} / ${escapeHtml(u.experience || '')}</td>
+              <td>${escapeHtml((u.category || '').replace(/_/g, ' ').toUpperCase())} / ${escapeHtml(u.experience || '')}</td>
               <td>${u.defeated ? 'OUT OF ACTION' : (u.isRallying ? 'REAR RALLY' : 'OPERATIONAL')}</td>
               <td class="num">${u.maxPersonnel}</td>
               <td class="num">${u.personnel}</td>
@@ -2493,9 +2517,7 @@ window.IronDivision = window.IronDivision || {};
               <td class="num">${(u.originalMaxArmor > 0 || u.maxArmor > 0) ? `${u.armor}/${u.recoverableArmor}/${u.towedArmor || 0}/${u.unrecoverableArmor}` : '—'}</td>
             </tr>
           `).join('')}
-        </tbody>
-        <tfoot>
-          <tr>
+          <tr class="totals-row">
             <td colspan="3"><strong>FORCE TOTALS</strong></td>
             <td class="num"><strong>${sum.start}</strong></td>
             <td class="num"><strong>${sum.rem}</strong></td>
@@ -2505,7 +2527,7 @@ window.IronDivision = window.IronDivision || {};
             <td class="num"><strong>${sum.escaped}</strong></td>
             <td class="num"><strong>${sum.armorStart > 0 ? `${sum.armorRem}/${sum.armorRec}/${sum.armorTowed}/${sum.armorUnrec}` : '—'}</strong></td>
           </tr>
-        </tfoot>
+        </tbody>
       </table>
     `;
 
@@ -2619,7 +2641,8 @@ window.IronDivision = window.IronDivision || {};
       text-transform: uppercase;
       font-size: 8pt;
     }
-    tfoot td { background: #eceee9; }
+    tfoot { display: table-row-group; }
+    tfoot td, tr.totals-row td { background: #eceee9; }
     .num { text-align: right; font-variant-numeric: tabular-nums; }
     .box {
       border: 1px solid #111;
@@ -2702,7 +2725,7 @@ window.IronDivision = window.IronDivision || {};
       <div><strong>VICTOR FIELD POSSESSION (${escapeHtml(winName.toUpperCase())}):</strong> ${salvage.abandoned} abandoned enemy armored hulls secured on the objective.</div>
       <ul>
         <li><strong>Repaired &amp; Impressed (Beutepanzers):</strong> ${salvage.impressed} vehicle(s)</li>
-        <li><strong>Stripped for Depot Logistics:</strong> +${salvage.supplyScrapped} Supply Points</li>
+        <li><strong>Stripped for Depot Logistics:</strong> ${salvageStrippedCount} vehicle(s) (+${salvage.supplyScrapped} Supply Points)</li>
         <li><strong>Scuttled / Destroyed Write-Offs:</strong> ${salvage.scuttled} vehicle(s)</li>
       </ul>
     ` : `<div>No abandoned enemy armored vehicles were claimed during this reporting period.</div>`}
