@@ -232,6 +232,18 @@ window.IronDivision = window.IronDivision || {};
 
     if (!u.isDismounted && u.maxArmor > 0 && u.armor <= 0) {
       u.armor = 0;
+      const orgRatio = u.org / Math.max(1, u.maxOrg);
+      const persRatio = u.personnel / Math.max(1, u.maxPersonnel);
+      if (u.category === 'armored_vehicle' && orgRatio >= 0.40 && persRatio >= 0.50) {
+        u.isDismounted = true;
+        u.category = 'infantry';
+        u.armorTier = 'unarmored';
+        u.hardness = Math.min(u.hardness || 2, 2);
+        const dismountShock = 4 + H.rollDie(6);
+        u.org = Math.max(1, u.org - dismountShock);
+        H.addLog('armor', `[AFV] [Dismounted on Foot] ${u.name} lost all transports, but holds cohesion (${u.personnel}/${u.maxPersonnel} pers, -${dismountShock} Org shock -> ${u.org}/${u.maxOrg}) and fights on as dismounted Infantry!`);
+        return false;
+      }
       if (!u.ralliedOnce && u.personnel >= minRallyPersonnel) {
         triggerUnitRally(u, 'All combat-ready armor disabled');
         return false;
@@ -782,21 +794,32 @@ window.IronDivision = window.IronDivision || {};
             `[MOV] [Advancing on Y-Axis] ${atkUnit.name} (Max Range ≤${unitRange}) has no enemy in range and moves ${oldPos - atkUnit.pos} distance forward (Dist: ${oldPos} -> ${atkUnit.pos} | Closest Enemy Total Dist: ${newClosestDist}).`
           );
 
-          // Defensive Overwatch: in-range defenders fire uncontested volleys at the approaching unit
-          for (const defUnit of currentDefenders) {
+          // Defensive Overwatch: up to 3 in-range defenders fire uncontested volleys (prioritizing closest, then highest vigilance)
+          const getUnitVigScore = (unit) => {
+            const tVig = (unit.traits || []).map(getTraitById).filter(Boolean).reduce((s, t) => s + (t.vigilance || 0), 0);
+            const expVig = (D.EXPERIENCE_TIERS[unit.experience]?.recBonus || 0);
+            return tVig + expVig;
+          };
+          const overwatchCandidates = currentDefenders
+            .filter(defUnit => !overwatchFiredThisRound.has(defUnit.instanceId) && H.canUnitEngageTarget(defUnit, atkUnit, defTactic))
+            .sort((a, b) => {
+              const distDiff = H.getTotalDistance(a, atkUnit) - H.getTotalDistance(b, atkUnit);
+              if (distDiff !== 0) return distDiff;
+              return getUnitVigScore(b) - getUnitVigScore(a);
+            })
+            .slice(0, 3);
+
+          for (const defUnit of overwatchCandidates) {
             if (!isUnitActive(atkUnit)) break;
-            if (overwatchFiredThisRound.has(defUnit.instanceId)) continue;
-            if (H.canUnitEngageTarget(defUnit, atkUnit, defTactic)) {
-              overwatchFiredThisRound.add(defUnit.instanceId);
-              H.addLog(
-                'rolls',
-                `[FS-OVR] [Defensive Overwatch] ${defUnit.name} (Range ≤${H.getUnitEngagementRange(defUnit)}) opens uncontested overwatch fire on advancing ${atkUnit.name} at Total Dist ${H.getTotalDistance(defUnit, atkUnit)}!`
-              );
-              resolveUnitEngagement(defUnit, atkUnit, defSide, atkSide, defTactic, atkTactic, {
-                ...vigResult,
-                attackerWonVig: !vigResult.attackerWonVig
-              }, true);
-            }
+            overwatchFiredThisRound.add(defUnit.instanceId);
+            H.addLog(
+              'rolls',
+              `[FS-OVR] [Defensive Overwatch] ${defUnit.name} (Range ≤${H.getUnitEngagementRange(defUnit)}) opens uncontested overwatch fire on advancing ${atkUnit.name} at Total Dist ${H.getTotalDistance(defUnit, atkUnit)}!`
+            );
+            resolveUnitEngagement(defUnit, atkUnit, defSide, atkSide, defTactic, atkTactic, {
+              ...vigResult,
+              attackerWonVig: !vigResult.attackerWonVig
+            }, true);
           }
           continue;
         }
@@ -1791,30 +1814,35 @@ window.IronDivision = window.IronDivision || {};
       );
     }
 
-    // STEP B: Armored Vehicle Knockout Resolution
+    // STEP B: Prepare Armored Vehicle Knockout Roll (applied after Clash to gate/halve on successful defense)
+    let pendingArmorHit = null;
     if (pierced && defender.maxArmor > 0 && defender.armor > 0) {
       const diff = totalPierceRoll - totalHardnessRoll;
       const h = Math.max(1, effHardness);
       const ratio = diff / h;
-      let disabledRoll = 0;
+      let rawDisabled = 0;
       let bracketDesc = '';
 
       if (ratio <= 0.25) {
-        disabledRoll = H.rollDie(3);
+        rawDisabled = H.rollDie(3);
         bracketDesc = '<= 1/4 Hardness (d3)';
       } else if (ratio <= 0.50) {
-        disabledRoll = 1 + H.rollDie(6);
+        rawDisabled = 1 + H.rollDie(6);
         bracketDesc = '1/4 to 2/4 Hardness (1+d6)';
       } else if (ratio <= 0.75) {
-        disabledRoll = 3 + H.rollDie(8);
+        rawDisabled = 3 + H.rollDie(8);
         bracketDesc = '2/4 to 3/4 Hardness (3+d8)';
       } else {
-        disabledRoll = 6 + H.rollDie(12);
+        rawDisabled = 6 + H.rollDie(12);
         bracketDesc = '> 3/4 Hardness (6+d12)';
       }
 
-      processArmorLossAndCrewCasualties(defender, disabledRoll, bracketDesc, 'Main Attack');
-      if (defender.defeated || defender.isRallying) return;
+      const fleetCap = Math.max(2, Math.ceil(defender.maxArmor * 0.25));
+      const cappedDisabled = Math.min(rawDisabled, fleetCap);
+      if (cappedDisabled < rawDisabled) {
+        bracketDesc += `, Fleet Cap ${fleetCap}`;
+      }
+      pendingArmorHit = { disabledRoll: cappedDisabled, bracketDesc };
     }
 
     // STEP C: Dynamic Armor Split
@@ -1869,7 +1897,19 @@ window.IronDivision = window.IronDivision || {};
     // Sealed Armor Rule: unpierced zombies cannot break through Medium/Heavy/Super-Heavy operational armor
     const sealedArmorBlocked = attacker.isZombie && !pierced && defender.maxArmor > 0 && defender.armor > 0 && ['medium', 'heavy', 'super'].includes(defender.armorTier);
 
-    // STEP F: Resolve Damage or Grazing
+    // STEP F: Apply Clash-Gated Armor Knockouts, then Resolve Personnel Damage or Grazing
+    const mainClashWon = atkTotals.finalValue > defTotals.finalValue;
+    if (pendingArmorHit && !sealedArmorBlocked && defender.armor > 0) {
+      let finalDisabled = pendingArmorHit.disabledRoll;
+      let finalBracket = pendingArmorHit.bracketDesc;
+      if (!mainClashWon) {
+        finalDisabled = Math.max(1, Math.floor(finalDisabled * 0.5));
+        finalBracket += ', Clash Deflected ×0.5';
+      }
+      processArmorLossAndCrewCasualties(defender, finalDisabled, finalBracket, isOverwatch ? 'Overwatch' : 'Main Attack');
+      if (defender.defeated || defender.isRallying) return;
+    }
+
     const prevDefPersonnel = defender.personnel;
     if (sealedArmorBlocked) {
       H.addLog('rolls', `[DEF] [ARMOR SEALED] ${defender.name}'s ${defender.armorTier.toUpperCase()} armor plating is impervious to unpierced ${attacker.name} attacks (0 crew casualties)!`);
@@ -1998,29 +2038,34 @@ window.IronDivision = window.IronDivision || {};
         (retPierced ? `PIERCED! (Diff: +${retPierceRoll - retHardRoll})` : `ARMOR HELD (Unpierced — Soft/Close-Assault Chip Active)`)
       );
 
+      let pendingRetArmorHit = null;
       if (retPierced && attacker.maxArmor > 0 && attacker.armor > 0) {
         const retDiff = retPierceRoll - retHardRoll;
         const retH = Math.max(1, retEffHardness);
         const retRatio = retDiff / retH;
-        let retDisabledRoll = 0;
+        let rawRetDisabled = 0;
         let retBracketDesc = '';
 
         if (retRatio <= 0.25) {
-          retDisabledRoll = H.rollDie(3);
+          rawRetDisabled = H.rollDie(3);
           retBracketDesc = '<= 1/4 Hardness (d3)';
         } else if (retRatio <= 0.50) {
-          retDisabledRoll = 1 + H.rollDie(6);
+          rawRetDisabled = 1 + H.rollDie(6);
           retBracketDesc = '1/4 to 2/4 Hardness (1+d6)';
         } else if (retRatio <= 0.75) {
-          retDisabledRoll = 3 + H.rollDie(8);
+          rawRetDisabled = 3 + H.rollDie(8);
           retBracketDesc = '2/4 to 3/4 Hardness (3+d8)';
         } else {
-          retDisabledRoll = 6 + H.rollDie(12);
+          rawRetDisabled = 6 + H.rollDie(12);
           retBracketDesc = '> 3/4 Hardness (6+d12)';
         }
 
-        processArmorLossAndCrewCasualties(attacker, retDisabledRoll, retBracketDesc, 'Return Fire');
-        if (attacker.defeated || attacker.isRallying) return;
+        const retFleetCap = Math.max(2, Math.ceil(attacker.maxArmor * 0.25));
+        const cappedRetDisabled = Math.min(rawRetDisabled, retFleetCap);
+        if (cappedRetDisabled < rawRetDisabled) {
+          retBracketDesc += `, Fleet Cap ${retFleetCap}`;
+        }
+        pendingRetArmorHit = { disabledRoll: cappedRetDisabled, bracketDesc: retBracketDesc };
       }
 
       const atkArmorSplit = getEffectiveArmorSplit(attacker);
@@ -2054,6 +2099,17 @@ window.IronDivision = window.IronDivision || {};
       );
 
       const retSealedArmorBlocked = defender.isZombie && !retPierced && attacker.maxArmor > 0 && attacker.armor > 0 && ['medium', 'heavy', 'super'].includes(attacker.armorTier);
+      const retClashWon = defRetAtkTotals.finalValue > atkBreakTotals.finalValue;
+      if (pendingRetArmorHit && !retSealedArmorBlocked && attacker.armor > 0) {
+        let finalRetDisabled = pendingRetArmorHit.disabledRoll;
+        let finalRetBracket = pendingRetArmorHit.bracketDesc;
+        if (!retClashWon) {
+          finalRetDisabled = Math.max(1, Math.floor(finalRetDisabled * 0.5));
+          finalRetBracket += ', Clash Deflected ×0.5';
+        }
+        processArmorLossAndCrewCasualties(attacker, finalRetDisabled, finalRetBracket, 'Return Fire');
+        if (attacker.defeated || attacker.isRallying) return;
+      }
       if (retSealedArmorBlocked) {
         H.addLog('rolls', `[RET] [ARMOR SEALED] ${attacker.name}'s ${attacker.armorTier.toUpperCase()} armor plating is impervious to unpierced ${defender.name} return fire (0 crew casualties)!`);
       } else if (defRetAtkTotals.finalValue > atkBreakTotals.finalValue) {

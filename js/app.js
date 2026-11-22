@@ -434,7 +434,8 @@ window.IronDivision = window.IronDivision || {};
     }
 
     ID.state.battle.round = 1;
-    ID.state.battle.attackerSide = 'A';
+    const thAtk = (ID.state.environment && ID.state.environment.theatreAttackerSide) ? ID.state.environment.theatreAttackerSide : 'A';
+    ID.state.battle.attackerSide = (thAtk === 'B') ? 'B' : 'A';
     ID.state.battle.isOver = false;
     ID.state.battle.winner = null;
     ID.state.battle.initialSnapshot = null;
