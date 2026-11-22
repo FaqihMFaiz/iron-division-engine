@@ -1,8 +1,10 @@
 /* ==========================================================================
    IRON DIVISION ENGINE — INDONESIAN (BAHASA INDONESIA) LOCALIZATION MODULE
    File: js/i18n-id.js
-   Drop-in i18n layer with live EN <-> ID toggle, localStorage persistence,
-   exact + pattern translation, and automatic MutationObserver sync.
+   Drop-in i18n layer (default EN) with live EN <-> ID toggle, localStorage
+   persistence, reversible data.js localization, natural non-stiff Indonesian
+   Manuals written by a subordinate soldier ("Komandan / Kumendan / Ndan"),
+   and automatic MutationObserver sync.
    ========================================================================== */
 
 window.IronDivision = window.IronDivision || {};
@@ -14,17 +16,150 @@ window.IronDivision = window.IronDivision || {};
   let currentLang = 'en';
   let observer = null;
   let isApplying = false;
+  let origRenderGuide = null;
 
-  // Preserve original English text/attributes so switching back to EN is lossless
+  // Lossless English backups for DOM nodes & data.js objects
   const originalTextMap = new WeakMap();
   const originalPlaceholderMap = new WeakMap();
-  const originalTitleMap = new WeakMap();
+  const dataBackups = {
+    saved: false,
+    terrains: {},
+    features: {},
+    weather: {},
+    tod: {},
+    hazards: {},
+    traits: {},
+    cmdTraits: {},
+    tactics: {}
+  };
 
   // --------------------------------------------------------------------------
-  // 1. Exact String Dictionary (English -> Bahasa Indonesia)
+  // 1. data.js Indonesian Translations (Natural, Non-Stiff Military Indonesian)
+  // --------------------------------------------------------------------------
+  const ID_TERRAINS = {
+    Plains:   { name: 'Dataran Terbuka' },
+    Forest:   { name: 'Hutan Lebat' },
+    Hills:    { name: 'Perbukitan' },
+    Mountain: { name: 'Pegunungan' },
+    Jungle:   { name: 'Hutan Rimba' },
+    Marsh:    { name: 'Rawa-Rawa' },
+    Desert:   { name: 'Gurun Pasir' },
+    Urban:    { name: 'Perkotaan' }
+  };
+
+  const ID_FEATURES = {
+    Normal:     { name: 'Normal', desc: 'Medan standar tanpa rintangan tambahan.' },
+    Road:       { name: 'Jalan Raya', desc: 'Bantuan mobilitas dan logistik; kolom pasukan bergerak cepat tapi lebih mudah disergap.' },
+    SmallRiver: { name: 'Sungai Kecil', desc: 'Penyerang kena penalti saat menyeberang di bawah tembakan; Marinir & Zeni mengurangi dampaknya.' },
+    LargeRiver: { name: 'Sungai Besar', desc: 'Rintangan air berat bagi penyerang tanpa dukungan jembatan atau unit amfibi.' },
+    Amphibious: { name: 'Pendaratan Amfibi', desc: 'Serbuan pantai berisiko tinggi; sangat menguntungkan pihak bertahan kecuali penyerang membawa Marinir.' },
+    Fort:       { name: 'Bunker / Kubu Pertahanan', desc: 'Benteng beton & parit diperkuat: melipatgandakan pertahanan dan menambah batas galian (+2).' }
+  };
+
+  const ID_WEATHER = {
+    Sunny:     { name: 'Cerah', desc: 'Jarak pandang jernih, operasi udara dan tembakan langsung berjalan normal.' },
+    Overcast:  { name: 'Mendung', desc: 'Langit tertutup awan tebal, sedikit mengurangi efektivitas serangan udara.' },
+    Windy:     { name: 'Berangin Kencang', desc: 'Angin kuat sedikit mengganggu akurasi salvo artileri dan penerbangan.' },
+    LightRain: { name: 'Hujan Ringan', desc: 'Tanah mulai licin, jarak pandang dan dukungan udara sedikit menurun.' },
+    HeavyRain: { name: 'Hujan Deras', desc: 'Banjir lumpur, dukungan udara anjlok parah dan rawan batal terbang.' },
+    Foggy:     { name: 'Berkabut Tebal', desc: 'Jarak pandang dibatasi ketat; tank harus merayap dekat dan pesawat bisa gagal terbang.' },
+    Snowy:     { name: 'Salju / Beku', desc: 'Suhu beku mempercepat habisnya logistik, memperburuk luka, dan rawan mesin tank mogok.' },
+    HeatWaves: { name: 'Gelombang Panas', desc: 'Panas ekstrem menguras air/logistik infanteri dan memicu badai debu di gurun.' }
+  };
+
+  const ID_TOD = {
+    Day:      { name: 'Siang Hari', desc: 'Visibilitas penuh; pengintaian dan dukungan udara berjalan tanpa hambatan.' },
+    DuskDawn: { name: 'Fajar / Senja', desc: 'Cahaya remang mengurangi pengintaian (-10 Vig) dan dukungan udara (-15%).' },
+    Night:    { name: 'Malam Hari', desc: 'Gelap gulita membatasi jarak pandang (VisCap 4), memperkuat penyergapan (+15), dan membatasi udara (-40%).' }
+  };
+
+  const ID_HAZARDS = {
+    mud_rasputitsa:  { name: 'Lumpur / Rasputitsa', trigger: 'Hujan Deras di Dataran/Hutan/Bukit/Rawa/Jalan', desc: 'Tank terjebak lumpur (-1 s.d. -2 mobilitas), truk logistik macet (+2 konsumsi), dan evakuasi ranpur rusak jauh lebih sulit (-15).' },
+    zero_visibility: { name: 'Jarak Pandang Nihil', trigger: 'Kabut di mana saja, atau Malam di Kota/Hutan/Rimba', desc: 'Jarak tembak langsung dibatasi (VisCap 3–4) dan pengintaian turun (-15 Vig) tanpa unit Intai atau Kamuflase.' },
+    deep_freeze:     { name: 'Beku Ekstrem', trigger: 'Salju di Pegunungan/Bukit/Dataran', desc: 'Prajurit luka rawan gugur kedinginan (+3% DOW), logistik boros (+1), dan tank kurang logistik (<30%) rawan mogok mesin.' },
+    heatstroke_dust: { name: 'Sengatan Panas / Debu', trigger: 'Gelombang Panas di Gurun', desc: 'Infanteri boros air (+2 logistik) dan kehilangan Org (-2/ronde); badai debu membutakan optik tank & artileri (-15 Vig).' }
+  };
+
+  const ID_TRAITS = {
+    high_caliber:            { name: 'Senjata Kaliber Besar', desc: 'Meriam/senjata berat: menambah dadu korban tambahan dan memperparah tingkat fatalitas luka musuh (-10 pemulihan).' },
+    explosive_weapon:        { name: 'Amunisi Daya Ledak (HE)', desc: 'Peluru ledak/pecahan: memberi dadu korban ekstra melawan infanteri (dibatalkan jika gagal menembus baja Medium+).' },
+    anti_tank:               { name: 'Senjata Anti-Tank', desc: 'Spesialis pemburu lapis baja: bonus serangan besar ke Tank & Ranpur, dan memberi jarak tembak <= 3 untuk Tank Destroyer.' },
+    grenade_assault:         { name: 'Granat / Serbuan Jarak Dekat', desc: 'Efektif membersihkan parit dan ruangan sempit; bonus serangan jarak dekat dan melemahkan pertahanan musuh.' },
+    mountaineers:            { name: 'Pasukan Gunung', desc: 'Terlatih di medan terjal: bonus tempur signifikan saat bertempur di Pegunungan dan Perbukitan.' },
+    marines:                 { name: 'Marinir / Amfibi', desc: 'Ahli pendaratan pantai dan penyeberangan sungai; mengurangi penalti berat serangan amfibi dan sungai.' },
+    rangers:                 { name: 'Pasukan Hutan / Ranger', desc: 'Lincah di pepohonan lebat: bonus tempur dan pengintaian di Hutan dan Hutan Rimba.' },
+    melee_attack:            { name: 'Pertempuran Jarak Dekat', desc: 'Mengutamakan baku hantam dan serbuan jarak rapat untuk meruntuhkan moral musuh.' },
+    engineering_support:     { name: 'Dukungan Zeni Tempur', desc: 'Membantu menerobos rintangan, menggerus pertahanan musuh, dan meningkatkan hasil salvase ranpur pasca-pertempuran.' },
+    recon_support:           { name: 'Unit Pengintaian (Intai)', desc: 'Meningkatkan lemparan Pengintaian (Vigilance) secara drastis dan membantu menembus penalti jarak pandang.' },
+    desperate_defense:       { name: 'Pertahanan Mati-Matian', desc: 'Saat kekuatan menipis, pasukan tetap gigih bertahan dan menahan keruntuhan Organisasi.' },
+    unbreakable:             { name: 'Pantang Mundur', desc: 'Memangkas separuh penalti Org rendah dan dapat bertahan gigih beberapa ronde meski Org sudah menipis.' },
+    special_forces:          { name: 'Pasukan Khusus', desc: 'Elit serba bisa: bonus serangan, pertahanan, pengintaian, dan ketahanan mental di segala medan.' },
+    field_medic:             { name: 'Medis Lapangan', desc: 'Menekan angka gugur (KIA) dengan meningkatkan pemulihan korban dan mencegah prajurit luka gugur (DOW).' },
+    first_aid_kit:           { name: 'P3K Lapangan', desc: 'Pertolongan pertama cepat: menambah peluang prajurit selamat dari luka tembak dan pecahan kaliber besar.' },
+    logistic_support:        { name: 'Dukungan Logistik', desc: 'Truk amunisi organik: menarik pasokan ekstra dari Depot Teater agar unit tidak cepat kehabisan peluru.' },
+    supply_raiders:          { name: 'Perampas Logistik', desc: 'Pada jarak dekat (<= 2, non-artileri), bisa merampas pasokan langsung dari unit musuh yang berhasil dipukul.' },
+    frontliner_defender:     { name: 'Garda Depan / Pelindung', desc: 'Menarik tembakan musuh ke dirinya sendiri untuk melindungi artileri dan unit rapuh di garis belakang.' },
+    repair_crew:             { name: 'Kru Perbaikan Lapangan', desc: 'Montir & traktor ARV: +12% Pemulihan Baja; tiap 4 ronde (jika Logistik >= 25% & tidak kena tembak anti-baja ronde lalu) memperbaiki 1–2 ranpur (maks 3 dengan Desain Sederhana).' },
+    redundancy:              { name: 'Sistem Cadangan', desc: 'Suku cadang dan jalur komando ganda yang membantu menjaga kestabilan dan pemulihan kendaraan tempur.' },
+    tough_chassis:           { name: 'Rangka Baja Tangguh', desc: 'Desain lambung kokoh: +15% Pemulihan Baja dan mengurangi korban awak saat kendaraan dilumpuhkan.' },
+    simple_engineering:      { name: 'Desain Mekanis Sederhana', desc: 'Mesin modular gampang diperbaiki: +20% Pemulihan Baja, hemat biaya perbaikan, +1 ekstra perbaikan per siklus, dan memangkas risiko mogok beku.' },
+    mortar_support:          { name: 'Dukungan Mortir', desc: 'Tembakan lengkung jarak dekat: merusak parit infanteri, mengguncang Org, atau merusak rantai roda ranpur.' },
+    heavy_artillery_support: { name: 'Dukungan Artileri Berat', desc: 'Salvo meriam berat dari garis belakang yang menghancurkan pertahanan, ketebalan baja, dan formasi musuh.' },
+    air_support:             { name: 'Dukungan Udara (CAS)', desc: 'Pesawat serang darat menghantam musuh sebelum kontak — efektivitas bergantung pada cuaca, malam, dan Hanud musuh.' },
+    aa_defense:              { name: 'Pertahanan Udara Ringan', desc: 'Senapan mesin anti-pesawat yang mengurangi kerusakan serangan udara musuh ke pasukan kita.' },
+    aa_gun:                  { name: 'Baterai Meriam Hanud', desc: 'Meriam anti-pesawat berat yang mampu merontokkan pesawat serang musuh dan menghentikan dukungan udara lawan.' },
+    infiltration_specialist: { name: 'Spesialis Infiltrasi', desc: 'Mahir menyusup ke celah pertahanan musuh, mengabaikan sebagian parit dan bonus kubu lawan.' },
+    fortification_engineer:  { name: 'Zeni Benteng', desc: 'Meningkatkan kecepatan menggali parit dan menambah batas galian (Dig-In) maksimum unit sebesar +1.' },
+    concealment_specialist:  { name: 'Spesialis Kamuflase', desc: 'Jago bersembunyi di hutan, kabut, atau malam hari — menaikkan pengintaian dan mengurangi deteksi lawan.' },
+    monster_unit:            { name: 'Entitas Monster', desc: 'Makhluk raksasa kebal penalti Org/Logistik normal, tapi setiap luka langsung mengurangi massa hidup permanen.' },
+    zombie_unit:             { name: 'Gerombolan Zombi', desc: 'Hanya menyerang di jarak <= 1, kebal moral, dan sebagian korban bisa bangkit lagi kecuali dihancurkan senjata berat.' }
+  };
+
+  const ID_CMD_TRAITS = {
+    tank_leader:          { name: 'Panglima Lapis Baja', desc: 'Memberi bonus serangan dan ketangguhan ekstra untuk seluruh formasi Tank dan Ranpur.' },
+    infantry_leader:      { name: 'Komandan Infanteri', desc: 'Meningkatkan daya gempur dan pertahanan seluruh batalyon Infanteri.' },
+    artillery_leader:     { name: 'Ahli Artileri', desc: 'Mempertajam daya hancur salvo dan tembakan seluruh baterai Artileri.' },
+    organizer:            { name: 'Ahli Organisasi', desc: 'Mempercepat pemulihan Organisasi dan membantu unit yang mundur agar lebih cepat berkonsolidasi.' },
+    skilled_staff:        { name: 'Staf Komando Cakap', desc: 'Meningkatkan skor Pengintaian (Vigilance) dan koordinasi tempur lintas satuan.' },
+    logistics_wizard:     { name: 'Ahli Logistik', desc: 'Memperbesar kapasitas Depot Teater dan menghemat konsumsi pasokan pasukan.' },
+    urban_assault_ldr:    { name: 'Pakar Perang Kota', desc: 'Bonus serangan dan pertahanan khusus saat bertempur di sektor Perkotaan.' },
+    rally_master:         { name: 'Pengobar Semangat', desc: 'Menaikkan peluang keberhasilan Rally Check agar pasukan yang pecah segera kembali ke garis depan.' },
+    iron_disciplinarian:  { name: 'Disiplin Baja', desc: 'Menahan jatuhnya moral pasukan di bawah gempuran berat dan memperkecil kerugian saat mundur.' },
+    rearguard_specialist: { name: 'Spesialis Pengawal Belakang', desc: 'Melindungi penarikan mundur agar lebih banyak personel dan ranpur selamat dari pengejaran musuh.' }
+  };
+
+  const ID_TACTICS = {
+    atk_attack:                { name: 'Serangan Standar', desc: 'Gerak maju terkoordinasi dengan tembakan pelindung yang seimbang.' },
+    atk_assault:               { name: 'Serbuan Frontal', desc: 'Dorongan agresif jarak dekat langsung ke garis parit musuh.' },
+    atk_encirclement:          { name: 'Pengepungan', desc: 'Mengunci bagian tengah sambil menyapu sayap untuk memotong jalur mundur lawan.' },
+    atk_shock:                 { name: 'Serangan Kejut', desc: 'Tembakan beruntun berintensitas tinggi untuk meruntuhkan moral dan Org musuh.' },
+    atk_breakthrough:          { name: 'Terobosan Baja', desc: 'Memusatkan tank dan penetrasi tinggi (+3 Piercing) di satu titik lemah musuh.' },
+    atk_blitz:                 { name: 'Serangan Kilat (Blitz)', desc: 'Tempo super cepat yang memutus jaringan komando dan memblokir pemulihan Org lawan.' },
+    atk_mass_charge:           { name: 'Serbuan Massal', desc: 'Gelombang pasukan besar-besaran dengan risiko korban tinggi tapi tekanan moral masif.' },
+    atk_infiltration:          { name: 'Serbuan Infiltrasi', desc: 'Tim kecil menyusup lewat celah pertahanan untuk menghantam titik belakang lawan.' },
+    atk_well_planned:          { name: 'Serangan Terencana', desc: 'Serangan penuh persiapan dengan pengintaian matang dan efisiensi serangan tinggi.' },
+    atk_relentless:            { name: 'Gempuran Tanpa Henti', desc: 'Tekanan terus-menerus yang memacu semangat pasukan saat berhasil mencetak pukulan.' },
+    atk_unexpected_thrust:     { name: 'Tusukan Mendadak', desc: 'Manuver tak terduga dengan bonus Pengintaian tinggi untuk mengecoh pertahanan lawan.' },
+    def_defend:                { name: 'Bertahan Standar', desc: 'Memegang parit secara disiplin sambil membalas tembakan penyerang.' },
+    def_counterattack:         { name: 'Serangan Balik', desc: 'Menghantam balik penyerang tepat saat formasi mereka mulai terbuka.' },
+    def_delay:                 { name: 'Taktik Mengulur Waktu', desc: 'Menahan laju musuh sambil menghemat korban dan menjaga garis mundur.' },
+    def_tactical_withdrawal:   { name: 'Mundur Taktis', desc: 'Penarikan mundur teratur untuk menyelamatkan pasukan dan merapikan barisan.' },
+    def_ambush:                { name: 'Penyergapan', desc: 'Menunggu di tempat tersembunyi lalu menghajar penyerang yang lengah dari jarak dekat.' },
+    def_backhand_blow:         { name: 'Pukulan Balik Cepat', desc: 'Membiarkan musuh maju lalu memukul telak sayapnya dengan serangan balik tajam.' },
+    def_guerrilla:             { name: 'Taktik Gerilya', desc: 'Pukul-lari yang bikin musuh frustrasi, memperlambat tempo, dan menguras logistik lawan.' },
+    urb_atk_street_fighting:   { name: 'Perang Jalanan (Kota)', desc: 'Pertempuran blok demi blok di jalanan kota.' },
+    urb_atk_barrage:           { name: 'Rentetan Blok Kota (Kota)', desc: 'Menghujani gedung musuh dengan peluru ledak sebelum infanteri masuk.' },
+    urb_atk_armour_supported:  { name: 'Serbuan Kota Berlapis Baja (Kota)', desc: 'Kerja sama erat infanteri dan tank untuk meruntuhkan kubu gedung.' },
+    urb_atk_mouse_holing:      { name: 'Terobos Dinding / Mouse-Holing (Kota)', desc: 'Meledakkan tembok antar-bangunan agar infanteri maju tanpa lewat jalanan terbuka.' },
+    urb_def_city:              { name: 'Pertahanan Kota (Kota)', desc: 'Memanfaatkan puing dan bangunan bertingkat sebagai benteng alami.' },
+    urb_def_fortified:         { name: 'Pertahanan Kubu Kuat (Kota)', desc: 'Barikade berlapis dan posisi tembak silang yang sangat sulit ditembus.' },
+    urb_def_ambush:            { name: 'Penyergapan Kota (Kota)', desc: 'Menjebak kolom musuh di gang sempit dan menghantam dari jendela atas.' }
+  };
+
+  // --------------------------------------------------------------------------
+  // 2. Exact UI Dictionary (Casual, Natural Military Indonesian)
   // --------------------------------------------------------------------------
   const EXACT_MAP = {
-    // Header & Navigation Dock
     'COMBINED-ARMS TACTICAL COMMAND': 'KOMANDO TAKTIS GABUNGAN SENJATA',
     'EXPORT JSON': 'EKSPOR JSON',
     'IMPORT JSON': 'IMPOR JSON',
@@ -36,12 +171,12 @@ window.IronDivision = window.IronDivision || {};
     'Command HQ': 'Markas Komando',
     'Terrain': 'Medan & Cuaca',
     'Doctrines': 'Doktrin Taktik',
-    'FM Manual': 'Buku Manual',
+    'FM Manual': 'Buku Saku',
 
     // Theatre Command & Environment Bar
     'THEATRE //': 'TEATER //',
     'THEATRE COMMAND & ENVIRONMENT': 'KOMANDO TEATER & LINGKUNGAN',
-    '▲ COLLAPSE': '▲ TUTUP',
+    '▲ COLLAPSE': '▲ LIPAT',
     '▼ EXPAND': '▼ BUKA',
     'Base Terrain': 'Medan Dasar',
     'Terrain Feature': 'Fitur Medan',
@@ -68,7 +203,7 @@ window.IronDivision = window.IronDivision || {};
     '◄ UNDO 1 ROUND': '◄ BATAL 1 RONDE',
     '+50 DEPOT A': '+50 DEPOT A',
     '+50 DEPOT B': '+50 DEPOT B',
-    'Adjust Supply / Org / Dist directly on unit cards or deploy mid-battle reinforcements.': 'Atur Logistik / Org / Jarak langsung di kartu unit atau kerahkan bala bantuan.',
+    'Adjust Supply / Org / Dist directly on unit cards or deploy mid-battle reinforcements.': 'Atur Logistik / Org / Jarak langsung di kartu unit atau turunkan bala bantuan, Ndan.',
 
     // Battlefield Flanks & Commander Boxes
     'INITIATIVE': 'INISIATIF',
@@ -81,8 +216,8 @@ window.IronDivision = window.IronDivision || {};
     'ACTIVE FORMATIONS': 'FORMASI AKTIF',
     'EFF. STRENGTH / AFV': 'KEKUATAN EFEKTIF / RANPUR',
     'LOSSES (KIA+WIA)': 'KORBAN (GUGUR+LUKA)',
-    'UNARMORED // FOOT ELEMENT': 'NON-LAPSUS // INFANTERI KAKI',
-    'EXPERIENCE TIER': 'TINGKAT PENGALAMAN',
+    'UNARMORED // FOOT ELEMENT': 'NON-BAJA // INFANTERI KAKI',
+    'EXPERIENCE TIER': 'PENGALAMAN',
     'BASE RECOVERY': 'PEMULIHAN DASAR',
     'TRAITS & SUPPORT': 'SIFAT & DUKUNGAN',
     'NONE': 'TIDAK ADA',
@@ -92,10 +227,10 @@ window.IronDivision = window.IronDivision || {};
     'INITIATIVE VECTOR': 'ARAH INISIATIF',
     '▶ EXECUTE ROUND': '▶ JALANKAN RONDE',
     'AUTO-OPS': 'OTOMATIS',
-    'STOP AUTO': 'HENTIKAN',
+    'STOP AUTO': 'BERHENTI',
     'GM LIVE': 'MODE GM',
     'AAR REPORT': 'LAPORAN AAR',
-    'RESET': 'ATUR ULANG',
+    'RESET': 'ULANG',
     'CLEAR': 'KOSONGKAN',
     'PARITY': 'SEIMBANG',
     'SCENARIOS:': 'SKENARIO:',
@@ -105,29 +240,29 @@ window.IronDivision = window.IronDivision || {};
     'SITREP // COMBAT LOG': 'SITREP // LOG PERTEMPURAN',
     'ALL LOGS': 'SEMUA LOG',
     'DAMAGE': 'KERUSAKAN',
-    'ARMOR': 'LAPSUS/RANPUR',
+    'ARMOR': 'RANPUR/BAJA',
     'SUPPORT': 'DUKUNGAN',
-    'ROLLS': 'DADU/TACTIC',
+    'ROLLS': 'DADU/TAKTIK',
     'EXPAND': 'PERBESAR',
     'COPY': 'SALIN',
     'CLR': 'HAPUS',
     'COPY ALL': 'SALIN SEMUA',
     'CLOSE [X]': 'TUTUP [X]',
 
-    // Tab 2: ORBAT Unit Designer
+    // Tab 2: ORBAT
     'Create / Edit Unit Template': 'Buat / Sunting Templat Unit',
     '+ New Unit': '+ Unit Baru',
     '01 // IDENTITY & CLASSIFICATION': '01 // IDENTITAS & KLASIFIKASI',
     'Unit Name': 'Nama Unit',
     'Unit Category (Combat Die)': 'Kategori Unit (Dadu Tempur)',
-    'Armor Class (Hard/Soft Split)': 'Kelas Lapis Baja (Rasio Keras/Lunak)',
+    'Armor Class (Hard/Soft Split)': 'Kelas Lapis Baja (Keras/Lunak)',
     'Experience Tier': 'Tingkat Pengalaman',
     '02 // OFFENSE & PENETRATION': '02 // SERANGAN & PENETRASI',
     'Soft Attack': 'Serangan Lunak (Soft)',
-    'Hard Attack': 'Serangan Lapis Baja (Hard)',
+    'Hard Attack': 'Serangan Baja (Hard)',
     'Piercing': 'Penetrasi (Piercing)',
     '03 // DEFENSE & ARMOR': '03 // PERTAHANAN & LAPIS BAJA',
-    'Defense Stat': 'Nilai Pertahanan',
+    'Defense Stat': 'Pertahanan',
     'Hardness': 'Ketebalan Baja (Hardness)',
     'Combat-Ready Armor Vehicles': 'Jumlah Ranpur Siap Tempur',
     '04 // STRENGTH, LOGISTICS & RECOVERY': '04 // KEKUATAN, LOGISTIK & PEMULIHAN',
@@ -135,18 +270,18 @@ window.IronDivision = window.IronDivision || {};
     'Max Organization (HP)': 'Organisasi Maks (ORG)',
     'Max Supply Stat': 'Logistik Maks (SUP)',
     'Base Recovery (%)': 'Pemulihan Dasar (%)',
-    'Assigned Unit Traits & Support Modules': 'Sifat Unit & Modul Dukungan Terpasang',
+    'Assigned Unit Traits & Support Modules': 'Sifat Unit & Modul Dukungan',
     'SAVE TEMPLATE': 'SIMPAN TEMPLAT',
     '+ Side A': '+ Pihak A',
     '+ Side B': '+ Pihak B',
     'Unit Templates Library': 'Pustaka Templat Unit',
-    'Includes all standard sample templates plus your custom saved units.': 'Mencakup seluruh templat standar dan unit kustom yang Anda simpan.',
+    'Includes all standard sample templates plus your custom saved units.': 'Berisi semua templat bawaan plus unit rakitan Komandan sendiri.',
     'Restore Sample Templates': 'Pulihkan Templat Bawaan',
     'ALL': 'SEMUA',
     'INFANTRY': 'INFANTERI',
     'ARTILLERY': 'ARTILERI',
 
-    // Tab 3: Traits & Support Modules
+    // Tab 3: Traits
     'Create / Edit Custom Trait': 'Buat / Sunting Sifat Kustom',
     '+ New Trait': '+ Sifat Baru',
     '01 // IDENTITY': '01 // IDENTITAS',
@@ -183,8 +318,8 @@ window.IronDivision = window.IronDivision || {};
     'Frontliner / Defender': 'Garda Depan / Pelindung',
     'Repair Crew': 'Kru Perbaikan Lapangan',
     'SAVE TRAIT': 'SIMPAN SIFAT',
-    'Traits & Support Modules Directory': 'Direktori Sifat & Modul Dukungan',
-    'Click any trait to edit its numerical values.': 'Klik sifat mana saja untuk menyunting nilainya.',
+    'Traits & Support Modules Directory': 'Daftar Sifat & Modul Dukungan',
+    'Click any trait to edit its numerical values.': 'Klik sifat mana saja untuk mengubah angkanya.',
     'COMBAT': 'TEMPUR',
     'SPECIAL': 'KHUSUS',
 
@@ -192,88 +327,108 @@ window.IronDivision = window.IronDivision || {};
     'Add / Edit Commander': 'Tambah / Sunting Komandan',
     '+ New General': '+ Jenderal Baru',
     'Name & Rank': 'Nama & Pangkat',
-    'Tactical Doctrine Personality': 'Kepribadian Doktrin Taktis',
+    'Tactical Doctrine Personality': 'Gaya Doktrin Taktis',
     'Commander Attributes (+2.5% per Level)': 'Atribut Komandan (+2,5% per Level)',
     'Assigned Commander Traits': 'Sifat Komandan Terpasang',
     '+ Create New Trait': '+ Buat Sifat Baru',
     'SAVE COMMANDER': 'SIMPAN KOMANDAN',
     'Active Commanders Roster': 'Daftar Komandan Aktif',
-    'Assign generals to Side A or Side B on the Battlefield tab.': 'Tugaskan jenderal ke Pihak A atau Pihak B di tab Medan Tempur.',
+    'Assign generals to Side A or Side B on the Battlefield tab.': 'Pasang jenderal ke Pihak A atau Pihak B di tab Medan Tempur.',
     'Restore Defaults': 'Pulihkan Bawaan',
     'Create / Edit Commander Trait': 'Buat / Sunting Sifat Komandan',
     'Cancel': 'Batal',
     'Save Trait': 'Simpan Sifat',
 
-    // Tab 5: Terrain & Weather
+    // Tab 5: Terrain
+    'Terrain Configuration Editor': 'Editor Pengaturan Medan',
+    'Select Terrain to Edit': 'Pilih Medan untuk Disunting',
+    'Save Terrain Modifiers': 'Simpan Pengubah Medan',
     'Base Terrains Matrix': 'Matriks Medan Dasar',
     'Terrain Features': 'Fitur Medan',
     'Weather Conditions': 'Kondisi Cuaca',
     'Time-of-Day Cycle': 'Siklus Waktu Harian',
     'Compound Hazards (Terrain × Weather)': 'Bahaya Gabungan (Medan × Cuaca)',
 
+    // AAR Statuses & Modals
+    'OPERATIONAL': 'SIAP TEMPUR',
+    'DISMOUNTED (OP)': 'TURUN KENDARAAN (AKTIF)',
+    'REAR RALLY': 'KONSOLIDASI BELAKANG',
+    'WITHDRAWN (0 AFV)': 'MUNDUR (0 RANPUR)',
+    'WITHDRAWN (UNSCREENED)': 'MUNDUR (TANPA PENGAWAL)',
+    'ROUTED': 'KOCAR-KACIR',
+    'DISPERSED': 'TERCERAI-BERAI',
+    'SHATTERED': 'HANCUR MORAL',
+    'WIPED OUT': 'GUGUR SEMUA',
+    'OUT OF ACTION': 'NONAKTIF',
+    'HEROIC VICTORY': 'KEMENANGAN HEROIK',
+    'DECISIVE VICTORY': 'KEMENANGAN TELAK',
+    'CLOSE VICTORY': 'KEMENANGAN TIPIS',
+    'PYRRHIC VICTORY': 'KEMENANGAN MAHAL',
+    'MUTUAL EXHAUSTION (DRAW)': 'KELELAHAN BERSAMA (SERI)',
+    'CAPTURED & IMPRESSED:': 'DIRAMPAS & DIPAKAI LAGI:',
+    'STRIPPED FOR DEPOT:': 'DILUCUTI UNTUK DEPOT:',
+    'SCUTTLED / WRITE-OFF:': 'DIHANCURKAN / RUSAK TOTAL:',
+
     // Welcome Briefing & Modals
-    'INITIAL ORIENTATION BRIEFING': 'PENGARAHAN ORIENTASI AWAL',
-    'READ FIRST': 'BACA DULU',
-    "DRILL SERGEANT'S RECOMMENDATION:": 'REKOMENDASI SERSAN PELATIH:',
-    "Don't show this briefing on next visit": 'Jangan tampilkan pengarahan ini lagi',
-    'PROCEED TO BATTLEFIELD': 'MASUK MEDAN TEMPUR',
+    'INITIAL ORIENTATION BRIEFING': 'LAPORAN ORIENTASI AWAL',
+    'READ FIRST': 'BACA DULU, NDAN',
+    "DRILL SERGEANT'S RECOMMENDATION:": 'SARAN DARI AJUDAN LAPANGAN:',
+    "Don't show this briefing on next visit": 'Jangan tampilkan lagi pas masuk berikutnya',
+    'PROCEED TO BATTLEFIELD': 'LANGSUNG KE MEDAN TEMPUR',
     'START UI TOUR': 'MULAI TUR UI',
-    'READ THE FIELD MANUAL': 'BACA BUKU MANUAL',
+    'READ THE FIELD MANUAL': 'BACA BUKU SAKU',
     'SITREP // EXPANDED COMBAT LOG': 'SITREP // LOG PERTEMPURAN LENGKAP',
     'OPERATION CONCLUDED': 'OPERASI SELESAI',
     'EXPORT PDF (FORM DA-774)': 'EKSPOR PDF (FORM DA-774)',
     'RESET BATTLE': 'ULANG PERTEMPURAN',
     'CLOSE': 'TUTUP',
 
-    // Interactive UI Tutorial Controls & Steps
+    // Interactive UI Tutorial Controls & Steps (Casual Subordinate Tone)
     'SKIP TOUR': 'LEWATI TUR',
-    '◄ BACK': '◄ KEMBALI',
+    '◄ BACK': '◄ BALIK',
     'NEXT ►': 'LANJUT ►',
-    'FINISH ✓': 'SELESAI ✓',
-    'Theatre Command & Environment Ticker': 'Pita Komando Teater & Lingkungan',
-    'This top ticker displays the live 24-hour operational clock, terrain, and weather at a glance while staying compact above the fold. Click ▼ EXPAND anytime to change Terrain, Features, Climate-Aware Dynamic Weather, Round Length, or set any historical/fictional year from -270000 BCE to +270000.': 'Pita atas ini menampilkan jam operasional 24 jam, medan, dan cuaca secara ringkas tanpa memenuhi layar. Klik ▼ BUKA kapan saja untuk mengubah Medan, Fitur, Cuaca Dinamis berbasis Iklim, Durasi Ronde, atau tahun historis/fiksi apa pun (-270000 SM hingga +270000).',
-    'TIP: Morning Fog and Night automatically clamp visibility range and slash Close Air Support efficiency.': 'TIPS: Kabut Pagi dan Malam otomatis membatasi jarak pandang dan memangkas efektivitas Dukungan Udara.',
+    'FINISH ✓': 'SIAP, SELESAI ✓',
+    'Theatre Command & Environment Ticker': 'Pita Teater & Cuaca, Ndan!',
+    'This top ticker displays the live 24-hour operational clock, terrain, and weather at a glance while staying compact above the fold. Click ▼ EXPAND anytime to change Terrain, Features, Climate-Aware Dynamic Weather, Round Length, or set any historical/fictional year from -270000 BCE to +270000.': 'Lapor Komandan! Pita atas ini langsung nunjukkin jam 24 jam, medan, sama cuaca biar layar nggak kepenuhan. Klik ▼ BUKA kapan saja kalau Ndan mau ganti Medan, Cuaca Dinamis, Durasi Ronde, atau atur tahun fiksi dari -270000 SM sampai +270000.',
+    'TIP: Morning Fog and Night automatically clamp visibility range and slash Close Air Support efficiency.': 'CATATAN, NDAN: Kabut Pagi sama Malam otomatis ngebatasin jarak pandang dan bikin pesawat CAS susah terbang.',
 
-    'Faction Plates, Brass Commanders & Tactics': 'Pelat Faksi, Pelat Komandan & Taktik',
-    'Each flank has a clickable steel faction nameplate (type any custom faction name), an engraved brass Commander nameplate dropdown with 10-tier Officer Rank Insignia, and a Tactic selector. Commanders grant +2.5% army-wide per ATK/DEF/CMD/LOG level plus unique traits.': 'Setiap sisi memiliki pelat nama faksi baja yang bisa diklik untuk diganti namanya, menu dropdown pelat kuningan Komandan lengkap dengan Lencana Pangkat 10 tingkat, dan pemilih Taktik. Komandan memberi +2,5% bonus pasukan per level ATK/DEF/CMD/LOG.',
-    'TIP: Leave Tactic on Auto-AI to let the general pick doctrines matching their personality, or override manually each round.': 'TIPS: Biarkan Taktik di Auto-AI agar jenderal memilih doktrin sesuai kepribadiannya, atau pilih manual setiap ronde.',
+    'Faction Plates, Brass Commanders & Tactics': 'Pelat Faksi, Komandan & Taktik',
+    'Each flank has a clickable steel faction nameplate (type any custom faction name), an engraved brass Commander nameplate dropdown with 10-tier Officer Rank Insignia, and a Tactic selector. Commanders grant +2.5% army-wide per ATK/DEF/CMD/LOG level plus unique traits.': 'Di kiri-kanan ini ada pelat nama faksi yang bisa diklik buat diganti namanya, Kumendan. Di bawahnya ada pelat kuningan Komandan lengkap sama lencana pangkat 10 tingkat plus pilihan Taktik. Tiap level ATK/DEF/CMD/LOG ngasih +2,5% bonus ke seluruh pasukan!',
+    'TIP: Leave Tactic on Auto-AI to let the general pick doctrines matching their personality, or override manually each round.': 'CATATAN, NDAN: Biarin aja di Auto-AI kalau mau jenderal milih doktrin sendiri, atau Ndan bisa atur manual tiap ronde.',
 
-    'Force Strength & Shared Supply Depot': 'Kekuatan Pasukan & Depot Logistik Bersama',
-    'Track active formations, effective personnel, combat-ready AFVs, and total KIA+WIA losses here. Below sits your shared Theatre Supply Depot — frontline units draw refills from it every round, and running dry cripples combat stats.': 'Pantau formasi aktif, personel efektif, ranpur siap tempur, dan total korban gugur+luka di sini. Di bawahnya terdapat Depot Logistik Teater bersama — unit garis depan mengambil pasokan dari depot ini setiap ronde.',
-    'TIP: Watch the depot bar! Below 30% it turns amber, and at 0% your divisions cannot resupply.': 'TIPS: Awasi bilah depot! Di bawah 30% warnanya menjadi kuning-oranye, dan di 0% divisi Anda tak bisa mengisi ulang amunisi.',
+    'Force Strength & Shared Supply Depot': 'Kekuatan Pasukan & Depot Logistik',
+    'Track active formations, effective personnel, combat-ready AFVs, and total KIA+WIA losses here. Below sits your shared Theatre Supply Depot — frontline units draw refills from it every round, and running dry cripples combat stats.': 'Di kotak ini kelihatan jumlah unit aktif, personel siap tembak, ranpur, sama total korban gugur+luka, Ndan. Di bawahnya ada Depot Logistik barengan — kalau sampai kering, anak buah di depan bakal kehabisan peluru!',
+    'TIP: Watch the depot bar! Below 30% it turns amber, and at 0% your divisions cannot resupply.': 'CATATAN, NDAN: Pantau terus bilah depotnya! Kalau udah di bawah 30% warnanya kuning, dan pas 0% kita nggak bisa isi peluru lagi.',
 
-    'Deploying Units & Compact Card Mode': 'Pengerahan Unit & Mode Kartu Ringkas',
-    'Pick any unit template from the dropdown and click + DEPLOY to reinforce a flank. Use the COMPACT / FULL toggle right next to it to shrink unit cards down to Name, DIST, and the 4 core stat bars (PERS, ORG, SUP, AFV) when commanding large divisions.': 'Pilih templat unit dari daftar lalu klik + KERAHKAN untuk menambah pasukan. Gunakan tombol RINGKAS / PENUH di sebelahnya untuk memperkecil kartu unit menjadi Nama, JARAK, dan 4 bilah utama (PERS, ORG, SUP, AFV) saat memimpin banyak batalyon.',
-    'TIP: In Compact mode, hovering any unit card automatically surfaces all hidden details (TV, Dig-In, KIA/WIA, Class, AFV Recov/KO) inside the floating tooltip.': 'TIPS: Dalam mode Ringkas, arahkan kursor ke kartu unit mana pun untuk melihat semua detail tersembunyi (TV, Parit, KIA/WIA, Kelas, Ranpur) di jendela melayang.',
+    'Deploying Units & Compact Card Mode': 'Kerahin Unit & Mode Kartu Ringkas',
+    'Pick any unit template from the dropdown and click + DEPLOY to reinforce a flank. Use the COMPACT / FULL toggle right next to it to shrink unit cards down to Name, DIST, and the 4 core stat bars (PERS, ORG, SUP, AFV) when commanding large divisions.': 'Pilih templat unit lalu klik + KERAHKAN buat nurunin pasukan baru, Komandan. Kalau pasukannya banyak banget, klik tombol RINGKAS / PENUH di sebelahnya biar kartunya ramping — cuma nampilin Nama, JARAK, sama 4 bilah utama.',
+    'TIP: In Compact mode, hovering any unit card automatically surfaces all hidden details (TV, Dig-In, KIA/WIA, Class, AFV Recov/KO) inside the floating tooltip.': 'CATATAN, NDAN: Pas mode Ringkas aktif, arahkan aja kursor ke kartu unit — semua info yang disembunyiin (TV, Parit, KIA/WIA, Ranpur) langsung muncul di tooltip melayang!',
 
-    'Unit Dossier Cards & Status Accents': 'Kartu Dossier Unit & Aksen Status',
-    'Every battalion card has a 3px left-edge status bar: solid Blue/Red when combat-effective, muted Amber when ORG or SUP drops below 30%, and a diagonal hatch overlay when routed or out of action. Hover a card for deep combat stats and to light up its counter on the map.': 'Setiap kartu batalyon memiliki garis status 3px di tepi kiri: Biru/Merah solid saat siap tempur, Kuning saat ORG atau SUP di bawah 30%, dan arsiran diagonal saat kocar-kacir atau gugur. Arahkan kursor ke kartu untuk menyorot simbolnya di peta.',
-    'TIP: Battles are won by breaking enemy Organization (blue bar) and Supply (yellow bar), not killing every last soldier.': 'TIPS: Pertempuran dimenangkan dengan menghancurkan Organisasi (bilah biru) dan Logistik (bilah kuning) musuh, bukan menghabisi setiap prajurit.',
+    'Unit Dossier Cards & Status Accents': 'Kartu Batalyon & Garis Status',
+    'Every battalion card has a 3px left-edge status bar: solid Blue/Red when combat-effective, muted Amber when ORG or SUP drops below 30%, and a diagonal hatch overlay when routed or out of action. Hover a card for deep combat stats and to light up its counter on the map.': 'Lihat garis tipis 3px di kiri tiap kartu, Ndan: Biru/Merah solid artinya anak buah siap tempur, Kuning artinya ORG atau logistik udah kritis (<30%), dan arsiran diagonal artinya lagi mundur atau nonaktif. Arahkan kursor ke kartu biar simbolnya di peta ikut nyala!',
+    'TIP: Battles are won by breaking enemy Organization (blue bar) and Supply (yellow bar), not killing every last soldier.': 'CATATAN, NDAN: Menang perang itu kuncinya bikin Organisasi (bilah biru) dan Logistik (bilah kuning) musuh ambruk, nggak perlu habisin 100% orangnya.',
 
-    'Sticky Operational Status & Turn Controls': 'Panel Status Operasional Menempel & Kontrol Ronde',
-    'This center console stays pinned as you scroll down through flanks. Hit ▶ EXECUTE ROUND to advance one turn, AUTO-OPS to run continuously, GM LIVE for 1-round Undo and live edits, or click ▲ to collapse it into a razor-thin sticky bar showing only Execute, Auto-Ops, and the Force Ratio gauge.': 'Konsol tengah ini tetap menempel saat Anda menggulir daftar unit. Tekan ▶ JALANKAN RONDE untuk maju satu giliran, OTOMATIS untuk berjalan terus, MODE GM untuk batal 1 ronde, atau klik ▲ untuk melipatnya menjadi bilah tipis.',
-    'TIP: Quick-load Arracourt (1944) or San Marino (1944) anytime from the Scenarios buttons inside this panel.': 'TIPS: Muat cepat skenario Arracourt (1944) atau San Marino (1944) kapan saja dari tombol Skenario di panel ini.',
+    'Sticky Operational Status & Turn Controls': 'Konsol Komando Menempel & Tombol Ronde',
+    'This center console stays pinned as you scroll down through flanks. Hit ▶ EXECUTE ROUND to advance one turn, AUTO-OPS to run continuously, GM LIVE for 1-round Undo and live edits, or click ▲ to collapse it into a razor-thin sticky bar showing only Execute, Auto-Ops, and the Force Ratio gauge.': 'Konsol tengah ini bakal terus ngikutin pas Komandan gulir ke bawah! Pencet ▶ JALANKAN RONDE buat maju satu giliran, OTOMATIS biar jalan terus, MODE GM buat batalin 1 ronde, atau klik ▲ buat ngelipet jadi pita tipis biar makin lega.',
+    'TIP: Quick-load Arracourt (1944) or San Marino (1944) anytime from the Scenarios buttons inside this panel.': 'CATATAN, NDAN: Mau coba skenario Arracourt (1944) atau San Marino (1944)? Tinggal klik tombol Skenario di sini.',
 
-    '2D Tactical Sector & Two-Way Map Linking': 'Sektor Taktis 2D & Tautan Peta Dua Arah',
-    'Watch formations advance toward CONTACT LINE (0) in real time. Infantry and standard Armored Vehicles engage at Distance <= 2, Tanks and Tank Destroyers at <= 3, and Artillery up to <= 6. Click any NATO counter on the map to scroll straight to its unit card and flash it in amber.': 'Saksikan formasi maju menuju GARIS KONTAK (0) secara langsung. Infanteri & Ranpur standar menembak di Jarak <= 2, Tank & Penghancur Tank di <= 3, dan Artileri hingga <= 6. Klik simbol NATO di peta untuk langsung melompat ke kartu unitnya.',
-    'TIP: Hover the Y-Axis triangles right below the map to inspect stacked units at any distance coordinate.': 'TIPS: Arahkan kursor ke segitiga Sumbu-Y tepat di bawah peta untuk memeriksa tumpukan unit di setiap koordinat jarak.',
+    '2D Tactical Sector & Two-Way Map Linking': 'Peta Taktis 2D & Klik Langsung ke Kartu',
+    'Watch formations advance toward CONTACT LINE (0) in real time. Infantry and standard Armored Vehicles engage at Distance <= 2, Tanks and Tank Destroyers at <= 3, and Artillery up to <= 6. Click any NATO counter on the map to scroll straight to its unit card and flash it in amber.': 'Di peta ini kelihatan posisi semua batalyon menuju GARIS KONTAK (0), Kumendan. Infanteri/Ranpur nembak di Jarak <= 2, Tank & Penghancur Tank di <= 3, Artileri sampai <= 6. Klik simbol NATO mana aja di peta buat langsung lompat ke kartu unitnya!',
+    'TIP: Hover the Y-Axis triangles right below the map to inspect stacked units at any distance coordinate.': 'CATATAN, NDAN: Arahkan kursor ke segitiga Sumbu-Y di bawah peta buat ngintip unit yang numpuk di satu koordinat.',
 
-    'SITREP Operational Logbook (Form DA-1594)': 'Buku Log Operasional SITREP (Form DA-1594)',
-    'Every vigilance roll, fire-support volley, armor penetration check, field repair, and rout is recorded here in real time. Filter by category (Damage, Armor, Support, Rolls), click EXPAND for a full-screen searchable logbook, or COPY to paste into your TTRPG notes.': 'Setiap hasil pengintaian, salvo artileri, penetrasi baja, perbaikan lapangan, dan mundurnya pasukan tercatat langsung di sini. Saring berdasarkan kategori, klik PERBESAR untuk layar penuh, atau SALIN ke catatan TTRPG Anda.',
-    'TIP: Click anywhere outside any pop-up modal — or press Esc — to close it instantly.': 'TIPS: Klik di mana saja di luar jendela pop-up — atau tekan Esc — untuk menutupnya seketika.',
+    'SITREP Operational Logbook (Form DA-1594)': 'Buku Log SITREP (Form DA-1594)',
+    'Every vigilance roll, fire-support volley, armor penetration check, field repair, and rout is recorded here in real time. Filter by category (Damage, Armor, Support, Rolls), click EXPAND for a full-screen searchable logbook, or COPY to paste into your TTRPG notes.': 'Semua kejadian di lapangan — intai, tembakan artileri, peluru mantul, montir benerin tank, sampai pasukan mundur — dicatat di sini, Ndan. Bisa disaring, diperbesar lewat PERBESAR, atau di-SALIN buat catatan TTRPG.',
+    'TIP: Click anywhere outside any pop-up modal — or press Esc — to close it instantly.': 'CATATAN, NDAN: Kalau mau nutup pop-up apa aja, tinggal klik di luar kotaknya atau pencet Esc.',
 
-    '7-Slot Command Navigation Dock': 'Bilah Navigasi Komando 7-Tab',
-    'Switch across all 7 workspaces from this dock: Battlefield, ORBAT (custom unit designer), Traits, Command HQ (custom generals), Terrain (color-coded modifier matrix), Doctrines (25-page tactic manual), and FM Manual (Drill Sergeant & Technical manuals).': 'Berpindah antar 7 ruang kerja dari bilah ini: Medan Tempur, ORBAT (perancang unit), Sifat & Modul, Markas Komando (jenderal kustom), Medan & Cuaca, Doktrin Taktik (manual 25 halaman), dan Buku Manual (Panduan Sersan Pelatih & Teknis).',
-    'TIP: Every custom unit, trait, general, and terrain auto-saves in your browser.': 'TIPS: Setiap unit, sifat, jenderal, dan medan kustom otomatis tersimpan di peramban Anda.',
+    '7-Slot Command Navigation Dock': 'Bilah Navigasi 7 Ruang Kerja',
+    'Switch across all 7 workspaces from this dock: Battlefield, ORBAT (custom unit designer), Traits, Command HQ (custom generals), Terrain (color-coded modifier matrix), Doctrines (25-page tactic manual), and FM Manual (Drill Sergeant & Technical manuals).': 'Dari atas sini Komandan bisa pindah-pindah ke 7 tab: Medan Tempur, ORBAT (bikin unit), Sifat & Modul, Markas Komando (bikin jenderal), Medan & Cuaca, Doktrin Taktik, sama Buku Saku.',
+    'TIP: Every custom unit, trait, general, and terrain auto-saves in your browser.': 'CATATAN, NDAN: Semua unit, sifat, jenderal, dan medan bikinan Ndan otomatis kesimpen di browser.',
 
-    'Form DA-774 After-Action Report & JSON Backup': 'Laporan Pasca-Operasi Form DA-774 & Cadangan JSON',
-    'Click AAR anytime for an interim SITREP or post-battle debrief complete with per-unit kills, depot logistics, weather trail, and printable A4 Form DA-774 PDF export. Use EXPORT / IMPORT JSON next to it to save or share your custom armies, and click UI TOUR anytime to replay this guide.': 'Klik AAR kapan saja untuk laporan sementara atau laporan akhir lengkap dengan korban per unit, logistik depot, riwayat cuaca, dan ekspor PDF A4 Form DA-774. Gunakan EKSPOR / IMPOR JSON di sebelahnya untuk mencadangkan pasukan kustom Anda, dan klik TUR UI kapan saja untuk mengulang panduan ini.',
-    'DISMISSED, COMMANDER — hit ▶ EXECUTE ROUND to kick off the Battle of Arracourt!': 'BUBAR, KOMANDAN — tekan ▶ JALANKAN RONDE untuk memulai Pertempuran Arracourt!'
+    'Form DA-774 After-Action Report & JSON Backup': 'Laporan AAR Form DA-774 & Cadangan JSON',
+    'Click AAR anytime for an interim SITREP or post-battle debrief complete with per-unit kills, depot logistics, weather trail, and printable A4 Form DA-774 PDF export. Use EXPORT / IMPORT JSON next to it to save or share your custom armies, and click UI TOUR anytime to replay this guide.': 'Klik AAR kapan aja buat lihat laporan lengkap — termasuk korban per unit, sisa depot, riwayat cuaca, sampai ekspor PDF A4 Form DA-774! Di sebelahnya ada EKSPOR / IMPOR JSON buat simpan pasukan, dan TUR UI kalau mau ulang panduan ini.',
+    'DISMISSED, COMMANDER — hit ▶ EXECUTE ROUND to kick off the Battle of Arracourt!': 'SIAP, KOMANDAN! Tinggal pencet ▶ JALANKAN RONDE buat mulai Pertempuran Arracourt!'
   };
 
-  // --------------------------------------------------------------------------
-  // 2. Pattern / Dynamic String Replacements
-  // --------------------------------------------------------------------------
   const PATTERN_RULES = [
     [/^ORIENTATION \/\/ STEP (\d+) \/ (\d+)$/, 'ORIENTASI // LANGKAH $1 / $2'],
     [/^ROUND (\d+)$/, 'RONDE $1'],
@@ -291,7 +446,6 @@ window.IronDivision = window.IronDivision || {};
     [/^Result: Mutual Exhaustion$/, 'Hasil: Kelelahan Bersama (Seri)']
   ];
 
-  // Placeholder translations
   const PLACEHOLDER_MAP = {
     'Search traits...': 'Cari sifat...',
     'Filter units...': 'Saring unit...',
@@ -302,17 +456,457 @@ window.IronDivision = window.IronDivision || {};
     'e.g. Field Marshal Zhukov': 'cth. Jenderal Sudirman'
   };
 
+  // --------------------------------------------------------------------------
+  // 3. Natural Indonesian Manuals (Subordinate Soldier -> "Komandan / Kumendan / Ndan")
+  // --------------------------------------------------------------------------
+  function renderIndonesianManuals() {
+    const container = document.getElementById('view-guide');
+    if (!container) return;
+    const isTech = document.getElementById('guide-tab-tech')?.classList.contains('is-active');
+
+    container.innerHTML = `
+      <div class="manila-folder-shell max-w-[1060px] mx-auto">
+        <div class="manila-tabs-bar" role="tablist" aria-label="Tab Buku Manual">
+          <button type="button" id="guide-tab-boot" role="tab" aria-selected="${!isTech ? 'true' : 'false'}" onclick="switchGuidePage('boot')" class="manila-folder-tab ${!isTech ? 'is-active' : ''}">
+            <span class="manila-tab-code">TAB A // FM 100-5-BOOT</span>
+            <span class="manila-tab-label">BUKU SAKU AJUDAN</span>
+          </button>
+          <button type="button" id="guide-tab-tech" role="tab" aria-selected="${isTech ? 'true' : 'false'}" onclick="switchGuidePage('tech')" class="manila-folder-tab ${isTech ? 'is-active' : ''}">
+            <span class="manila-tab-code">TAB B // TM 9-1005-TECH</span>
+            <span class="manila-tab-label">MANUAL TEKNIS</span>
+          </button>
+        </div>
+
+        <div class="manila-folder-body">
+          <!-- ==================== TAB A: BUKU SAKU AJUDAN (BAWAHAN -> KOMANDAN) ==================== -->
+          <div id="guide-pane-boot" class="${!isTech ? '' : 'hidden'}">
+            <article class="tradoc-doc" aria-label="Buku Saku Lapangan Iron Division Versi Ajudan">
+              <div class="tradoc-class-strip">
+                <span>TERBUKA // CATATAN LAPANGAN UNTUK KOMANDAN &amp; GAME MASTER</span>
+                <span>DOKUMEN // FM 100-5-BOOT (EDISI AJUDAN)</span>
+              </div>
+
+              <header class="tradoc-header">
+                <div class="flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <div class="tradoc-mono text-[11px] font-bold uppercase tracking-widest text-[#3a4738]">
+                      STAF LAPANGAN DIVISI BESI // CATATAN PRIBADI UNTUK KOMANDAN
+                    </div>
+                    <h2 class="text-2xl sm:text-3xl font-black uppercase tracking-tight text-[#141815] mt-1">
+                      SIAP, NDAN! INI BUKU SAKU BIAR NGGAK SALAH PENCET
+                    </h2>
+                    <p class="text-sm text-[#323a33] max-w-3xl mt-1">
+                      Mohon izin lapor, <strong>Komandan</strong>! Belum pernah main game strategi macam <em>Hearts of Iron</em> sebelumnya? Santai aja, Ndan — malah bagus, jadi belum ketularan kebiasaan ngawur dari game sebelah. Saya sudah rangkumin semua tombol, angka, aturan lapis baja, dan logistik di Iron Division pakai bahasa gampang, plus <strong>kenapa aturan itu ada di medan perang beneran</strong>.
+                    </p>
+                  </div>
+                  <div class="tradoc-mono text-[11px] bg-[#dfd7c2] border border-[#b5ad98] p-3 text-right shrink-0 space-y-1 text-[#1c211d]">
+                    <div><strong>NO. BUKU:</strong> FM 100-5-BOOT</div>
+                    <div><strong>PENULIS:</strong> KOPKA "BESI" (AJUDAN)</div>
+                    <div><strong>MESIN:</strong> IRON DIVISION v3.5</div>
+                    <button type="button" onclick="openWelcomeModal(true)" class="mt-1 px-2 py-0.5 bg-[#1b221c] text-[#e0be6a] border border-[#4d4224] text-[10px] font-bold uppercase">
+                      BUKA LAGI PENGARAHAN
+                    </button>
+                  </div>
+                </div>
+
+                <div class="mt-4 pt-3 border-t border-[#c9c1ab] flex flex-wrap gap-2 tradoc-mono text-[10.5px]">
+                  <a href="#fm-ch1" class="px-2 py-1 bg-[#c8bfa8] border border-[#bfb7a1] text-[#1c211d] hover:bg-[#bdb39a] font-bold">01. SIMULATOR APA INI?</a>
+                  <a href="#fm-ch2" class="px-2 py-1 bg-[#c8bfa8] border border-[#bfb7a1] text-[#1c211d] hover:bg-[#bdb39a] font-bold">02. TEATER &amp; CUACA</a>
+                  <a href="#fm-ch3" class="px-2 py-1 bg-[#c8bfa8] border border-[#bfb7a1] text-[#1c211d] hover:bg-[#bdb39a] font-bold">03. STAT &amp; LAPIS BAJA</a>
+                  <a href="#fm-ch4" class="px-2 py-1 bg-[#c8bfa8] border border-[#bfb7a1] text-[#1c211d] hover:bg-[#bdb39a] font-bold">04. ALUR 1 RONDE</a>
+                  <a href="#fm-ch5" class="px-2 py-1 bg-[#c8bfa8] border border-[#bfb7a1] text-[#1c211d] hover:bg-[#bdb39a] font-bold">05. JARAK, RALLY &amp; MONTIR</a>
+                  <a href="#fm-ch6" class="px-2 py-1 bg-[#c8bfa8] border border-[#bfb7a1] text-[#1c211d] hover:bg-[#bdb39a] font-bold">06. LAPORAN FORM DA-774</a>
+                  <a href="#fm-ch7" class="px-2 py-1 bg-[#c8bfa8] border border-[#bfb7a1] text-[#1c211d] hover:bg-[#bdb39a] font-bold">07. RAKIT PERANG SENDIRI</a>
+                </div>
+              </header>
+
+              <div class="tradoc-body space-y-6">
+
+                <!-- BAB 1 -->
+                <section id="fm-ch1" class="tradoc-chapter">
+                  <h3 class="tradoc-chapter-title">BAB 01 // SEBENARNYA INI SIMULATOR APA SIH, NDAN?</h3>
+                  <p class="tradoc-para">
+                    <span class="tradoc-para-id">1-1.</span>
+                    <strong>Mohon izin, Kumendan — ini bukan game tembak-tembakan biasa yang pakai bar darah doang.</strong> Di game arcade, prajurit sisa 1 HP masih bisa lari-larian santai. Di perang beneran, satu batalyon bubar bukan karena semua orangnya gugur, tapi karena radionya mati, pelurunya habis, dihujani artileri di lumpur, atau setengah temannya udah kena tembak dan nggak ada yang berani berdiri lagi.
+                  </p>
+                  <p class="tradoc-para">
+                    <span class="tradoc-para-id">1-2.</span>
+                    <strong>Iron Division</strong> adalah simulator tempur operasional gaya TTRPG. Bawaannya langsung siap tempur di <strong>Pertempuran Arracourt (18 September 1944, Perbukitan Lorraine)</strong> — Tentara Panzer ke-5 Jerman menyerang Divisi Lapis Baja ke-4 AS (CCA) di tengah kabut pagi (skenario <strong>San Marino</strong> juga sudah siap di tombol Skenario). Komandan tinggal atur medan, cuaca, jam, dan jenderal, lalu pencet <strong>JALANKAN RONDE</strong>. Mesin akan melempar dadu di belakang layar, menghitung penetrasi baja, mencatat setiap prajurit gugur/luka/tawanan, menulis log SITREP, dan mencetak laporan resmi <strong>Form DA-774</strong> pas pertempuran kelar.
+                  </p>
+                  <div class="tradoc-callout">
+                    <strong>MOHON IZIN LAPOR, KOMANDAN — INI BUKAN GAME BAR DARAH:</strong> Kalau satu batalyon masih punya 600 orang, tapi pelurunya nol, radionya jebol, dan tiga baterai 155mm lagi ngirim besi panas ke helm mereka, anak buah nggak bakal salto heroik nerjang senapan mesin, Ndan — mereka bakal ngacir ke kabupaten sebelah! Fokus bikin <strong>Organisasi (ORG)</strong> dan <strong>Logistik (SUP)</strong> musuh ambruk, beres urusan!
+                  </div>
+                </section>
+
+                <!-- BAB 2 -->
+                <section id="fm-ch2" class="tradoc-chapter">
+                  <h3 class="tradoc-chapter-title">BAB 02 // PITA TEATER, IKLIM &amp; JAM 24 JAM</h3>
+                  <p class="tradoc-para">
+                    <span class="tradoc-para-id">2-1.</span>
+                    Coba tengok pita paling atas di tab Medan Tempur (<strong>TEATER //</strong>). Biar layar Komandan nggak penuh, pita ini otomatis dilipat jadi satu baris ringkas. Kalau mau ubah kondisi alam, tinggal klik <strong>▼ BUKA</strong>:
+                  </p>
+
+                  <table class="tradoc-table">
+                    <thead>
+                      <tr>
+                        <th>Pengaturan</th>
+                        <th>Fungsinya di Simulator</th>
+                        <th>Realitanya di Lapangan, Ndan</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td><strong>Medan Dasar</strong></td>
+                        <td>Mengatur bonus/penalti tiap jenis unit, Pengintaian, borosnya Logistik, <strong>Batas Galian Parit</strong>, dan <strong>Batas Unggul Jumlah</strong>.</td>
+                        <td>Tank senang di Dataran Terbuka tapi sengsara di Pegunungan. Gang sempit kota bikin 10.000 prajurit nggak bisa nembak barengan — makanya Perkotaan membatasi bonus jumlah di +40% dan Pegunungan di +35%.</td>
+                      </tr>
+                      <tr>
+                        <td><strong>Fitur Medan</strong></td>
+                        <td>Pengali tambahan (Jalan Raya, Sungai Kecil/Besar, Pendaratan Amfibi, Bunker/Kubu).</td>
+                        <td>Nyebrang sungai lebar di bawah tembakan senapan mesin itu cari mati, Ndan — kecuali bawa <strong>Marinir</strong> atau Zeni. Bunker beton melipatgandakan pertahanan dan nambah batas parit (+2).</td>
+                      </tr>
+                      <tr>
+                        <td><strong>Cuaca Dinamis (Berbasis Iklim)</strong></td>
+                        <td>Mengubah akurasi, logistik, dan <strong>Efektivitas Udara</strong>. Centang <strong>DINAMIS</strong> biar cuaca bergeser tiap 3 ronde sesuai <strong>Medan, Musim, dan Waktu</strong>.</td>
+                        <td>Bukit Lorraine bulan September dapatnya kabut pagi, mendung, atau hujan — bukan badai salju atau panas gurun. Cuaca buruk memangkas serangan udara 50–60% atau bikin pesawat batal terbang.</td>
+                      </tr>
+                      <tr>
+                        <td><strong>Tanggal Bebas Era &amp; Jam 24J</strong></td>
+                        <td>Komandan bisa isi tahun apa saja dari <strong>-270000 (SM) sampai +270000</strong> (termasuk Tahun 0, tahun 44, 1944, atau 40999!), jam 24J, dan durasi ronde (Menit/Jam/Hari). Otomatis atur <strong>Fajar, Siang, Senja, Malam</strong>.</td>
+                        <td>Tempur jam 02:00 malam beda jauh sama jam 12 siang, Kumendan. Gelap membutakan optik tank, memperbesar peluang penyergapan (+15), dan bikin pilot CAS susah lihat target.</td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  <p class="tradoc-para mt-3">
+                    <span class="tradoc-para-id">2-2.</span>
+                    <strong>Bahaya Gabungan (Pas Tanah &amp; Langit Kompak Bikin Repot):</strong>
+                  </p>
+                  <ul class="list-disc pl-6 space-y-1 text-sm text-[#232a24]">
+                    <li><strong>LUMPUR / RASPUTITSA</strong> <em>(Hujan Deras di Dataran/Hutan/Bukit/Rawa/Jalan)</em>: Tank amblas (-1 s.d. -2 mobilitas), truk logistik nyangkut (+2 logistik), dan narik tank rusak makin susah (-15).</li>
+                    <li><strong>JARAK PANDANG NIHIL</strong> <em>(Kabut di mana saja, atau Malam di Kota/Hutan/Rimba)</em>: Jarak tembak dibatasi 3–4 kotak dan pengintaian turun (-15 Vig) kalau nggak bawa Intai atau Kamuflase.</li>
+                    <li><strong>BEKU EKSTREM</strong> <em>(Salju di Pegunungan/Bukit/Dataran)</em>: Prajurit luka rawan gugur kedinginan (+3% DOW), logistik boros, dan tank kurang pasokan (&lt;30%) rawan mesin beku.</li>
+                    <li><strong>SENGATAN PANAS / DEBU</strong> <em>(Gelombang Panas di Gurun)</em>: Infanteri cepat haus (+2 logistik, -2 Org/ronde); debu bikin optik tank &amp; artileri kelilipan (-15 Vig).</li>
+                  </ul>
+
+                  <div class="tradoc-callout mt-3">
+                    <strong>AMPUN, KUMENDAN — JANGAN PESAN BADAI SALJU DI GURUN SAHARA JAM DUA PAGI:</strong> Cuaca dinamis sekarang udah nurut sama iklim, musim, dan jam beneran, Ndan — jadi nggak bakal ada salju turun di Lorraine bulan September atau gelombang panas nongol tengah malam. Mau setel tahun ke <strong>-216 (216 SM)</strong> atau <strong>40999</strong> buat perang fiksi? Siap, gas terus Ndan — asal jangan kaget kalau pesawat tempur nggak mau terbang di kabut tebal jam 02:00 dini hari!
+                  </div>
+                </section>
+
+                <!-- BAB 3 -->
+                <section id="fm-ch3" class="tradoc-chapter">
+                  <h3 class="tradoc-chapter-title">BAB 03 // ANGKA UNIT, LAPIS BAJA &amp; PELAT NAMA</h3>
+                  <p class="tradoc-para">
+                    <span class="tradoc-para-id">3-1.</span>
+                    Tiap batalyon di layar punya <strong>Dog Tag</strong> baja, simbol NATO di kiri, lencana pengalaman di kanan, dan <strong>garis status 3px</strong> di tepi kiri (Biru/Merah solid = siap tempur, Kuning = ORG/SUP kritis &lt;30%, Arsiran diagonal = mundur/nonaktif). Arahkan kursor ke kartu untuk lihat statistik lengkap — bahkan di mode <strong>RINGKAS</strong>, semua detail tersembunyi langsung muncul di tooltip!
+                  </p>
+
+                  <table class="tradoc-table">
+                    <thead>
+                      <tr>
+                        <th>Statistik</th>
+                        <th>Artinya Buat Kita, Ndan</th>
+                        <th>Kenapa Penting di Lapangan</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td><strong>Personel (PERS)</strong></td>
+                        <td>Prajurit yang masih berdiri pegang senjata. Dihitung presisi ke <strong>Aktif, KIA, WIA, POW, dan ESC</strong>.</td>
+                        <td>Makin berkurang, daya tembak ikut turun. Yang luka (WIA) bisa gugur belakangan (DOW) mulai Ronde 4 kalau logistik habis dan nggak ada Medis.</td>
+                      </tr>
+                      <tr>
+                        <td><strong>Organisasi (ORG)</strong></td>
+                        <td>Mental, kekompakan, dan rantai komando (bilah Biru).</td>
+                        <td>Begitu ORG menyentuh <strong>0</strong>, batalyon langsung pecah dan mundur — biarpun 70% prajuritnya masih sehat walafiat.</td>
+                      </tr>
+                      <tr>
+                        <td><strong>Logistik (SUP) &amp; Depot</strong></td>
+                        <td>Peluru, ransum, solar, dan suku cadang (bilah Kuning). Diisi ulang dari <strong>Depot Teater</strong> barengan.</td>
+                        <td>Di bawah 50% stat turun -10%, di bawah 20% turun -20%, dan pas 0% anjlok -50% plus moral rontok tiap ronde.</td>
+                      </tr>
+                      <tr>
+                        <td><strong>Serangan Lunak vs. Baja</strong></td>
+                        <td><strong>Soft Attack</strong> buat hajar infanteri; <strong>Hard Attack</strong> buat hajar tank dan ranpur.</td>
+                        <td>Senapan mesin bikin infanteri tiarap, tapi nggak bakal mempan buat baja 40 ton.</td>
+                      </tr>
+                      <tr>
+                        <td><strong>Piercing vs. Hardness</strong></td>
+                        <td><strong>Hardness</strong> = tebal baja target. <strong>Piercing</strong> = daya tembus meriam kita.</td>
+                        <td>Kalau gagal menembus baja Medium/Heavy/Super (<strong>ARMOR HELD</strong>): korban personel dipotong separuh, dadu Explosive batal, dan guncangan Org baja Berat/Super dibatasi cuma <strong>-1</strong>!</td>
+                      </tr>
+                      <tr>
+                        <td><strong>Ranpur Lumpuh &amp; Pemulihan</strong></td>
+                        <td>Kendaraan kena pukul dibagi ke <strong>Bisa Diperbaiki (Rec)</strong> dan <strong>Hancur Total (KO)</strong> dengan batas pemulihan dinamis <strong>80 + d20%</strong>.</td>
+                        <td>Nggak semua tank yang kena tembak langsung meledak — tapi dengan pembulatan probabilistik, pukulan kecil pun tetap punya peluang membakar tank secara permanen.</td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  <div class="tradoc-callout mt-3">
+                    <strong>IZIN, NDAN — JANGAN NEMBAK TANK PANTHER 45 TON PAKAI SENAPAN MESIN KALIBER .30:</strong> Paling banter cuma bikin catnya lecet sama bikin komandan Jerman di dalam ketumpahan kopi, Komandan! Kalau Piercing kalah sama Hardness, aturan <strong>ARMOR HELD</strong> langsung motong korban separuh, membatalkan dadu ledak, dan bentrokan yang memantul di tekanan rendah melumpuhkan NOL tank. Panggil Penghancur Tank atau meriam kaliber besar, Ndan!
+                  </div>
+                </section>
+
+                <!-- BAB 4 -->
+                <section id="fm-ch4" class="tradoc-chapter">
+                  <h3 class="tradoc-chapter-title">BAB 04 // APA YANG TERJADI DI DALAM SATU RONDE?</h3>
+                  <p class="tradoc-para">
+                    <span class="tradoc-para-id">4-1.</span>
+                    Begitu Komandan pencet tombol emas <strong>▶ JALANKAN RONDE</strong> (atau <strong>OTOMATIS</strong>), mesin menjalankan 8 tahap berurutan:
+                  </p>
+                  <ol class="list-decimal pl-6 space-y-1.5 text-sm text-[#232a24]">
+                    <li><strong>Simpan Undo, Jam &amp; Cuaca:</strong> Simpan cadangan 1 ronde (maks 15 ronde untuk Mode GM), majukan jam 24J, cek Fajar/Siang/Senja/Malam, dan putar Cuaca Dinamis tiap 3 ronde.</li>
+                    <li><strong>Logistik, Gali Parit, Kelelahan &amp; Perbaikan:</strong> Unit yang <em>sudah masuk jarak tembak</em> membakar amunisi dan kena Kelelahan Tempur (Ronde 6+); unit yang <em>masih jalan mendekat</em> berhenti membakar amunisi, bebas kelelahan, dan prajurit baru (Green) nggak bocor Org-nya. Kru Perbaikan bekerja tiap 4 ronde — kecuali ronde sebelumnya unit baru kena tembak anti-baja!</li>
+                    <li><strong>Pemilihan Taktik:</strong> Tiap pihak memilih salah satu dari 25 doktrin tempur (otomatis oleh AI Komandan atau dipilih manual oleh Komandan).</li>
+                    <li><strong>Pengintaian (Vigilance):</strong> Kedua pihak melempar <code>1d100 + Pengubah</code>. Pemenangnya dapat bonus akurasi karena melihat lawan lebih dulu.</li>
+                    <li><strong>Salvo Dukungan Tembakan:</strong> Mortir, Artileri Berat, dan Serangan Udara menghajar duluan. Meriam Hanud menghadang pesawat lawan.</li>
+                    <li><strong>Manuver &amp; Jarak Kontak:</strong> Unit yang belum sampai jarak tembak maju di <strong>Sumbu-Y (-7 s.d. +7)</strong>. Pihak bertahan yang sudah dalam jarak menembakkan <strong>Tembakan Penghadang (Overwatch)</strong>!</li>
+                    <li><strong>Baku Tembak Utama &amp; Balasan:</strong> Garda Depan melindungi artileri, penetrasi baja dicek, perampas logistik hanya bekerja di jarak dekat (<code>&lt;= 2</code>, non-artileri), korban dibagi KIA/WIA, dan musuh yang selamat membalas tembakan.</li>
+                    <li><strong>Kemenangan, Pengejaran &amp; Salvase:</strong> Begitu garis depan satu pihak habis (atau cuma tersisa artileri tanpa pengawal yang otomatis mundur), pemenang mengejar untuk menawan POW, traktor menarik tank rusak pulang, dan pemenang menyortir ranpur musuh yang ditinggal lalu mencetak <strong>Form DA-774</strong>.</li>
+                  </ol>
+
+                  <div class="tradoc-callout mt-3">
+                    <strong>SIAP, NDAN — BATERAI ARTILERI NGGAK BISA TELEPORTASI 6 KILOMETER BUAT NYOLONG RANSUM MUSUH:</strong> Merampas logistik sekarang cuma bisa dilakukan pasukan tembak langsung di jarak dekat (<code>Jarak &lt;= 2</code>, bukan artileri)! Begitu juga montir kita, Kumendan: <strong>Kru Perbaikan Lapangan</strong> kerjanya tiap 4 ronde (1–2 ranpur, maks 3 dengan Desain Sederhana) dan langsung tiarap kalau ronde kemarin tank baru kena tembak. Mana ada montir nekat ngelas transmisi Sherman pas peluru 88mm lagi lewat di atas kuping!
+                  </div>
+                </section>
+
+                <!-- BAB 5 -->
+                <section id="fm-ch5" class="tradoc-chapter">
+                  <h3 class="tradoc-chapter-title">BAB 05 // JARAK TEMBAK, RALLY, TURUN KENDARAAN &amp; KOMANDO</h3>
+                  <p class="tradoc-para">
+                    <span class="tradoc-para-id">5-1.</span>
+                    <strong>Jarak Sumbu-Y &amp; Peta Taktis 2D:</strong> Lihat peta <strong>SEKTOR TAKTIS 2D</strong> di tengah. Pihak A di kiri, Pihak B di kanan, dan <strong>GARIS KONTAK (0)</strong> di tengah. Klik simbol NATO mana pun di peta untuk langsung melompat ke kartu unitnya!
+                  </p>
+                  <div class="tradoc-callout">
+                    <strong>MOHON IZIN LAPOR, NDAN:</strong> Anak buah nggak bisa nembak pakai senapan M4 lurus dua kilometer terus berharap kena sasaran — kalau sampai ada prajurit yang berhasil, biar saya hormat sambil salto di depan markas, Kumendan! Makanya <strong>Infanteri &amp; Ranpur biasa harus maju sampai Jarak &lt;= 2</strong>, <strong>Tank &amp; Penghancur Tank (TD) menembak di Jarak &lt;= 3</strong>, dan <strong>Artileri menghajar dari belakang sampai Jarak &lt;= 6</strong>. Kalau Kabut atau Malam mengaktifkan <strong>VIS CAP</strong>, tank juga wajib merayap lebih dekat!
+                  </div>
+
+                  <p class="tradoc-para">
+                    <span class="tradoc-para-id">5-2.</span>
+                    <strong>Mundur, Konsolidasi &amp; Lantai Org Rally:</strong> Unit yang Org-nya 0 bakal mundur ke belakang, menyelaraskan catatan korban lamanya biar nggak kena syok ganda, isi ulang dari Depot, lalu melempar <strong>Rally Check</strong> untuk balik ke garis depan dengan minimal <strong>18 Org atau 35% Org Maks</strong>. Kalau pecah kedua kalinya, baru benar-benar keluar dari pertempuran.
+                  </p>
+
+                  <p class="tradoc-para">
+                    <span class="tradoc-para-id">5-3.</span>
+                    <strong>Turun Kendaraan (Dismount) vs. Mundur ke Depot:</strong>
+                  </p>
+                  <ul class="list-disc pl-6 space-y-1 text-sm text-[#232a24]">
+                    <li><strong>Infanteri Mekanis &amp; Intai (<code>armored_vehicle</code> non-<code>anti_tank</code>):</strong> Saat Org turun ke <strong>&lt;= 20%</strong> (dengan personel &gt;= 50%) atau semua kendaraan hancur, prajurit <strong>turun ke tanah dan terus bertempur sebagai infanteri</strong>.</li>
+                    <li><strong>Tank, Artileri Swagerak &amp; Penghancur Tank:</strong> Kalau kendaraan siap tempur habis (0), kru <strong>mundur ke depot</strong> untuk perbaikan/penggantian (<code>MUNDUR (0 RANPUR)</code>).</li>
+                    <li><strong>Artileri Tanpa Pengawal:</strong> Kalau semua pasukan garis depan gugur/mundur dan tinggal artileri sendirian, baterai meriam otomatis berkemas dan mundur (<code>MUNDUR (TANPA PENGAWAL)</code>).</li>
+                  </ul>
+
+                  <div class="tradoc-callout mt-3">
+                    <strong>KRU TANK TANPA TANK ITU BUKAN BATALYON INFANTERI, KUMENDAN:</strong> Infanteri halftrack memang bisa lompat turun terus bertahan di parit pakai senapan, tapi kalau Batalyon Tank 37 atau Penghancur Tank 704 kehabisan kendaraan, mereka tarik mundur ke belakang cari tank pengganti — nggak disuruh maju pasang sangkur! Jaga terus garda depan kita ya, Ndan, biar artileri di belakang nggak ikut kabur!
+                  </div>
+                </section>
+
+                <!-- BAB 6 -->
+                <section id="fm-ch6" class="tradoc-chapter">
+                  <h3 class="tradoc-chapter-title">BAB 06 // LAPORAN PASCA-OPERASI (FORM DA-774) &amp; TELEMETRI</h3>
+                  <p class="tradoc-para">
+                    <span class="tradoc-para-id">6-1.</span>
+                    Kapan saja Komandan klik <strong>AAR</strong> atau <strong>EKSPOR PDF (FORM DA-774)</strong>, staf menyusun laporan militer A4 resmi lengkap dengan nomor halaman <code>PAGE X OF Y</code>, nol istilah dadu/mesin, dan data tempur lengkap:
+                  </p>
+                  <ul class="list-disc pl-6 space-y-1 text-sm text-[#232a24]">
+                    <li><strong>Bagian 1 — Ringkasan Eksekutif &amp; Perbandingan Kekuatan:</strong> Tingkat kemenangan, riwayat perubahan cuaca (<strong>METEO</strong>), perbandingan persentase korban, rasio KIA:WIA, kerugian ranpur, dan pengeluaran <strong>Depot Logistik</strong>.</li>
+                    <li><strong>Bagian 2 — Tabel ORBAT &amp; Output Tempur:</strong> Perhitungan personel pas 100% (<code>Start = Rem + KIA + WIA + POW + ESC</code>), status akhir spesifik tiap batalyon, kolom ranpur lengkap (<code>Start | Act/Rec/Tow/KO</code>), dan kolom <strong>Inflicted (Cas/AFV)</strong> untuk melihat batalyon mana yang paling ganas.</li>
+                    <li><strong>Bagian 3–5 — Salvase Netral, Kronologi Seimbang &amp; Analisis G-3:</strong> Catatan salvase netral faksi, kronologi seimbang dari awal–tengah–akhir pertempuran, plus temuan G-3 otomatis (formasi terbaik, pemburu tank terbaik, porsi korban artileri/udara, dan tekanan logistik).</li>
+                  </ul>
+
+                  <div class="tradoc-callout mt-3">
+                    <strong>JANGAN KASIH LAPORAN PENUH "d20[14] vs DC 12" KE MEJA JENDERAL, NDAN:</strong> Bisa-bisa satu kompi disuruh kupas kentang sampai tahun 40999 kalau laporan resminya isinya rumus dadu sama "Supply Points"! Makanya Form DA-774 otomatis membersihkan semua rumus mesin, merapikan hitungan personel sampai orang terakhir, dan langsung ngasih tahu batalyon mana yang jadi bintang lapangan.
+                  </div>
+                </section>
+
+                <!-- BAB 7 -->
+                <section id="fm-ch7" class="tradoc-chapter">
+                  <h3 class="tradoc-chapter-title">BAB 07 // RAKIT PERANG SENDIRI (ORBAT, MARKAS, MEDAN &amp; JSON)</h3>
+                  <p class="tradoc-para">
+                    <span class="tradoc-para-id">7-1.</span>
+                    Semua bisa Komandan utak-atik sesuka hati: klik pelat nama faksi di Medan Tempur untuk ganti nama, rakit unit baru di <strong>ORBAT</strong>, bikin sifat kustom di <strong>Sifat &amp; Modul</strong>, angkat jenderal baru di <strong>Markas Komando</strong> (lencana pangkat otomatis naik tiap 4 poin stat dari Letnan Satu sampai Jenderal Bintang 5!), atau ubah bobot medan di <strong>Medan &amp; Cuaca</strong>.
+                  </p>
+                  <p class="tradoc-para">
+                    <span class="tradoc-para-id">7-2.</span>
+                    Semua perubahan otomatis tersimpan di browser, dan Komandan bisa klik <strong>EKSPOR JSON / IMPOR JSON</strong> di pojok kanan atas buat cadangan atau dibagi ke teman-teman meja TTRPG!
+                  </p>
+                  <div class="tradoc-callout mt-3">
+                    <strong>BOLEH BANGET, NDAN, NGADU LEGIUN ROMAWI 216 SM LAWAN MARINIR LUAR ANGKASA TAHUN 40999:</strong> Tahunnya udah bebas dari <code>-270000</code> sampai <code>+270000</code>, jadi bebas mau bikin perang era apa aja, Kumendan — asal jangan kaget kalau pasukan tombaknya lupa bawa meriam Anti-Tank! Dan jangan lupa pencet <strong>EKSPOR JSON</strong> biar pasukan racikan Ndan aman sentosa!
+                  </div>
+                </section>
+
+              </div>
+
+              <footer class="tradoc-footer">
+                <span>SIAP MELAKSANAKAN PERINTAH, KOMANDAN — LANGSUNG KE MEDAN TEMPUR!</span>
+                <span>FM 100-5-BOOT // STAF AJUDAN DIVISI BESI</span>
+              </footer>
+            </article>
+          </div>
+
+          <!-- ==================== TAB B: MANUAL TEKNIS (INDONESIA) ==================== -->
+          <div id="guide-pane-tech" class="${isTech ? '' : 'hidden'}">
+            <article class="tradoc-doc" aria-label="Manual Teknis Iron Division TM 9-1005-TECH">
+              <div class="tradoc-class-strip">
+                <span>TERBUKA // REFERENSI MESIN &amp; SPESIFIKASI MATEMATIKA</span>
+                <span>DOKUMEN // TM 9-1005-TECH (REV 3.5)</span>
+              </div>
+
+              <header class="tradoc-header">
+                <div class="flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <div class="tradoc-mono text-[11px] font-bold uppercase tracking-widest text-[#3a4738]">
+                      REKAYASA SISTEM IRON DIVISION // MANUAL TEKNIS
+                    </div>
+                    <h2 class="text-2xl sm:text-3xl font-black uppercase tracking-tight text-[#141815] mt-1">
+                      TM 9-1005-TECH: Rumus Simulasi &amp; Arsitektur
+                    </h2>
+                    <p class="text-sm text-[#323a33] max-w-3xl mt-1">
+                      Referensi teknis rumus tempur, mitigasi penetrasi baja, gerbang bentrokan memantul, pemulihan dinamis 80+d20%, cuaca berbasis iklim, kalender bebas era, dan alur telemetri Form DA-774.
+                    </p>
+                  </div>
+                  <div class="tradoc-mono text-[11px] bg-[#dfd7c2] border border-[#b5ad98] p-3 text-right shrink-0 space-y-0.5 text-[#1c211d]">
+                    <div><strong>NO. DOK:</strong> TM 9-1005-TECH</div>
+                    <div><strong>RUNTIME:</strong> VANILLA ES6 (ZERO-BUILD)</div>
+                    <div><strong>SIMPAN:</strong> LOCALSTORAGE + JSON</div>
+                  </div>
+                </div>
+              </header>
+
+              <div class="tradoc-body space-y-5">
+                <section class="tradoc-chapter">
+                  <h3 class="tradoc-chapter-title">1. RESOLUSI TEMPUR, MITIGASI BAJA &amp; KNOCKOUT RANPUR</h3>
+                  <table class="tradoc-table">
+                    <thead><tr><th>Subsistem</th><th>Rumus / Aturan Pasti</th></tr></thead>
+                    <tbody>
+                      <tr><td><strong>Dadu Tempur</strong></td><td><code>Infanteri: d12</code> &middot; <code>Ranpur: d16</code> &middot; <code>Tank: d20</code> &middot; <code>Artileri: d20 (Ser) / d8 (Per)</code>.</td></tr>
+                      <tr><td><strong>Pengintaian (Vigilance)</strong></td><td><code>1d100 + Medan + Fitur + Cuaca + Waktu + Taktik + Rata-Rata Sifat + Komandan</code>. Pemenang meraih bonus <code>floor(|selisih| / 10)</code>.</td></tr>
+                      <tr><td><strong>ARMOR HELD (Gagal Tembus)</strong></td><td>Jika <code>Piercing &lt; Hardness</code> terhadap baja <code>Medium/Heavy/Super</code>: korban personel <strong>dibagi dua (&times;0,5)</strong>, dadu bonus <code>Explosive</code> <strong>dibatalkan</strong>, dan syok Org baja <code>Heavy/Super</code> <strong>dibatasi -1</strong>.</td></tr>
+                      <tr><td><strong>Bentrokan Memantul &amp; Braket</strong></td><td>Braket knockout ranpur: <code>d3</code>, <code>1+d4</code>, <code>2+d6</code>, <code>3+d8</code> dengan <strong>Batas Armada 15%</strong> per hantaman. Pada bentrokan memantul: tekanan <code>&lt; 0,70</code> = <strong>0 knockout</strong>; <code>&gt;= 0,70</code> dibatasi maks <strong>2 ranpur</strong>.</td></tr>
+                      <tr><td><strong>Jeda Luar Jarak Tembak</strong></td><td>Saat unit berada di luar jarak tembak, pembakaran amunisi dasar, <strong>Kelelahan Tempur</strong> (<code>rd &gt; 5</code> / <code>rd &gt; 12</code>), dan penurunan Org <code>-1</code> unit <code>Green</code> otomatis dijeda.</td></tr>
+                    </tbody>
+                  </table>
+                </section>
+
+                <section class="tradoc-chapter">
+                  <h3 class="tradoc-chapter-title">2. JARAK SUMBU-Y, CUACA IKLIM &amp; KALENDER BEBAS ERA</h3>
+                  <table class="tradoc-table">
+                    <thead><tr><th>Mekanik</th><th>Spesifikasi Teknis</th></tr></thead>
+                    <tbody>
+                      <tr><td><strong>Jarak &amp; Rampas Logistik</strong></td><td><code>Jarak Total = posA + posB</code>. Jarak dasar: <code>Infanteri / Ranpur biasa &lt;= 2</code>, <code>Tank &amp; TD (anti_tank) &lt;= 3</code>, <code>Artileri &lt;= 6</code>, <code>Zombi &lt;= 1</code>. Rampas Logistik dibatasi <code>category !== 'artillery' &amp;&amp; totalDist &lt;= 2</code>.</td></tr>
+                      <tr><td><strong>Kalender Bebas Era</strong></td><td>Menggunakan <code>Date.setUTCFullYear()</code> untuk mendukung tahun <code>-270000</code> (tampil sebagai <code>BCE</code>) hingga <code>+270000</code> termasuk Tahun <code>0</code> dan tahun 2-digit tanpa terpetakan ke 1900.</td></tr>
+                      <tr><td><strong>Cuaca Berbasis Iklim</strong></td><td>Tiap 3 ronde (jika <code>DINAMIS</code> aktif), <code>getClimateWeatherCandidates()</code> menyaring transisi cuaca berdasarkan medan, musim kalender, dan waktu (Fajar/Siang/Senja/Malam).</td></tr>
+                    </tbody>
+                  </table>
+                </section>
+
+                <section class="tradoc-chapter">
+                  <h3 class="tradoc-chapter-title">3. PEMULIHAN BAJA, PERBAIKAN LAPANGAN, DISMOUNT &amp; RALLY</h3>
+                  <ul class="list-disc pl-6 space-y-1 text-sm text-[#232a24]">
+                    <li><strong>Batas Pemulihan Baja Dinamis:</strong> <code>clamp(baseRec + d50 + bonus, 5, 80 + d20)</code> dengan pembulatan probabilistik agar hantaman kecil tetap berpeluang menghasilkan kerusakan permanen (<code>KO</code>).</li>
+                    <li><strong>Tempo Kru Perbaikan:</strong> Berjalan tiap <strong>4 ronde</strong> (<code>round % 4 === 0</code>) jika <code>!isDismounted &amp;&amp; maxArmor &gt; 0 &amp;&amp; Supply &gt;= 25%</code>. Dijeda jika terkena tembakan anti-baja pada ronde sebelumnya. Memulihkan <code>ceil(dN / 2)</code> (maks 2 ranpur, atau 3 dengan Desain Sederhana, maks 35% pool).</li>
+                    <li><strong>Dismount vs. Mundur:</strong> Hanya <code>armored_vehicle</code> non-<code>anti_tank</code> yang turun menjadi infanteri (di <code>Org &lt;= 20%</code> &amp; <code>&gt;= 50%</code> personel). Tank, Artileri SP, dan TD mundur saat 0 ranpur; Artileri tanpa pengawal otomatis mundur.</li>
+                    <li><strong>Rally &amp; Konservasi AAR:</strong> Unit yang Rally kembali dengan lantai <code>max(18, 35% maxOrg)</code> dan menyelaraskan <code>cumPersonnelLostTenths</code>. Pengejaran pasca-perang menjamin <code>START === REM + KIA + WIA + POW + ESC</code> dan <code>Start === Act + Rec(+Abn) + Tow + KO</code>.</li>
+                  </ul>
+                </section>
+              </div>
+
+              <footer class="tradoc-footer">
+                <span>REKAYASA SISTEM IRON DIVISION // SPESIFIKASI TEKNIS</span>
+                <span>TM 9-1005-TECH // AKHIR DOKUMEN</span>
+              </footer>
+            </article>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // --------------------------------------------------------------------------
+  // 4. Reversible data.js Localization
+  // --------------------------------------------------------------------------
+  function backupEnglishDataOnce() {
+    if (dataBackups.saved || !ID.Data) return;
+    const D = ID.Data;
+    const saveObjMap = (src, dst) => {
+      if (!src) return;
+      Object.keys(src).forEach(k => {
+        dst[k] = { name: src[k].name, desc: src[k].desc, trigger: src[k].trigger };
+      });
+    };
+    const saveArrMap = (arr, dst) => {
+      if (!Array.isArray(arr)) return;
+      arr.forEach(item => {
+        if (item && item.id) dst[item.id] = { name: item.name, desc: item.desc };
+      });
+    };
+
+    saveObjMap(D.DEFAULT_TERRAINS, dataBackups.terrains);
+    saveObjMap(D.TERRAIN_FEATURES, dataBackups.features);
+    saveObjMap(D.WEATHER_TYPES, dataBackups.weather);
+    saveObjMap(D.TIME_OF_DAY_TYPES, dataBackups.tod);
+    saveObjMap(D.COMPOUND_HAZARDS, dataBackups.hazards);
+    saveArrMap(D.DEFAULT_TRAITS, dataBackups.traits);
+    saveArrMap(D.DEFAULT_COMMANDER_TRAITS, dataBackups.cmdTraits);
+    saveArrMap(D.TACTICS_DB, dataBackups.tactics);
+    dataBackups.saved = true;
+  }
+
+  function applyDataLocalization(lang) {
+    if (!ID.Data) return;
+    backupEnglishDataOnce();
+    const D = ID.Data;
+    const useId = (lang === 'id');
+
+    const patchObjMap = (target, idMap, enMap) => {
+      if (!target) return;
+      Object.keys(target).forEach(k => {
+        const src = useId ? idMap[k] : enMap[k];
+        if (!src) return;
+        if (src.name !== undefined) target[k].name = src.name;
+        if (src.desc !== undefined) target[k].desc = src.desc;
+        if (src.trigger !== undefined) target[k].trigger = src.trigger;
+      });
+    };
+
+    const patchArr = (arr, idMap, enMap) => {
+      if (!Array.isArray(arr)) return;
+      arr.forEach(item => {
+        if (!item || !item.id) return;
+        const src = useId ? idMap[item.id] : enMap[item.id];
+        if (!src) return;
+        if (src.name !== undefined) item.name = src.name;
+        if (src.desc !== undefined) item.desc = src.desc;
+      });
+    };
+
+    patchObjMap(D.DEFAULT_TERRAINS, ID_TERRAINS, dataBackups.terrains);
+    patchObjMap(ID.state?.terrains, ID_TERRAINS, dataBackups.terrains);
+    patchObjMap(D.TERRAIN_FEATURES, ID_FEATURES, dataBackups.features);
+    patchObjMap(D.WEATHER_TYPES, ID_WEATHER, dataBackups.weather);
+    patchObjMap(D.TIME_OF_DAY_TYPES, ID_TOD, dataBackups.tod);
+    patchObjMap(D.COMPOUND_HAZARDS, ID_HAZARDS, dataBackups.hazards);
+
+    patchArr(D.DEFAULT_TRAITS, ID_TRAITS, dataBackups.traits);
+    patchArr(ID.state?.traits, ID_TRAITS, dataBackups.traits);
+    patchArr(D.DEFAULT_COMMANDER_TRAITS, ID_CMD_TRAITS, dataBackups.cmdTraits);
+    patchArr(ID.state?.commanderTraits, ID_CMD_TRAITS, dataBackups.cmdTraits);
+    patchArr(D.TACTICS_DB, ID_TACTICS, dataBackups.tactics);
+  }
+
+  // --------------------------------------------------------------------------
+  // 5. DOM Translation Engine & Guide Hook
+  // --------------------------------------------------------------------------
   function translateText(raw) {
     if (!raw || typeof raw !== 'string') return raw;
     const trimmed = raw.trim();
     if (!trimmed) return raw;
 
-    // Exact match (preserving leading/trailing whitespace)
     if (Object.prototype.hasOwnProperty.call(EXACT_MAP, trimmed)) {
       return raw.replace(trimmed, EXACT_MAP[trimmed]);
     }
-
-    // Dynamic pattern match
     for (const [regex, replacement] of PATTERN_RULES) {
       if (regex.test(trimmed)) {
         return raw.replace(trimmed, trimmed.replace(regex, replacement));
@@ -327,8 +921,7 @@ window.IronDivision = window.IronDivision || {};
     if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'CODE' || tag === 'TEXTAREA' || tag === 'INPUT') {
       return true;
     }
-    // Never mangle live combat log entries or user-entered unit names
-    if (node.parentElement.closest('#combat-log-container, #log-expand-container, .mil-dogtag-text, .mil-cmd-plate-text')) {
+    if (node.parentElement.closest('#combat-log-container, #log-expand-container, .mil-dogtag-text, .mil-cmd-plate-text, #view-guide')) {
       return true;
     }
     return false;
@@ -338,7 +931,6 @@ window.IronDivision = window.IronDivision || {};
     if (!root) return;
     isApplying = true;
     try {
-      // 1. Walk text nodes
       const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
       let node;
       while ((node = walker.nextNode())) {
@@ -353,7 +945,6 @@ window.IronDivision = window.IronDivision || {};
         }
       }
 
-      // 2. Translate input placeholders
       if (root.querySelectorAll) {
         root.querySelectorAll('input[placeholder], textarea[placeholder]').forEach(el => {
           if (!originalPlaceholderMap.has(el)) {
@@ -371,13 +962,27 @@ window.IronDivision = window.IronDivision || {};
     }
   }
 
+  function hookManualRenderer() {
+    if (origRenderGuide || !ID.Guide || typeof ID.Guide.renderSimulationGuide !== 'function') return;
+    origRenderGuide = ID.Guide.renderSimulationGuide;
+    const wrapped = () => {
+      if (currentLang === 'id') {
+        renderIndonesianManuals();
+      } else {
+        origRenderGuide();
+      }
+    };
+    ID.Guide.renderSimulationGuide = wrapped;
+    window.renderSimulationGuide = wrapped;
+  }
+
   function updateToggleButton() {
     const btn = document.getElementById('btn-lang-toggle');
     if (!btn) return;
-    btn.textContent = currentLang === 'id' ? 'ID 🇮🇩' : 'EN';
+    btn.textContent = currentLang === 'id' ? 'ID' : 'EN';
     btn.title = currentLang === 'id'
-      ? 'Bahasa Indonesia aktif — klik untuk kembali ke Bahasa Inggris (EN)'
-      : 'English active — click to switch UI to Bahasa Indonesia (ID)';
+      ? 'Bahasa Indonesia aktif — klik untuk ganti ke Bahasa Inggris (EN)'
+      : 'English active — click to switch UI & Manuals to Bahasa Indonesia (ID)';
     btn.classList.toggle('border-[#c8a24b]', currentLang === 'id');
     btn.classList.toggle('text-[#e6c873]', currentLang === 'id');
   }
@@ -437,7 +1042,24 @@ window.IronDivision = window.IronDivision || {};
     if (document.documentElement) {
       document.documentElement.lang = currentLang;
     }
+
+    hookManualRenderer();
+    applyDataLocalization(currentLang);
     updateToggleButton();
+
+    // Re-render dynamic views so updated data.js names/descriptions & manuals appear immediately
+    isApplying = true;
+    try {
+      if (ID.UI && typeof ID.UI.renderAll === 'function') {
+        ID.UI.renderAll();
+      }
+      if (ID.Guide && typeof ID.Guide.renderSimulationGuide === 'function') {
+        ID.Guide.renderSimulationGuide();
+      }
+    } finally {
+      isApplying = false;
+    }
+
     if (document.body) {
       applyLanguageToSubtree(document.body, currentLang);
     }
@@ -448,12 +1070,13 @@ window.IronDivision = window.IronDivision || {};
   }
 
   function initI18n() {
-    let saved = 'en';
+    let saved = 'en'; // Default language is English
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored === 'en' || stored === 'id') saved = stored;
     } catch (_) {}
 
+    hookManualRenderer();
     injectLanguageToggleButton();
     startObserver();
     setLanguage(saved);
@@ -465,12 +1088,12 @@ window.IronDivision = window.IronDivision || {};
     setTimeout(initI18n, 40);
   }
 
-  // Public API
   ID.I18n = {
     setLanguage,
     toggleLanguage,
     getLanguage: () => currentLang,
     translateText,
+    renderIndonesianManuals,
     EXACT_MAP
   };
 
