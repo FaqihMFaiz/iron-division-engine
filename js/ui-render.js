@@ -354,7 +354,7 @@ window.IronDivision = window.IronDivision || {};
 
     const collapsedSum = document.getElementById('theatre-collapsed-summary');
     if (collapsedSum) {
-      collapsedSum.textContent = `${simClockStr} HRS · ${dayOrdinal} (${todPhaseLabel}) · ${(terr.name || 'Plains').toUpperCase()} · ${(weath.name || 'Sunny').toUpperCase()}`;
+      collapsedSum.textContent = `CLOCK // ${simClockStr} HRS · ${dayOrdinal} (${todPhaseLabel})  |  TERR // ${(terr.name || 'Plains').toUpperCase()} (${(feat.name || 'Normal').toUpperCase()})  |  METEO // ${(weath.name || 'Sunny').toUpperCase()}${state.environment.dynamicWeather ? ' [DYN]' : ''}`;
     }
   }
 
@@ -851,8 +851,14 @@ window.IronDivision = window.IronDivision || {};
     if (inpB && document.activeElement !== inpB) inpB.value = nameB;
     const yLblA = document.getElementById('yaxis-label-a');
     const yLblB = document.getElementById('yaxis-label-b');
-    if (yLblA) yLblA.textContent = `◄ ${nameA}`;
-    if (yLblB) yLblB.textContent = `${nameB} ►`;
+    if (yLblA) {
+      yLblA.textContent = `◄ ${formatTacticalSectorSideLabel(nameA, 18)}`;
+      yLblA.title = nameA;
+    }
+    if (yLblB) {
+      yLblB.textContent = `${formatTacticalSectorSideLabel(nameB, 18)} ►`;
+      yLblB.title = nameB;
+    }
 
     if (phEl) {
       const atk = state.battle.attackerSide;
@@ -896,6 +902,38 @@ window.IronDivision = window.IronDivision || {};
    * with reversed-triangle markers (Blue = A, Red = B, Purple = Both),
    * themed hover tooltips, and an off-line rear-staging strip for routed units.
    */
+  function formatTacticalSectorSideLabel(rawName, maxLen = 19) {
+    const clean = String(rawName || '').trim().toUpperCase();
+    if (!clean) return 'SIDE';
+    if (clean.length <= maxLen) return clean;
+
+    const parenMatch = clean.match(/\(([^)]+)\)/);
+    const baseNoParen = clean.replace(/\s*\([^)]*\)\s*/g, ' ').replace(/\s{2,}/g, ' ').trim();
+    if (parenMatch) {
+      const abbr = parenMatch[1].trim();
+      if (abbr.length > 0 && abbr.length <= 6) {
+        const strippedBase = baseNoParen
+          .replace(/^(U\.S\.(?:A\.?)?|US|UK|GER|USSR|IMP\.?)\s+/i, '')
+          .replace(/\s+(DIV|DIVISION|CORPS|ARMY|REGIMENT|BRIGADE|BATTALION)$/i, '')
+          .trim();
+        if (strippedBase && /^\d+(ST|ND|RD|TH)?\b/.test(strippedBase)) {
+          const candidate = `${strippedBase} (${abbr})`;
+          if (candidate.length <= maxLen) return candidate;
+        }
+        return abbr;
+      }
+    }
+
+    const words = (baseNoParen || clean).split(/\s+/);
+    let out = '';
+    for (const w of words) {
+      const next = out ? `${out} ${w}` : w;
+      if (next.length <= maxLen) out = next;
+      else break;
+    }
+    return out || (baseNoParen || clean).slice(0, maxLen).trim();
+  }
+
   function renderTacticalSectorCanvas() {
     const state = ID.state;
     const wrap = document.getElementById('tactical-sector-canvas');
@@ -1061,8 +1099,8 @@ window.IronDivision = window.IronDivision || {};
         ${terrainSvg}
         ${fireLinesSvg}
         ${countersSvg}
-        <text x="8" y="13" fill="#7db3df" font-family="IBM Plex Mono, monospace" font-size="8.5" font-weight="700" opacity="0.85">${escapeHtml(nameA.slice(0, 22).toUpperCase())}</text>
-        <text x="${W - 8}" y="13" text-anchor="end" fill="#e69894" font-family="IBM Plex Mono, monospace" font-size="8.5" font-weight="700" opacity="0.85">${escapeHtml(nameB.slice(0, 22).toUpperCase())}</text>
+        <text x="8" y="13" fill="#7db3df" font-family="IBM Plex Mono, monospace" font-size="8" font-weight="700" letter-spacing="0.02em" opacity="0.9"><title>${escapeHtml(nameA)}</title>${escapeHtml(formatTacticalSectorSideLabel(nameA, 19))}</text>
+        <text x="${W - 8}" y="13" text-anchor="end" fill="#e69894" font-family="IBM Plex Mono, monospace" font-size="8" font-weight="700" letter-spacing="0.02em" opacity="0.9"><title>${escapeHtml(nameB)}</title>${escapeHtml(formatTacticalSectorSideLabel(nameB, 19))}</text>
         <text x="${midX}" y="${H_SVG - 6}" text-anchor="middle" fill="#c8a24b" font-family="IBM Plex Mono, monospace" font-size="8" font-weight="700" opacity="0.9">CONTACT LINE (0)</text>
       </svg>
     `;
@@ -1591,16 +1629,27 @@ window.IronDivision = window.IronDivision || {};
 
     const tbody = document.getElementById('terrain-matrix-tbody');
     if (tbody) {
+      const fmtMod = (val, suffix = '%') => {
+        const n = Number(val || 0);
+        if (n > 0) return `<span class="text-[#8fb888] font-semibold">+${n}${suffix}</span>`;
+        if (n < 0) return `<span class="text-[#d47a75] font-semibold">${n}${suffix}</span>`;
+        return `<span class="text-[#9ca69a]">0${suffix}</span>`;
+      };
+      const fmtSup = (val) => {
+        const n = Number(val || 0);
+        if (n > 0) return `<span class="text-[#d47a75] font-semibold">+${n}</span>`;
+        return `<span class="text-[#9ca69a]">+0</span>`;
+      };
       tbody.innerHTML = Object.keys(state.terrains || {}).map(k => {
         const t = state.terrains[k];
         return `
           <tr class="hover:bg-slate-950/60">
             <td class="py-2 px-2 font-bold text-white">${t.name} ${t.isUrban ? '<span class="text-[10px] text-amber-400">(Urban)</span>' : ''}</td>
-            <td class="py-2 px-2 font-mono">${t.infAtk}% / ${t.infDef}%</td>
-            <td class="py-2 px-2 font-mono">${t.avAtk}% / ${t.avDef}%</td>
-            <td class="py-2 px-2 font-mono">${t.tankAtk}% / ${t.tankDef}%</td>
-            <td class="py-2 px-2 font-mono">${t.artAtk}% / ${t.artDef}%</td>
-            <td class="py-2 px-2 font-mono">Vig ${t.vigMod >= 0 ? '+' : ''}${t.vigMod} | Sup +${t.supplyDrain}</td>
+            <td class="py-2 px-2 font-mono">${fmtMod(t.infAtk)} <span class="text-[#6c756b]">/</span> ${fmtMod(t.infDef)}</td>
+            <td class="py-2 px-2 font-mono">${fmtMod(t.avAtk)} <span class="text-[#6c756b]">/</span> ${fmtMod(t.avDef)}</td>
+            <td class="py-2 px-2 font-mono">${fmtMod(t.tankAtk)} <span class="text-[#6c756b]">/</span> ${fmtMod(t.tankDef)}</td>
+            <td class="py-2 px-2 font-mono">${fmtMod(t.artAtk)} <span class="text-[#6c756b]">/</span> ${fmtMod(t.artDef)}</td>
+            <td class="py-2 px-2 font-mono">Vig ${fmtMod(t.vigMod, '')} <span class="text-[#6c756b]">|</span> Sup ${fmtSup(t.supplyDrain)}</td>
             <td class="py-2 px-2 font-mono text-amber-300">Dig ${t.maxEntrench ?? 4} | Cap ${t.outnumberCap ?? 100}%</td>
           </tr>
         `;

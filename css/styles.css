@@ -868,17 +868,17 @@ body.mil-ui ::selection {
 
 .paper-sitrep-panel {
   position: relative;
-  background-color: #ebe5d5 !important;
-  color: #181c19 !important;
-  border: 1px solid #c4bca8 !important;
+  background-color: #d2c8b0 !important;
+  color: #161a17 !important;
+  border: 1px solid #9f957d !important;
   box-shadow:
-    inset 0 0 0 2px #f4f1e6,
-    inset 0 0 0 3px #cfc7b2,
-    4px 4px 0 0 #ded7c3,
-    4px 4px 0 1px #b5ad98,
-    8px 8px 0 0 #cfc7b2,
-    8px 8px 0 1px #9e9682,
-    0 10px 24px rgba(0, 0, 0, 0.4) !important;
+    inset 0 0 0 2px #dcd3be,
+    inset 0 0 0 3px #b4aa91,
+    4px 4px 0 0 #bfb59c,
+    4px 4px 0 1px #928870,
+    8px 8px 0 0 #ada38a,
+    8px 8px 0 1px #7d745e,
+    0 10px 24px rgba(0, 0, 0, 0.45) !important;
   margin-right: 9px;
   margin-bottom: 9px;
 }
@@ -890,7 +890,7 @@ body.mil-ui ::selection {
 }
 
 .paper-sitrep-panel select {
-  background-color: #faf8f2 !important;
+  background-color: #dfd7c2 !important;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none' stroke='%232f3b2e' stroke-width='1.8' stroke-linecap='square'%3E%3Cpath d='M2.5 4.25L6 7.75L9.5 4.25'/%3E%3C/svg%3E") !important;
   border: 1px solid #8f8773 !important;
   color: #181c19 !important;
@@ -899,7 +899,7 @@ body.mil-ui ::selection {
 }
 
 .paper-sitrep-panel select:hover {
-  background-color: #ffffff !important;
+  background-color: #e8e0cc !important;
   border-color: #2f3b2e !important;
 }
 
@@ -935,7 +935,7 @@ body.mil-ui ::selection {
 }
 
 .paper-sitrep-btn-muted {
-  background-color: #ded7c3;
+  background-color: #c2b89f;
   border: 1px solid #9e9682;
   color: #232924;
 }
@@ -946,10 +946,10 @@ body.mil-ui ::selection {
 }
 
 .paper-sitrep-sheet {
-  background-color: #f4f1e6 !important;
-  color: #181c19 !important;
-  border: 1px solid #bfb7a2 !important;
-  border-left: 1px solid #bfb7a2 !important;
+  background-color: #c8bea4 !important;
+  color: #161a17 !important;
+  border: 1px solid #9c9279 !important;
+  border-left: 1px solid #9c9279 !important;
   padding: 6px;
 }
 
@@ -966,9 +966,9 @@ body.mil-ui ::selection {
 }
 
 .paper-sitrep-row {
-  background-color: #faf8f2;
-  color: #1a201b;
-  border: 1px solid #cfc7b2;
+  background-color: #dad1bc;
+  color: #161b17;
+  border: 1px solid #b3a990;
   font-family: 'IBM Plex Mono', monospace;
   font-size: 11px;
   line-height: 1.45;
@@ -976,26 +976,26 @@ body.mil-ui ::selection {
 }
 
 .paper-sitrep-rolls {
-  border-color: #cfc7b2;
-  background-color: #faf8f2;
+  border-color: #b3a990;
+  background-color: #dad1bc;
 }
 
 .paper-sitrep-damage {
-  border-color: #cfa6a3;
-  background-color: #f7ecea;
-  color: #2b1413;
+  border-color: #b58985;
+  background-color: #dbc2bd;
+  color: #261110;
 }
 
 .paper-sitrep-armor {
-  border-color: #cfb982;
-  background-color: #f6f0df;
-  color: #261d0d;
+  border-color: #b59e67;
+  background-color: #dbd0b4;
+  color: #241b0b;
 }
 
 .paper-sitrep-support {
-  border-color: #a6bdd1;
-  background-color: #eaf0f5;
-  color: #132230;
+  border-color: #8ba3b8;
+  background-color: #c6d2d9;
+  color: #11202d;
 }
 
 .paper-sitrep-error {
@@ -2109,4 +2109,27 @@ body.mil-ui ::selection {
 .manila-folder-body .tradoc-doc {
   margin-top: 0 !important;
   border-top: none !important;
+}
+
+
+/* --------------------------------------------------------------------------
+   ORBAT Category Filter Pills
+   -------------------------------------------------------------------------- */
+.mil-ui button.orbat-filter-pill {
+  background-color: #161b17 !important;
+  border: 1px solid #323c34 !important;
+  color: #9ba69a !important;
+  letter-spacing: 0.08em;
+}
+
+.mil-ui button.orbat-filter-pill:hover {
+  background-color: #212922 !important;
+  color: #e7ece4 !important;
+  border-color: #5b695d !important;
+}
+
+.mil-ui button.orbat-filter-pill.is-active {
+  background-color: #c8a24b !important;
+  border-color: #e6c873 !important;
+  color: #0d100d !important;
 }

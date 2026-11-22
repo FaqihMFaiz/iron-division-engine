@@ -107,19 +107,19 @@
 
     <!-- ==================== TAB 1: BATTLEFIELD ==================== -->
     <section id="view-battlefield" class="space-y-5">
-      <!-- Theatre Controls Bar (Collapsible, Expanded by Default) -->
-      <div class="mil-monitor-frame p-3.5 sm:p-4">
-        <div class="flex flex-wrap items-center justify-between gap-2 pb-2.5 mb-2.5 border-b border-slate-800/80">
-          <div class="flex items-center gap-2.5 min-w-0">
-            <span class="font-mono text-[11px] font-bold uppercase tracking-widest text-[#c8a24b]">THEATRE COMMAND &amp; ENVIRONMENT</span>
-            <span id="theatre-collapsed-summary" class="hidden font-mono text-[10.5px] uppercase tracking-wider text-[#9ca69a] truncate"></span>
+      <!-- Theatre Controls Bar (Collapsible, Collapsed by Default for Above-the-Fold View) -->
+      <div class="mil-monitor-frame px-3.5 py-2.5 sm:px-4">
+        <div id="theatre-bar-header" class="flex flex-wrap items-center justify-between gap-2 border-slate-800/80">
+          <div class="flex items-center gap-2.5 min-w-0 flex-1">
+            <span class="font-mono text-[11px] font-bold uppercase tracking-widest text-[#c8a24b] shrink-0">THEATRE //</span>
+            <span id="theatre-collapsed-summary" class="font-mono text-[10.5px] uppercase tracking-wider text-[#c8d1c7] truncate"></span>
           </div>
-          <button type="button" id="btn-toggle-theatre" onclick="toggleTheatreBar()" class="mil-btn px-2.5 py-1 bg-[#1c221d] hover:bg-[#272f29] border border-[#3a453c] text-[#c8d1c7] font-mono text-[10px] font-bold">
-            ▲ COLLAPSE
+          <button type="button" id="btn-toggle-theatre" onclick="toggleTheatreBar()" class="mil-btn px-2.5 py-1 bg-[#1c221d] hover:bg-[#272f29] border border-[#3a453c] text-[#c8d1c7] font-mono text-[10px] font-bold shrink-0">
+            ▼ EXPAND
           </button>
         </div>
 
-        <div id="theatre-controls-body">
+        <div id="theatre-controls-body" class="hidden">
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
           <!-- Terrain Selector -->
           <div>
@@ -464,7 +464,8 @@
           </div>
           <div id="box-unit-editor">
           <input type="hidden" id="unit-edit-id">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+            <div class="sm:col-span-2 text-[10px] font-mono font-bold uppercase tracking-widest text-[#9ca69a] border-b border-slate-800/80 pb-1">01 // IDENTITY &amp; CLASSIFICATION</div>
             <div class="sm:col-span-2">
               <label class="block text-slate-400 mb-1 font-mono uppercase">Unit Name</label>
               <input type="text" id="unit-name" placeholder="e.g. 1st Panzer Grenadiers" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
@@ -488,47 +489,7 @@
                 <option value="super">Super Heavy Armor (100% Hard / 0% Soft)</option>
               </select>
             </div>
-            <div>
-              <label class="block text-slate-400 mb-1 font-mono uppercase">Total Personnel (HP)</label>
-              <input type="number" id="unit-personnel" min="10" max="50000" value="1000" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
-            </div>
-            <div>
-              <label class="block text-slate-400 mb-1 font-mono uppercase">Max Organization (HP)</label>
-              <input type="number" id="unit-org" min="10" max="500" value="60" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
-            </div>
-            <div>
-              <label class="block text-slate-400 mb-1 font-mono uppercase">Combat-Ready Armor Vehicles</label>
-              <input type="number" id="unit-armor-count" min="0" max="1000" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
-            </div>
-            <div>
-              <label class="block text-slate-400 mb-1 font-mono uppercase">Max Supply Stat</label>
-              <input type="number" id="unit-supply" min="10" max="500" value="40" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
-            </div>
-            <div>
-              <label class="block text-slate-400 mb-1 font-mono uppercase">Soft Attack</label>
-              <input type="number" id="unit-soft-atk" min="0" max="500" value="18" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
-            </div>
-            <div>
-              <label class="block text-slate-400 mb-1 font-mono uppercase">Hard Attack</label>
-              <input type="number" id="unit-hard-atk" min="0" max="500" value="6" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
-            </div>
-            <div>
-              <label class="block text-slate-400 mb-1 font-mono uppercase">Defense Stat</label>
-              <input type="number" id="unit-defense" min="0" max="500" value="20" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
-            </div>
-            <div>
-              <label class="block text-slate-400 mb-1 font-mono uppercase">Piercing</label>
-              <input type="number" id="unit-piercing" min="0" max="500" value="8" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
-            </div>
-            <div>
-              <label class="block text-slate-400 mb-1 font-mono uppercase">Hardness</label>
-              <input type="number" id="unit-hardness" min="0" max="500" value="4" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
-            </div>
-            <div>
-              <label class="block text-slate-400 mb-1 font-mono uppercase" title="Base % added to d50 casualty &amp; vehicle recovery rolls (0–95)">Base Recovery (%)</label>
-              <input type="number" id="unit-recovery" min="0" max="95" value="50" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
-            </div>
-            <div>
+            <div class="sm:col-span-2">
               <label class="block text-slate-400 mb-1 font-mono uppercase">Experience Tier</label>
               <select id="unit-exp" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-white">
                 <option value="Green">Green (-10% Atk/Def, -10 Ret, -1 Org/t, d2 Repair)</option>
@@ -538,6 +499,52 @@
                 <option value="Veteran">Veteran (+40% Atk/Def, +2 Org/t, +10 Rec/Ret/Pur, d4 Repair)</option>
                 <option value="Elite">Elite (+50% Atk/Def, +3 Org/t, +20 Rec/Ret/Pur, d5 Repair)</option>
               </select>
+            </div>
+
+            <div class="sm:col-span-2 text-[10px] font-mono font-bold uppercase tracking-widest text-[#9ca69a] border-b border-slate-800/80 pb-1 pt-2">02 // OFFENSE &amp; PENETRATION</div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Soft Attack</label>
+              <input type="number" id="unit-soft-atk" min="0" max="500" value="18" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Hard Attack</label>
+              <input type="number" id="unit-hard-atk" min="0" max="500" value="6" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Piercing</label>
+              <input type="number" id="unit-piercing" min="0" max="500" value="8" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
+            </div>
+
+            <div class="sm:col-span-2 text-[10px] font-mono font-bold uppercase tracking-widest text-[#9ca69a] border-b border-slate-800/80 pb-1 pt-2">03 // DEFENSE &amp; ARMOR</div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Defense Stat</label>
+              <input type="number" id="unit-defense" min="0" max="500" value="20" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Hardness</label>
+              <input type="number" id="unit-hardness" min="0" max="500" value="4" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Combat-Ready Armor Vehicles</label>
+              <input type="number" id="unit-armor-count" min="0" max="1000" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
+            </div>
+
+            <div class="sm:col-span-2 text-[10px] font-mono font-bold uppercase tracking-widest text-[#9ca69a] border-b border-slate-800/80 pb-1 pt-2">04 // STRENGTH, LOGISTICS &amp; RECOVERY</div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Total Personnel (HP)</label>
+              <input type="number" id="unit-personnel" min="10" max="50000" value="1000" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Max Organization (HP)</label>
+              <input type="number" id="unit-org" min="10" max="500" value="60" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Max Supply Stat</label>
+              <input type="number" id="unit-supply" min="10" max="500" value="40" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase" title="Base % added to d50 casualty &amp; vehicle recovery rolls (0–95)">Base Recovery (%)</label>
+              <input type="number" id="unit-recovery" min="0" max="95" value="50" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-white">
             </div>
           </div>
 
@@ -608,6 +615,7 @@
           <div id="box-trait-editor">
           <input type="hidden" id="trait-edit-id">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+            <div class="sm:col-span-2 text-[10px] font-mono font-bold uppercase tracking-widest text-[#9ca69a] border-b border-slate-800/80 pb-1">01 // IDENTITY</div>
             <div class="sm:col-span-2">
               <label class="block text-slate-400 mb-1 font-mono uppercase">Trait Name</label>
               <input type="text" id="trait-name" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-white">
@@ -616,6 +624,8 @@
               <label class="block text-slate-400 mb-1 font-mono uppercase">Description</label>
               <input type="text" id="trait-desc" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-white">
             </div>
+
+            <div class="sm:col-span-2 text-[10px] font-mono font-bold uppercase tracking-widest text-[#9ca69a] border-b border-slate-800/80 pb-1 pt-2">02 // OFFENSE MODIFIERS</div>
             <div>
               <label class="block text-slate-400 mb-1 font-mono uppercase">Attack (%)</label>
               <input type="number" id="trait-atk-pct" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
@@ -623,14 +633,6 @@
             <div>
               <label class="block text-slate-400 mb-1 font-mono uppercase">Attack (Flat)</label>
               <input type="number" id="trait-atk-flat" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
-            </div>
-            <div>
-              <label class="block text-slate-400 mb-1 font-mono uppercase">Defense (%)</label>
-              <input type="number" id="trait-def-pct" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
-            </div>
-            <div>
-              <label class="block text-slate-400 mb-1 font-mono uppercase">Defense (Flat)</label>
-              <input type="number" id="trait-def-flat" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
             </div>
             <div>
               <label class="block text-slate-400 mb-1 font-mono uppercase">Soft Attack (Flat)</label>
@@ -645,9 +647,29 @@
               <input type="number" id="trait-pierce-flat" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
             </div>
             <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Enemy Def Malus</label>
+              <input type="number" id="trait-enemy-def-malus" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Enemy Hardness Malus</label>
+              <input type="number" id="trait-enemy-hard-malus" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+            </div>
+
+            <div class="sm:col-span-2 text-[10px] font-mono font-bold uppercase tracking-widest text-[#9ca69a] border-b border-slate-800/80 pb-1 pt-2">03 // DEFENSE &amp; ARMOR</div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Defense (%)</label>
+              <input type="number" id="trait-def-pct" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1 font-mono uppercase">Defense (Flat)</label>
+              <input type="number" id="trait-def-flat" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+            </div>
+            <div class="sm:col-span-2">
               <label class="block text-slate-400 mb-1 font-mono uppercase">Hardness (Flat)</label>
               <input type="number" id="trait-hardness-flat" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
             </div>
+
+            <div class="sm:col-span-2 text-[10px] font-mono font-bold uppercase tracking-widest text-[#9ca69a] border-b border-slate-800/80 pb-1 pt-2">04 // LOGISTICS, RECON &amp; RECOVERY</div>
             <div>
               <label class="block text-slate-400 mb-1 font-mono uppercase">Vigilance Roll</label>
               <input type="number" id="trait-vigilance" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
@@ -680,14 +702,8 @@
               <label class="block text-slate-400 mb-1 font-mono uppercase">Retreat Bonus</label>
               <input type="number" id="trait-retreat-bonus" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
             </div>
-            <div>
-              <label class="block text-slate-400 mb-1 font-mono uppercase">Enemy Def Malus</label>
-              <input type="number" id="trait-enemy-def-malus" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
-            </div>
-            <div>
-              <label class="block text-slate-400 mb-1 font-mono uppercase">Enemy Hardness Malus</label>
-              <input type="number" id="trait-enemy-hard-malus" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
-            </div>
+
+            <div class="sm:col-span-2 text-[10px] font-mono font-bold uppercase tracking-widest text-[#9ca69a] border-b border-slate-800/80 pb-1 pt-2">05 // TERRAIN &amp; TARGETING SYNERGY</div>
             <div>
               <label class="block text-slate-400 mb-1 font-mono uppercase">Terrain Synergy</label>
               <select id="trait-terrain-target" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1.5 text-white">

@@ -461,6 +461,7 @@ window.IronDivision = window.IronDivision || {};
     H.addLog('rolls', `[RST] Current battle fully reset to Round 1. All deployed formations restored to 100% strength.`);
     H.showToast('Battle reset to Round 1.', 'success');
 
+    setTheatreBarCollapsed(true);
     if (ID.UI) {
       ID.UI.renderBattlefield(true);
     }
@@ -570,6 +571,7 @@ window.IronDivision = window.IronDivision || {};
 
     H.addLog('rolls', cfg.loadLog);
 
+    setTheatreBarCollapsed(true);
     if (ID.UI) {
       ID.UI.renderBattlefield(true);
     }
@@ -1158,18 +1160,31 @@ window.IronDivision = window.IronDivision || {};
     }
   }
 
-  function toggleTheatreBar() {
+  function setTheatreBarCollapsed(collapsed) {
     const body = document.getElementById('theatre-controls-body');
     const btn = document.getElementById('btn-toggle-theatre');
+    const header = document.getElementById('theatre-bar-header');
     const collapsedSummary = document.getElementById('theatre-collapsed-summary');
     if (!body) return;
-    const isNowHidden = body.classList.toggle('hidden');
+    body.classList.toggle('hidden', !!collapsed);
     if (btn) {
-      btn.textContent = isNowHidden ? '▼ EXPAND' : '▲ COLLAPSE';
+      btn.textContent = collapsed ? '▼ EXPAND' : '▲ COLLAPSE';
     }
     if (collapsedSummary) {
-      collapsedSummary.classList.toggle('hidden', !isNowHidden);
+      collapsedSummary.classList.toggle('hidden', !collapsed);
     }
+    if (header) {
+      header.classList.toggle('pb-2.5', !collapsed);
+      header.classList.toggle('mb-2.5', !collapsed);
+      header.classList.toggle('border-b', !collapsed);
+    }
+  }
+
+  function toggleTheatreBar() {
+    const body = document.getElementById('theatre-controls-body');
+    if (!body) return;
+    const willCollapse = !body.classList.contains('hidden');
+    setTheatreBarCollapsed(willCollapse);
   }
 
   function toggleGMMode() {
