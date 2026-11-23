@@ -1372,6 +1372,30 @@
   <script src="js/i18n-id.js"></script>
 
 
+
+  <!-- ==================== MILITARY COMMAND CONFIRMATION MODAL ==================== -->
+  <div id="confirm-modal" onclick="if(event.target===this) closeConfirmModal()" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title">
+    <div class="mil-monitor-frame w-full max-w-md p-4 sm:p-5 shadow-2xl space-y-3.5 border-t-2 border-[#c8a24b]">
+      <div class="flex items-start justify-between gap-2 border-b border-slate-800 pb-2.5">
+        <div>
+          <span id="confirm-modal-kicker" class="block font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-[#c8a24b]">COMMAND CONFIRMATION // VERIFY ORDER</span>
+          <h3 id="confirm-modal-title" class="text-base font-bold uppercase tracking-wide text-[#f0f4ee] mt-0.5" style="font-family:'Chakra Petch',sans-serif;">Confirm Action</h3>
+        </div>
+        <button type="button" onclick="closeConfirmModal()" class="text-[#a6b2a4] hover:text-[#e69894] font-mono text-xs px-1.5 py-0.5 border border-[#323c33] bg-[#141915]" title="Cancel (Esc)">[X]</button>
+      </div>
+      <p id="confirm-modal-body" class="text-xs sm:text-[13px] leading-relaxed text-[#d7ded6] font-sans"></p>
+      <div id="confirm-modal-hint" class="px-2.5 py-1.5 bg-[#121613] border-l-2 border-[#c8a24b] font-mono text-[10.5px] text-[#c8b98a]"></div>
+      <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+        <button type="button" id="confirm-modal-cancel" onclick="closeConfirmModal()" class="mil-btn px-3.5 py-1.5 bg-[#1c221d] hover:bg-[#272f29] border border-[#3a453c] text-[#c8d1c7] font-mono text-xs font-bold">
+          CANCEL
+        </button>
+        <button type="button" id="confirm-modal-ok" onclick="confirmModalAccept()" class="mil-btn px-4 py-1.5 bg-[#c8a24b] hover:bg-[#d8b45c] border border-[#e6c873] text-[#0d100d] font-mono text-xs font-bold">
+          CONFIRM
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- ==================== INTERACTIVE GUIDED UI TUTORIAL OVERLAY ==================== -->
   <div id="ui-tour-overlay" onclick="if(event.target===this) endUITutorial()" class="ui-tour-overlay hidden" role="dialog" aria-modal="true" aria-label="Interactive UI Tutorial">
     <div id="ui-tour-spotlight" class="ui-tour-spotlight"></div>

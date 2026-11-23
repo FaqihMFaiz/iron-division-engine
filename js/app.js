@@ -416,8 +416,21 @@ window.IronDivision = window.IronDivision || {};
 
   function resetCurrentBattle(skipConfirm = false) {
     stopAutoRun();
-    if (!skipConfirm && typeof window.confirm === 'function' && ID.state.battle.round > 1) {
-      if (!window.confirm('Reset the current battle back to Round 1? (You can press Ctrl+Z to undo.)')) return;
+    if (!skipConfirm && ID.state.battle.round > 1 && document.getElementById('confirm-modal')) {
+      const isId = ID.I18n && ID.I18n.getLanguage && ID.I18n.getLanguage() === 'id';
+      openConfirmModal({
+        kicker: isId ? 'KONFIRMASI KOMANDO // VERIFIKASI PERINTAH' : 'COMMAND CONFIRMATION // VERIFY ORDER',
+        title: isId ? 'Ulang Pertempuran ke Ronde 1?' : 'Reset Battle to Round 1?',
+        message: isId
+          ? 'Seluruh satuan yang dikerahkan akan dipulihkan ke kekuatan 100% dan log tempur saat ini akan diulang dari Ronde 1.'
+          : 'All deployed formations will be restored to 100% starting strength and the battle clock will reset to Round 1.',
+        hint: isId ? 'Catatan: Komandan tetap bisa menekan Ctrl+Z untuk membatalkan.' : 'Tip: You can press Ctrl+Z immediately afterward to undo this reset.',
+        cancelLabel: isId ? 'BATAL' : 'CANCEL',
+        confirmLabel: isId ? 'YA, ULANG RONDE 1' : 'RESET TO ROUND 1',
+        danger: false,
+        onConfirm: () => resetCurrentBattle(true)
+      });
+      return;
     }
     if (ID.Combat && typeof ID.Combat.pushHistorySnapshot === 'function') {
       ID.Combat.pushHistorySnapshot();
@@ -476,8 +489,21 @@ window.IronDivision = window.IronDivision || {};
   function emptyBattlefield(skipConfirm = false) {
     stopAutoRun();
     const totalUnits = (ID.state.battle.sideA.units?.length || 0) + (ID.state.battle.sideB.units?.length || 0);
-    if (!skipConfirm && typeof window.confirm === 'function' && totalUnits > 0) {
-      if (!window.confirm('Clear all deployed units from both sides? (You can press Ctrl+Z to undo.)')) return;
+    if (!skipConfirm && totalUnits > 0 && document.getElementById('confirm-modal')) {
+      const isId = ID.I18n && ID.I18n.getLanguage && ID.I18n.getLanguage() === 'id';
+      openConfirmModal({
+        kicker: isId ? 'KONFIRMASI KOMANDO // TINDAKAN BERISIKO' : 'COMMAND CONFIRMATION // DESTRUCTIVE ACTION',
+        title: isId ? 'Kosongkan Medan Tempur?' : 'Clear All Deployed Units?',
+        message: isId
+          ? 'Seluruh satuan dari Pihak A dan Pihak B akan dihapus dari medan tempur saat ini.'
+          : 'All deployed formations on both Side A and Side B will be removed from the battlefield.',
+        hint: isId ? 'Catatan: Komandan tetap bisa menekan Ctrl+Z untuk membatalkan.' : 'Tip: You can press Ctrl+Z immediately afterward to restore your formations.',
+        cancelLabel: isId ? 'BATAL' : 'CANCEL',
+        confirmLabel: isId ? 'YA, KOSONGKAN' : 'CLEAR BATTLEFIELD',
+        danger: true,
+        onConfirm: () => emptyBattlefield(true)
+      });
+      return;
     }
     if (ID.Combat && typeof ID.Combat.pushHistorySnapshot === 'function') {
       ID.Combat.pushHistorySnapshot();
@@ -1173,6 +1199,56 @@ window.IronDivision = window.IronDivision || {};
     }
   }
 
+  let pendingConfirmCallback = null;
+
+  function openConfirmModal(opts = {}) {
+    const modal = document.getElementById('confirm-modal');
+    if (!modal) {
+      if (typeof opts.onConfirm === 'function') opts.onConfirm();
+      return;
+    }
+    const kickerEl = document.getElementById('confirm-modal-kicker');
+    const titleEl = document.getElementById('confirm-modal-title');
+    const bodyEl = document.getElementById('confirm-modal-body');
+    const hintEl = document.getElementById('confirm-modal-hint');
+    const cancelEl = document.getElementById('confirm-modal-cancel');
+    const okEl = document.getElementById('confirm-modal-ok');
+
+    if (kickerEl && opts.kicker) kickerEl.textContent = opts.kicker;
+    if (titleEl) titleEl.textContent = opts.title || 'Confirm Action';
+    if (bodyEl) bodyEl.textContent = opts.message || '';
+    if (hintEl) {
+      hintEl.textContent = opts.hint || '';
+      hintEl.classList.toggle('hidden', !opts.hint);
+    }
+    if (cancelEl) cancelEl.textContent = opts.cancelLabel || 'CANCEL';
+    if (okEl) {
+      okEl.textContent = opts.confirmLabel || 'CONFIRM';
+      okEl.className = opts.danger
+        ? 'mil-btn px-4 py-1.5 bg-[#2a1a1a] hover:bg-[#3d2323] border border-[#9e5854] text-[#f2c4c2] font-mono text-xs font-bold'
+        : 'mil-btn px-4 py-1.5 bg-[#c8a24b] hover:bg-[#d8b45c] border border-[#e6c873] text-[#0d100d] font-mono text-xs font-bold';
+    }
+
+    pendingConfirmCallback = typeof opts.onConfirm === 'function' ? opts.onConfirm : null;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+
+  function closeConfirmModal() {
+    pendingConfirmCallback = null;
+    const modal = document.getElementById('confirm-modal');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+  }
+
+  function confirmModalAccept() {
+    const fn = pendingConfirmCallback;
+    closeConfirmModal();
+    if (typeof fn === 'function') fn();
+  }
+
   function setTheatreBarCollapsed(collapsed) {
     const body = document.getElementById('theatre-controls-body');
     const btn = document.getElementById('btn-toggle-theatre');
@@ -1427,6 +1503,9 @@ window.IronDivision = window.IronDivision || {};
     updateSideName,
     openWelcomeModal,
     closeWelcomeModal,
+    openConfirmModal,
+    closeConfirmModal,
+    confirmModalAccept,
     toggleSectionBox,
     filterOrbatTraits,
     toggleTheatreBar,
@@ -1506,6 +1585,9 @@ window.IronDivision = window.IronDivision || {};
     updateSideName,
     openWelcomeModal,
     closeWelcomeModal,
+    openConfirmModal,
+    closeConfirmModal,
+    confirmModalAccept,
     toggleSectionBox,
     filterOrbatTraits,
     toggleTheatreBar,
@@ -1530,6 +1612,11 @@ window.IronDivision = window.IronDivision || {};
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target && e.target.isContentEditable)) return;
 
     // Skip if any modal or tutorial overlay is open
+    const confirmOpen = document.querySelector('#confirm-modal:not(.hidden)');
+    if (confirmOpen) {
+      if (e.key === 'Escape') { e.preventDefault(); closeConfirmModal(); }
+      return;
+    }
     const openOverlay = document.querySelector('#welcome-modal:not(.hidden), #battle-modal:not(.hidden), #log-expand-modal:not(.hidden), #cmd-trait-modal:not(.hidden), #ui-tour-overlay:not(.hidden)');
     if (openOverlay) return;
 
