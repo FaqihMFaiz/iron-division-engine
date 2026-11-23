@@ -471,11 +471,13 @@ window.IronDivision = window.IronDivision || {};
     const container = document.getElementById('view-guide');
     if (!container) return;
     const isTech = document.getElementById('guide-tab-tech')?.classList.contains('is-active');
+    const isCode = document.getElementById('guide-tab-code')?.classList.contains('is-active');
+    const isBoot = !isTech && !isCode;
 
     container.innerHTML = `
       <div class="manila-folder-shell max-w-[1060px] mx-auto">
         <div class="manila-tabs-bar" role="tablist" aria-label="Tab Buku Manual">
-          <button type="button" id="guide-tab-boot" role="tab" aria-selected="${!isTech ? 'true' : 'false'}" onclick="switchGuidePage('boot')" class="manila-folder-tab ${!isTech ? 'is-active' : ''}">
+          <button type="button" id="guide-tab-boot" role="tab" aria-selected="${isBoot ? 'true' : 'false'}" onclick="switchGuidePage('boot')" class="manila-folder-tab ${isBoot ? 'is-active' : ''}">
             <span class="manila-tab-code">TAB A // FM 100-5-BOOT</span>
             <span class="manila-tab-label">BUKU SAKU AJUDAN</span>
           </button>
@@ -483,11 +485,15 @@ window.IronDivision = window.IronDivision || {};
             <span class="manila-tab-code">TAB B // TM 9-1005-TECH</span>
             <span class="manila-tab-label">MANUAL TEKNIS</span>
           </button>
+          <button type="button" id="guide-tab-code" role="tab" aria-selected="${isCode ? 'true' : 'false'}" onclick="switchGuidePage('code')" class="manila-folder-tab ${isCode ? 'is-active' : ''}">
+            <span class="manila-tab-code">TAB C // DEV-DOC-ARCH</span>
+            <span class="manila-tab-label">DOKUMENTASI KODE</span>
+          </button>
         </div>
 
         <div class="manila-folder-body">
           <!-- ==================== TAB A: BUKU SAKU AJUDAN (BAWAHAN -> KOMANDAN) ==================== -->
-          <div id="guide-pane-boot" class="${!isTech ? '' : 'hidden'}">
+          <div id="guide-pane-boot" class="${isBoot ? '' : 'hidden'}">
             <article class="tradoc-doc" aria-label="Buku Saku Lapangan Iron Division Versi Ajudan">
               <div class="tradoc-class-strip">
                 <span>TERBUKA // CATATAN LAPANGAN UNTUK KOMANDAN &amp; GAME MASTER</span>
@@ -824,6 +830,84 @@ window.IronDivision = window.IronDivision || {};
               <footer class="tradoc-footer">
                 <span>REKAYASA SISTEM IRON DIVISION // SPESIFIKASI TEKNIS</span>
                 <span>TM 9-1005-TECH // AKHIR DOKUMEN</span>
+              </footer>
+            </article>
+          </div>
+
+          <!-- ==================== TAB C: DOKUMENTASI KODE & ARSITEKTUR ==================== -->
+          <div id="guide-pane-code" class="${isCode ? '' : 'hidden'}">
+            <article class="tradoc-doc" aria-label="Dokumentasi Kode & Arsitektur Iron Division DEV-DOC-ARCH">
+              <div class="tradoc-class-strip">
+                <span>TERBUKA // REFERENSI PENGEMBANG &amp; ARSITEKTUR KODE</span>
+                <span>DOKUMEN // DEV-DOC-ARCH (v3.5)</span>
+              </div>
+
+              <header class="tradoc-header">
+                <div class="flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <div class="tradoc-mono text-[11px] font-bold uppercase tracking-widest text-[#3a4738]">
+                      REKAYASA IRON DIVISION // DOKUMENTASI KODE LENGKAP
+                    </div>
+                    <h2 class="text-2xl sm:text-3xl font-black uppercase tracking-tight text-[#141815] mt-1">
+                      DEV-DOC-ARCH: Peta Kode, Skema State &amp; API
+                    </h2>
+                    <p class="text-sm text-[#323a33] max-w-3xl mt-1">
+                      Panduan teknis seluruh codebase Iron Division (~16.300 baris vanilla ES6 tanpa bundler): urutan muat skrip, peta 11 file modul, struktur <code>IronDivision.state</code>, alur eksekusi ronde, arsitektur UI/i18n, dan cara bikin mod/skenario baru.
+                    </p>
+                  </div>
+                  <div class="tradoc-mono text-[11px] bg-[#dfd7c2] border border-[#b5ad98] p-3 text-right shrink-0 space-y-0.5 text-[#1c211d]">
+                    <div><strong>NO. DOK:</strong> DEV-DOC-ARCH</div>
+                    <div><strong>MODUL:</strong> 9 JS + HTML + CSS</div>
+                    <div><strong>POLA:</strong> IIFE + <code>window.IronDivision</code></div>
+                  </div>
+                </div>
+              </header>
+
+              <div class="tradoc-body space-y-5">
+                <section class="tradoc-chapter">
+                  <h3 class="tradoc-chapter-title">1. POLA BOOTSTRAP &amp; URUTAN MUAT SKRIP</h3>
+                  <div class="tradoc-formula">
+                    <div class="tradoc-formula-label">URUTAN WAJIB DI BAGIAN BAWAH index.html</div>
+                    <code>1. diagnostics.js</code> &rarr; <code>2. data.js</code> &rarr; <code>3. engine-helpers.js</code> &rarr; <code>4. engine-combat.js</code> &rarr; <code>5. engine-pursuit.js</code> &rarr; <code>6. ui-render.js</code> &rarr; <code>7. guide.js</code> &rarr; <code>8. app.js</code> &rarr; <code>9. i18n-id.js</code>
+                  </div>
+                  <p class="tradoc-para">
+                    Setiap modul dibungkus IIFE yang mendaftarkan API publiknya ke <code>window.IronDivision</code>. File <code>i18n-id.js</code> dimuat paling akhir agar bisa membungkus <code>ID.Data</code>, <code>ID.Guide</code>, dan <code>ID.UI</code> secara aman dan bisa dibalik kapan saja.
+                  </p>
+                </section>
+
+                <section class="tradoc-chapter">
+                  <h3 class="tradoc-chapter-title">2. PETA LENGKAP 11 MODUL CODEBASE</h3>
+                  <table class="tradoc-table">
+                    <thead><tr><th>File</th><th>Namespace</th><th>Tugas Utama</th></tr></thead>
+                    <tbody>
+                      <tr><td><code>index.html</code></td><td>Kerangka DOM</td><td>7 tab ruang kerja, tata letak layar lebar 3-kolom + split tengah bawah (Log di sebelah Peta 2D), 5 modal pop-up, dan overlay Tur UI 11 langkah.</td></tr>
+                      <tr><td><code>css/styles.css</code></td><td>Tema &amp; Tata Letak</td><td>Bingkai monitor militer, grid layar lebar (<code>&gt;=1500px</code>, <code>min-width: 1280px</code>), pelat kuningan komandan, garis status 3px, kertas perkamen, lencana tombol pintas.</td></tr>
+                      <tr><td><code>js/diagnostics.js</code></td><td><code>ID.Diagnostics</code></td><td>Penangkap galat global (<code>onerror</code> &amp; <code>unhandledrejection</code>) untuk kanal <code>SYS ERRORS</code>.</td></tr>
+                      <tr><td><code>js/data.js</code></td><td><code>ID.Data</code></td><td>Database statis: 8 Medan, 6 Fitur, 8 Cuaca, 4 Bahaya Gabungan, 32 Sifat Unit, 10 Sifat Komandan, 25 Taktik, dan templat Arracourt &amp; San Marino.</td></tr>
+                      <tr><td><code>js/engine-helpers.js</code></td><td><code>ID.Helpers</code>, <code>ID.Icons</code></td><td>Dadu RNG, kalender UTC bebas era (<code>setUTCFullYear</code>), cuaca berbasis iklim, jarak tembak &amp; visibilitas, ikon SVG NATO &amp; pangkat 10 tingkat, buffer log.</td></tr>
+                      <tr><td><code>js/engine-combat.js</code></td><td><code>ID.Combat</code></td><td>Loop tempur 8 tahap (<code>runSingleRound</code>), undo 15 ronde, logistik/kelelahan, perbaikan 4 ronde, penetrasi/<code>ARMOR HELD</code>, knockout memantul, pemulihan <code>80+d20%</code>, dismount/mundur, dan telemetri <code>u.stats</code>.</td></tr>
+                      <tr><td><code>js/engine-pursuit.js</code></td><td><code>ID.Pursuit</code></td><td>Cek kemenangan, pengejaran &amp; konservasi personel 100%, penarikan ranpur, salvase medan, dan pembuat snapshot AAR (<code>weatherTrail</code> &amp; <code>logistics</code>).</td></tr>
+                      <tr><td><code>js/ui-render.js</code></td><td><code>ID.UI</code></td><td>Render seluruh UI, Peta Taktis 2D &amp; tautan dua arah (<code>focusUnitCard</code> / <code>highlightMapCounter</code>), mode kartu ringkas, Tur UI 11 langkah, dan ekspor PDF Form DA-774.</td></tr>
+                      <tr><td><code>js/guide.js</code></td><td><code>ID.Guide</code></td><td>Merender 3 tab map manila: <code>FM 100-5-BOOT</code>, <code>TM 9-1005-TECH</code>, dan <code>DEV-DOC-ARCH</code>.</td></tr>
+                      <tr><td><code>js/app.js</code></td><td><code>ID.App</code>, <code>ID.state</code></td><td>State global, <code>localStorage</code>, pemuat skenario, pintasan papan ketik (<code>Space</code>/<code>Enter</code>, <code>A</code>, <code>Ctrl+Z</code>), modal konfirmasi militer, Mode GM, dan Ekspor/Impor JSON.</td></tr>
+                      <tr><td><code>js/i18n-id.js</code></td><td><code>ID.I18n</code></td><td>Lokalisasi Bahasa Indonesia (bawaan <code>'en'</code>): tombol <code>EN/ID</code>, terjemahan <code>data.js</code> &amp; log tempur via <code>MutationObserver</code>, Buku Saku Ajudan, dan AAR format <strong>TNI AD MINU LAP-OPS</strong>.</td></tr>
+                    </tbody>
+                  </table>
+                </section>
+
+                <section class="tradoc-chapter">
+                  <h3 class="tradoc-chapter-title">3. SKEMA STATE, ALUR RONDE &amp; PANDUAN MODDING</h3>
+                  <ul class="list-disc pl-6 space-y-1.5 text-sm text-[#232a24]">
+                    <li><strong>State Utama (<code>ID.state</code>):</strong> Seluruh data tersimpan dalam objek murni yang bisa di-<code>structuredClone()</code> — mencakup <code>environment</code>, <code>battle</code> (<code>round</code>, <code>logs</code>, <code>history</code>, <code>sideA/B</code>, <code>afterActionReport</code>), <code>unitTemplates</code>, <code>traits</code>, <code>commanders</code>, dan <code>terrains</code>.</li>
+                    <li><strong>Alur 1 Ronde:</strong> <code>runSingleRound()</code> &rarr; <code>pushHistorySnapshot()</code> &rarr; <code>processSupplyAndStartOfRoundTraits()</code> &rarr; <code>resolveVigilanceContest()</code> &rarr; <code>processFireSupport()</code> &rarr; <code>resolveCombatPhase()</code> &rarr; <code>checkBattleEndCondition()</code> &rarr; <code>resolveRetreatAndPursuit()</code> &rarr; <code>renderCombatRound()</code>.</li>
+                    <li><strong>Menambah Skenario / Mod Baru:</strong> Tambahkan templat unit di <code>js/data.js</code> lalu buat pemuat di <code>js/app.js</code> memakai <code>loadScenarioByConfig(...)</code>. Untuk menambah bahasa lain, cukup salin pola <code>js/i18n-id.js</code> dan muat setelah <code>app.js</code>.</li>
+                  </ul>
+                </section>
+              </div>
+
+              <footer class="tradoc-footer">
+                <span>REKAYASA IRON DIVISION // DOKUMENTASI ARSITEKTUR KODE</span>
+                <span>DEV-DOC-ARCH // AKHIR DOKUMEN</span>
               </footer>
             </article>
           </div>

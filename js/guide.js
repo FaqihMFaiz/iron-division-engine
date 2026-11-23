@@ -11,22 +11,18 @@ window.IronDivision = window.IronDivision || {};
   let activeGuidePage = 'boot';
 
   function switchGuidePage(pageKey) {
-    activeGuidePage = pageKey === 'tech' ? 'tech' : 'boot';
-    const bootPane = document.getElementById('guide-pane-boot');
-    const techPane = document.getElementById('guide-pane-tech');
-    const bootTab = document.getElementById('guide-tab-boot');
-    const techTab = document.getElementById('guide-tab-tech');
-
-    if (bootPane) bootPane.classList.toggle('hidden', activeGuidePage !== 'boot');
-    if (techPane) techPane.classList.toggle('hidden', activeGuidePage !== 'tech');
-    if (bootTab) {
-      bootTab.classList.toggle('is-active', activeGuidePage === 'boot');
-      bootTab.setAttribute('aria-selected', activeGuidePage === 'boot' ? 'true' : 'false');
-    }
-    if (techTab) {
-      techTab.classList.toggle('is-active', activeGuidePage === 'tech');
-      techTab.setAttribute('aria-selected', activeGuidePage === 'tech' ? 'true' : 'false');
-    }
+    activeGuidePage = (pageKey === 'tech' || pageKey === 'code') ? pageKey : 'boot';
+    const pages = ['boot', 'tech', 'code'];
+    pages.forEach(k => {
+      const pane = document.getElementById(`guide-pane-${k}`);
+      const tab = document.getElementById(`guide-tab-${k}`);
+      const active = activeGuidePage === k;
+      if (pane) pane.classList.toggle('hidden', !active);
+      if (tab) {
+        tab.classList.toggle('is-active', active);
+        tab.setAttribute('aria-selected', active ? 'true' : 'false');
+      }
+    });
   }
 
   function renderSimulationGuide() {
@@ -44,6 +40,10 @@ window.IronDivision = window.IronDivision || {};
           <button type="button" id="guide-tab-tech" role="tab" aria-selected="${activeGuidePage === 'tech' ? 'true' : 'false'}" onclick="switchGuidePage('tech')" class="manila-folder-tab ${activeGuidePage === 'tech' ? 'is-active' : ''}">
             <span class="manila-tab-code">TAB B // TM 9-1005-TECH</span>
             <span class="manila-tab-label">TECHNICAL MANUAL</span>
+          </button>
+          <button type="button" id="guide-tab-code" role="tab" aria-selected="${activeGuidePage === 'code' ? 'true' : 'false'}" onclick="switchGuidePage('code')" class="manila-folder-tab ${activeGuidePage === 'code' ? 'is-active' : ''}">
+            <span class="manila-tab-code">TAB C // DEV-DOC-ARCH</span>
+            <span class="manila-tab-label">CODEBASE DOCS</span>
           </button>
         </div>
 
@@ -504,6 +504,220 @@ window.IronDivision = window.IronDivision || {};
         <footer class="tradoc-footer">
           <span>IRON DIVISION SYSTEMS ENGINEERING // TECHNICAL SPECIFICATION</span>
           <span>TM 9-1005-TECH // END OF DOCUMENT</span>
+        </footer>
+      </article>
+          </div>
+          <div id="guide-pane-code" class="${activeGuidePage === 'code' ? '' : 'hidden'}">
+            <article class="tradoc-doc" aria-label="Iron Division Codebase & Architecture Documentation DEV-DOC-ARCH">
+        <div class="tradoc-class-strip">
+          <span>UNCLASSIFIED // DEVELOPER REFERENCE &amp; CODEBASE ARCHITECTURE</span>
+          <span>TRADOC PUB // DEV-DOC-ARCH (v3.5)</span>
+        </div>
+
+        <header class="tradoc-header">
+          <div class="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <div class="tradoc-mono text-[11px] font-bold uppercase tracking-widest text-[#3a4738]">
+                IRON DIVISION ENGINEERING // FULL CODEBASE DOCUMENTATION
+              </div>
+              <h2 class="text-2xl sm:text-3xl font-black uppercase tracking-tight text-[#141815] mt-1">
+                DEV-DOC-ARCH: Codebase, State Schema &amp; API Map
+              </h2>
+              <p class="text-sm text-[#323a33] max-w-3xl mt-1">
+                Complete developer guide to Iron Division's zero-build vanilla ES6 architecture (~16,300 lines across 11 files): module load order, global namespace contracts, live state &amp; unit schemas, round execution pipeline, UI/i18n hooks, and modding cookbook.
+              </p>
+            </div>
+            <div class="tradoc-mono text-[11px] bg-[#dfd7c2] border border-[#b5ad98] p-3 text-right shrink-0 space-y-0.5 text-[#1c211d]">
+              <div><strong>PUB NO:</strong> DEV-DOC-ARCH</div>
+              <div><strong>MODULES:</strong> 9 JS + HTML + CSS</div>
+              <div><strong>PATTERN:</strong> IIFE + <code>window.IronDivision</code></div>
+            </div>
+          </div>
+        </header>
+
+        <div class="tradoc-body space-y-5">
+
+          <!-- SECTION 1 -->
+          <section class="tradoc-chapter">
+            <h3 class="tradoc-chapter-title">1. BOOTSTRAP PATTERN &amp; SCRIPT LOAD ORDER</h3>
+            <p class="tradoc-para">
+              <span class="tradoc-para-id">1-1.</span>
+              Iron Division intentionally uses <strong>zero bundlers, zero frameworks, and zero npm dependencies</strong> so it can be opened directly from <code>file://</code> or any static HTTP server. Every JavaScript module wraps itself in an IIFE <code>(function (ID) { 'use strict'; ... })(window.IronDivision);</code>, attaches its public API to <code>window.IronDivision.&lt;Module&gt;</code>, and binds interactive handlers to <code>window.*</code> for declarative HTML callbacks.
+            </p>
+            <div class="tradoc-formula">
+              <div class="tradoc-formula-label">MANDATORY SCRIPT LOAD ORDER (BOTTOM OF index.html)</div>
+              <code>1. js/diagnostics.js</code> &rarr; <code>2. js/data.js</code> &rarr; <code>3. js/engine-helpers.js</code> &rarr; <code>4. js/engine-combat.js</code> &rarr; <code>5. js/engine-pursuit.js</code> &rarr; <code>6. js/ui-render.js</code> &rarr; <code>7. js/guide.js</code> &rarr; <code>8. js/app.js</code> &rarr; <code>9. js/i18n-id.js</code>
+            </div>
+            <p class="tradoc-para">
+              <span class="tradoc-para-id">1-2.</span>
+              <strong>Why Order Matters:</strong> <code>diagnostics.js</code> traps global errors before any engine code parses; <code>data.js</code> supplies immutable registries; <code>engine-helpers.js</code> provides RNG, calendar, and weather math consumed by <code>engine-combat.js</code> and <code>engine-pursuit.js</code>; <code>app.js</code> initializes <code>ID.state</code> and binds <code>DOMContentLoaded</code>; and <code>i18n-id.js</code> loads <em>last</em> so it can non-destructively wrap <code>ID.Guide</code>, <code>ID.UI</code>, and <code>ID.Data</code>.
+            </p>
+          </section>
+
+          <!-- SECTION 2 -->
+          <section class="tradoc-chapter">
+            <h3 class="tradoc-chapter-title">2. COMPLETE MODULE MAP (ALL 11 FILES)</h3>
+            <table class="tradoc-table">
+              <thead>
+                <tr>
+                  <th>File</th>
+                  <th>Namespace</th>
+                  <th>Core Responsibilities &amp; Key Exports</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>index.html</code></td>
+                  <td>DOM Shell</td>
+                  <td>7 workspace views (Battlefield, ORBAT, Traits, Command HQ, Terrain, Doctrines, FM Manual), full-width 3-col + split lower-center Battlefield layout, 5 modals (<code>#welcome-modal</code>, <code>#battle-modal</code>, <code>#log-expand-modal</code>, <code>#cmd-trait-modal</code>, <code>#confirm-modal</code>), and <code>#ui-tour-overlay</code>.</td>
+                </tr>
+                <tr>
+                  <td><code>css/styles.css</code></td>
+                  <td>Theme &amp; Layout</td>
+                  <td>Olive-steel military monitor frames, wide-monitor responsive grid (<code>&gt;=1500px</code> Log beside 2D Sector under Op Status; <code>min-width: 1280px</code>), riveted brass commander nameplates, 3px status accents, diagonal hatch overlays, aged-parchment SITREP/manual palettes, keycap badges, and spotlight tour CSS.</td>
+                </tr>
+                <tr>
+                  <td><code>js/diagnostics.js</code></td>
+                  <td><code>ID.Diagnostics</code></td>
+                  <td>Global <code>window.onerror</code> and <code>unhandledrejection</code> traps, diagnostic error buffer, and crash-safe logging to the <code>SYS ERRORS</code> channel.</td>
+                </tr>
+                <tr>
+                  <td><code>js/data.js</code></td>
+                  <td><code>ID.Data</code></td>
+                  <td>Static registries: <code>EXPERIENCE_TIERS</code>, <code>ARMOR_TIERS</code>, <code>DEFAULT_TERRAINS</code> (8), <code>TERRAIN_FEATURES</code> (6), <code>WEATHER_TYPES</code> (8), <code>TIME_OF_DAY_TYPES</code> (3), <code>COMPOUND_HAZARDS</code> (4), <code>DEFAULT_TRAITS</code> (32), <code>DEFAULT_COMMANDER_TRAITS</code> (10), <code>DEFAULT_COMMANDERS</code>, <code>TACTICS_DB</code> (25), and <code>DEFAULT_UNIT_TEMPLATES</code> (Arracourt &amp; San Marino).</td>
+                </tr>
+                <tr>
+                  <td><code>js/engine-helpers.js</code></td>
+                  <td><code>ID.Helpers</code>, <code>ID.Icons</code></td>
+                  <td>Polyhedral RNG (<code>rollDie</code>, <code>clamp</code>), arbitrary-era UTC calendar (<code>makeUtcTimestamp</code> via <code>setUTCFullYear</code>, <code>formatYearLabel</code>, <code>getSimulatedBattleDate</code>, <code>getBattleDayOrdinal</code>), climate weather resolver (<code>getSeasonLabel</code>, <code>isWeatherAllowedInClimate</code>, <code>getClimateWeatherCandidates</code>), range/visibility helpers (<code>getUnitEngagementRange</code>, <code>canUnitEngageTarget</code>), NATO &amp; 10-tier Officer SVG generators, and <code>addLog()</code>.</td>
+                </tr>
+                <tr>
+                  <td><code>js/engine-combat.js</code></td>
+                  <td><code>ID.Combat</code></td>
+                  <td>Round orchestrator (<code>runSingleRound</code>), 15-round undo stack (<code>pushHistorySnapshot</code>), unit factory (<code>createCombatUnitInstance</code>), supply/depot/dig-in/fatigue/DOW/4-round repair loop (<code>processSupplyAndStartOfRoundTraits</code>), vigilance, fire support + AA/weather grounding, Y-axis maneuver &amp; Overwatch, piercing/<code>ARMOR HELD</code>/deflected knockout gating (<code>processArmorLossAndCrewCasualties</code>), crew &amp; personnel triage (<code>applyPersonnelCasualties</code>), dismounting vs. withdrawal (<code>canUnitDismountAsInfantry</code>), unscreened artillery auto-withdrawal, and per-unit combat telemetry (<code>u.stats</code>).</td>
+                </tr>
+                <tr>
+                  <td><code>js/engine-pursuit.js</code></td>
+                  <td><code>ID.Pursuit</code></td>
+                  <td>Victory detection (<code>checkBattleEndCondition</code>), mobility pursuit &amp; exact personnel conservation (<code>resolveRetreatAndPursuit</code>), recovery tractor towing, proportional field salvage, and AAR snapshot builder (<code>buildAfterActionReport</code> with <code>weatherTrail</code> and <code>logistics</code>).</td>
+                </tr>
+                <tr>
+                  <td><code>js/ui-render.js</code></td>
+                  <td><code>ID.UI</code></td>
+                  <td>Full DOM renderer (<code>renderAll</code>, <code>renderBattlefield</code>, <code>renderSideUnitCards</code>, <code>renderTacticalSectorCanvas</code>), two-way map-to-card linking (<code>focusUnitCard</code>, <code>highlightMapCounter</code>), <code>toggleCompactUnitCards</code>, <code>toggleOpStatusCollapse</code>, 11-step spotlight tutorial (<code>startUITutorial</code>), 25-page Tactics Manual, immediate AAR modal (<code>openBattleSummaryModal</code>), and printable A4 Form DA-774 generator (<code>buildPrintableAARHtml</code>, <code>sanitizeForPrintableAAR</code>, <code>extractAARChronology</code>).</td>
+                </tr>
+                <tr>
+                  <td><code>js/guide.js</code></td>
+                  <td><code>ID.Guide</code></td>
+                  <td>Renders the 3-tab Manila-folder documentation suite inside Tab 7: <code>FM 100-5-BOOT</code> (Drill Sergeant Guide), <code>TM 9-1005-TECH</code> (Technical Manual), and <code>DEV-DOC-ARCH</code> (this Codebase Documentation).</td>
+                </tr>
+                <tr>
+                  <td><code>js/app.js</code></td>
+                  <td><code>ID.App</code>, <code>ID.state</code></td>
+                  <td>Global mutable state tree, <code>localStorage</code> persistence, scenario loaders (<code>loadArracourtScenario</code>, <code>loadSanMarinoScenario</code>), Auto-Ops timer, global desktop keyboard shortcuts (<code>Space</code>/<code>Enter</code>, <code>A</code>, <code>Ctrl+Z</code>), themed Military Confirmation modal (<code>openConfirmModal</code>), GM Live overrides, and Preset JSON export/import.</td>
+                </tr>
+                <tr>
+                  <td><code>js/i18n-id.js</code></td>
+                  <td><code>ID.I18n</code></td>
+                  <td>Standalone drop-in Indonesian localization (default <code>'en'</code>): injects header <code>EN/ID</code> toggle, reversibly localizes <code>ID.Data</code> registries, runs a <code>WeakMap</code>-backed <code>MutationObserver</code> + <code>translateCombatLogText()</code>, swaps Welcome Modal &amp; subordinate-tone Indonesian Manuals, and transforms both immediate and printable AARs into authentic <strong>TNI AD MINU LAP-OPS</strong> format.</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+
+          <!-- SECTION 3 -->
+          <section class="tradoc-chapter">
+            <h3 class="tradoc-chapter-title">3. STATE TREE (IronDivision.state) &amp; LIVE UNIT SCHEMA</h3>
+            <p class="tradoc-para">
+              <span class="tradoc-para-id">3-1.</span>
+              All runtime state lives under a single serializable root object (<code>window.IronDivision.state</code>) so <code>structuredClone()</code> can snapshot any round cleanly for GM Undo or Preset JSON export:
+            </p>
+            <div class="tradoc-formula">
+              <div class="tradoc-formula-label">TOP-LEVEL STATE STRUCTURE</div>
+              <code>ID.state = { environment, battle: { round, attackerSide, isOver, winner, logs[], history[], initialSnapshot, salvageReport, afterActionReport, sideA: { name, commanderId, tacticId, supplyDepot, maxSupplyDepot, supplyRaidedTotal, depotCriticalClock, units[] }, sideB: { ... } }, unitTemplates[], traits[], commanders[], commanderTraits[], terrains{}, gmMode }</code>
+            </div>
+            <table class="tradoc-table">
+              <thead>
+                <tr>
+                  <th>Unit Field Group</th>
+                  <th>Properties on Each Deployed Unit Instance</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Identity &amp; Base</strong></td>
+                  <td><code>instanceId</code>, <code>templateId</code>, <code>name</code>, <code>side</code> (<code>'A'|'B'</code>), <code>category</code> (<code>infantry|armored_vehicle|tank|artillery</code>), <code>armorTier</code>, <code>experience</code>, <code>traits[]</code></td>
+                </tr>
+                <tr>
+                  <td><strong>Personnel Conservation</strong></td>
+                  <td><code>maxPersonnel</code>, <code>personnel</code>, <code>dead</code> (KIA), <code>wounded</code> (WIA), <code>captured</code> (POW), <code>escaped</code> (ESC) &mdash; post-battle invariant: <code>maxPersonnel === personnel + dead + wounded + captured + escaped</code></td>
+                </tr>
+                <tr>
+                  <td><strong>Cohesion &amp; Logistics</strong></td>
+                  <td><code>maxOrg</code>, <code>org</code>, <code>maxSupply</code>, <code>supply</code>, <code>supplyBelow50Triggered</code>, <code>supplyBelow20Triggered</code>, <code>orgRecoveryBlockedRounds</code>, <code>cumPersonnelLostTenths</code></td>
+                </tr>
+                <tr>
+                  <td><strong>Material Armor Pool</strong></td>
+                  <td><code>originalMaxArmor</code>, <code>maxArmor</code>, <code>armor</code>, <code>recoverableArmor</code>, <code>unrecoverableArmor</code> (KO), <code>towedArmor</code>, <code>abandonedArmor</code>, <code>isDismounted</code>, <code>lastArmorHitRound</code></td>
+                </tr>
+                <tr>
+                  <td><strong>Spatial &amp; Status</strong></td>
+                  <td><code>pos</code> (Y-axis distance from contact <code>0</code>), <code>entrenchmentLevel</code>, <code>mobilityClassPenalty</code>, <code>isRallying</code>, <code>rallyRoundsLeft</code>, <code>ralliedOnce</code>, <code>defeated</code>, <code>defeatReason</code>, <code>supportCooldowns{}</code>, <code>roundTemp{}</code></td>
+                </tr>
+                <tr>
+                  <td><strong>Combat Telemetry (<code>u.stats</code>)</strong></td>
+                  <td><code>casualtiesInflicted</code>, <code>afvsDisabled</code>, <code>afvsDestroyed</code>, <code>fieldRepairs</code>, <code>indirectCasualtiesInflicted</code>, <code>airCasualtiesInflicted</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+
+          <!-- SECTION 4 -->
+          <section class="tradoc-chapter">
+            <h3 class="tradoc-chapter-title">4. ROUND EXECUTION CALL GRAPH &amp; DATAFLOW</h3>
+            <p class="tradoc-para">
+              <span class="tradoc-para-id">4-1.</span>
+              Pressing <strong>Execute Round</strong> (or <code>Space</code>/<code>Enter</code>) invokes <code>ID.Combat.runSingleRound()</code> inside a diagnostic try/catch wrapper. The exact execution pipeline is:
+            </p>
+            <ol class="list-decimal pl-6 space-y-1 text-sm text-[#232a24]">
+              <li><code>pushHistorySnapshot()</code> &rarr; deep-clones <code>battle</code> + <code>environment</code> into <code>battle.history</code> (max 15 entries).</li>
+              <li><strong>Climate Weather Tick</strong> &rarr; every 3 rounds when <code>dynamicWeather</code> is true, calls <code>H.getClimateWeatherCandidates()</code> and logs <code>[WTH] [Weather Shift]</code>.</li>
+              <li><code>processSupplyAndStartOfRoundTraits(side, ...)</code> &rarr; runs per-unit engagement checks, pauses ammo/fatigue/Green drift when out of range, draws from <code>sideState.supplyDepot</code>, updates entrenchment, rolls DOW, processes rally staging, and fires 4-round <code>Field Repair Crew</code> (skipping if <code>lastArmorHitRound === round - 1</code>).</li>
+              <li><code>resolveVigilanceContest()</code> &rarr; rolls <code>1d100</code> per side to grant flat accuracy boost.</li>
+              <li><code>processFireSupport()</code> &rarr; resolves Mortar, Artillery, and Air Support (with AA interception &amp; weather grounding), crediting <code>u.stats</code> via <code>applySupportCasualtiesAndArmor(..., sourceUnit, channel)</code>.</li>
+              <li><code>resolveCombatPhase()</code> &rarr; advances out-of-range units along <code>u.pos</code>, fires Defensive Overwatch, resolves Piercing vs. Hardness (or Cover Saves), calls <code>processArmorLossAndCrewCasualties()</code> &amp; <code>applyPersonnelCasualties()</code>, executes close-range supply raids (<code>totalDist &lt;= 2</code>), and runs Return Fire.</li>
+              <li><code>ID.Pursuit.checkBattleEndCondition()</code> &rarr; checks active frontliners &amp; unscreened artillery auto-withdrawal; on battle conclusion runs <code>resolveRetreatAndPursuit()</code> &rarr; <code>buildAfterActionReport()</code>.</li>
+              <li><code>ID.UI.renderCombatRound()</code> &rarr; updates flank cards, telemetry, sticky round badges, 2D SVG Tactical Sector, Y-axis strip, and SITREP logbook.</li>
+            </ol>
+          </section>
+
+          <!-- SECTION 5 -->
+          <section class="tradoc-chapter">
+            <h3 class="tradoc-chapter-title">5. UI INTERACTION, MODAL &amp; i18n HOOK ARCHITECTURE</h3>
+            <ul class="list-disc pl-6 space-y-1.5 text-sm text-[#232a24]">
+              <li><strong>Two-Way Map-to-Card Linking:</strong> SVG counters carry <code>data-unit-id</code> and call <code>focusUnitCard(id)</code> on click (scrolling &amp; pulsing <code>.unit-card-flash</code>). Unit cards bind <code>onmouseenter</code>/<code>onmouseleave</code> to <code>highlightMapCounter(id, active)</code>, toggling <code>.is-highlighted</code> on the SVG halo rect.</li>
+              <li><strong>Cursor-Following Floating Tooltip:</strong> Every unit card embeds a hidden <code>.unit-tooltip-source</code> block (including a <code>.unit-tooltip-compact-extra</code> section revealed only when <code>body.compact-unit-cards</code> is active). A single delegated <code>mousemove</code> listener clones it into <code>#floating-unit-tooltip</code>.</li>
+              <li><strong>Click-Outside Modals &amp; Confirmation Guard:</strong> All 5 modals bind <code>onclick="if(event.target===this) close...()"</code>. Destructive actions route through <code>ID.App.openConfirmModal({ title, message, hint, danger, onConfirm })</code> after pushing an undo snapshot.</li>
+              <li><strong>Zero-Invasion Localization (<code>js/i18n-id.js</code>):</strong> Keeps English as default (<code>'en'</code>). On <code>setLanguage('id')</code>, it backs up English strings once, patches <code>ID.Data</code> display properties, wraps <code>ID.Guide.renderSimulationGuide</code>, <code>ID.UI.openBattleSummaryModal</code>, and <code>ID.UI.buildPrintableAARHtml</code>, and uses a <code>WeakMap</code>-backed <code>MutationObserver</code> to translate dynamic DOM text and combat logs losslessly.</li>
+            </ul>
+          </section>
+
+          <!-- SECTION 6 -->
+          <section class="tradoc-chapter">
+            <h3 class="tradoc-chapter-title">6. MODDING &amp; EXTENSION COOKBOOK</h3>
+            <ul class="list-disc pl-6 space-y-1.5 text-sm text-[#232a24]">
+              <li><strong>Adding a Historical/Fictional Scenario:</strong> Add templates in <code>js/data.js</code> (<code>DEFAULT_UNIT_TEMPLATES</code>), then add a loader function in <code>js/app.js</code> calling <code>loadScenarioByConfig({ terrain, feature, weather, year, month, day, hour, minute, sideAName, sideBName, sideACmd, sideBCmd, pickA, pickB, loadLog })</code>. Any year from <code>-270000</code> to <code>+270000</code> is supported natively.</li>
+              <li><strong>Adding a New Unit Trait:</strong> Append an object to <code>DEFAULT_TRAITS</code> in <code>js/data.js</code> with standard numeric modifier fields (<code>atkPct</code>, <code>defPct</code>, <code>pierceFlat</code>, <code>armorRecBonus</code>, etc.) — <code>engine-combat.js</code> aggregates them dynamically.</li>
+              <li><strong>Adding Another Language Pack:</strong> Duplicate <code>js/i18n-id.js</code> (e.g. <code>js/i18n-de.js</code>), translate <code>EXACT_MAP</code>, <code>LOG_REPLACEMENTS</code>, and the data maps, and load it after <code>js/app.js</code> in <code>index.html</code>.</li>
+              <li><strong>Headless Automated Testing (Node.js):</strong> Load the 6 core JS files into a Node <code>vm</code> context with a lightweight DOM/<code>localStorage</code> shim, invoke <code>IronDivision.App.loadArracourtScenario()</code>, loop <code>IronDivision.Combat.runSingleRound()</code> until <code>isOver</code>, and assert invariants like <code>START === REM + KIA + WIA + POW + ESC</code> and <code>Start === Act + Rec + Tow + KO</code>.</li>
+            </ul>
+          </section>
+
+        </div>
+
+        <footer class="tradoc-footer">
+          <span>IRON DIVISION ENGINEERING // FULL CODEBASE ARCHITECTURE</span>
+          <span>DEV-DOC-ARCH // END OF DOCUMENT</span>
         </footer>
       </article>
           </div>
