@@ -509,7 +509,7 @@ window.IronDivision = window.IronDivision || {};
     if (!u) return 2;
     if (u.isZombie || (u.traits && u.traits.includes('zombie_unit'))) return 1;
     let baseRange = 2;
-    if (u.category === 'artillery') baseRange = 6;
+    if (u.category === 'artillery') baseRange = 12;
     else if (u.category === 'tank' || (u.category === 'armored_vehicle' && (u.traits || []).includes('anti_tank'))) baseRange = 3;
     else if (u.category === 'infantry' || u.category === 'armored_vehicle') baseRange = 2;
 
@@ -562,6 +562,21 @@ window.IronDivision = window.IronDivision || {};
     if (totalDist === 4) return 0.60;
     if (totalDist === 5) return 0.30;
     return 0.15;
+  }
+
+  function getArtilleryRangeDispersionPct(attacker, totalDist) {
+    if (!attacker || attacker.category !== 'artillery') return 0;
+    const dist = Number(totalDist) || 0;
+    if (dist <= 6) return 0;
+    const rawPenalty = -Math.min(20, (dist - 6) * 4);
+    const sideUnits = attacker.side === 'A'
+      ? (ID.state?.battle?.sideA?.units || [])
+      : (ID.state?.battle?.sideB?.units || []);
+    const isAct = (ID.Combat && typeof ID.Combat.isUnitActive === 'function')
+      ? ID.Combat.isUnitActive
+      : (su => !su.defeated && !su.isRallying && su.personnel > 0);
+    const hasSpotter = sideUnits.some(su => isAct(su) && su.traits && su.traits.includes('recon_support'));
+    return hasSpotter ? Math.round(rawPenalty * 0.5) : rawPenalty;
   }
 
   // --------------------------------------------------------------------------
@@ -799,6 +814,7 @@ window.IronDivision = window.IronDivision || {};
     canUnitIgnoreDistance,
     canUnitEngageTarget,
     getDistanceTargetMultiplier,
+    getArtilleryRangeDispersionPct,
     calculateGrazingCasualties
   };
 

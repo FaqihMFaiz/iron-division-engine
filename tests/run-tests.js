@@ -369,7 +369,7 @@ console.log('PASS [1]: All 9 js/*.js files pass `node --check`.');
   assert(ID.state.battle.logs.some(l => l.text.includes('[Supply Stolen]')));
   assert.strictEqual(ID.state.battle.sideA.nextRoundAtkMod, 10);
 
-  // 5c. Fog recon active check & multi-support target re-pick
+  // 5c. Fog recon active check & extended artillery range (<=12) + dispersion + guardrails
   ID.App.emptyBattlefield(true);
   ID.state.environment.terrain = 'Forest';
   ID.state.environment.weather = 'Foggy';
@@ -377,10 +377,82 @@ console.log('PASS [1]: All 9 js/*.js files pass `node --check`.');
   const recon = ID.Combat.createCombatUnitInstance(getTpl(ID, 'recon'), 'A');
   recon.traits = ['recon_support'];
   ID.state.battle.sideA.units = [arty, recon];
-  assert.strictEqual(ID.Helpers.getUnitEngagementRange(arty), 6);
+  assert.strictEqual(ID.Helpers.getUnitEngagementRange(arty), 12);
   recon.defeated = true;
   assert.strictEqual(ID.Helpers.getUnitEngagementRange(arty), 4);
-  console.log('PASS [5]: Combat edge cases, Return Fire Cover Save, breakthrough bonuses, and recon spotter checks verified.');
+
+  // 5d. Artillery dispersion curve & computeUnitTotalStat integration
+  ID.App.emptyBattlefield(true);
+  ID.state.environment.terrain = 'Plains';
+  ID.state.environment.weather = 'Clear';
+  const artyA = ID.Combat.createCombatUnitInstance(getTpl(ID, 'arty'), 'A');
+  const spotA = ID.Combat.createCombatUnitInstance(getTpl(ID, 'recon'), 'A');
+  spotA.traits = ['recon_support'];
+  spotA.defeated = true; // start without active spotter
+  const infB = ID.Combat.createCombatUnitInstance(getTpl(ID, 'inf'), 'B');
+  ID.state.battle.sideA.units = [artyA, spotA];
+  ID.state.battle.sideB.units = [infB];
+
+  assert.strictEqual(ID.Helpers.getArtilleryRangeDispersionPct(infB, 10), 0);
+  assert.strictEqual(ID.Helpers.getArtilleryRangeDispersionPct(artyA, 6), 0);
+  assert.strictEqual(ID.Helpers.getArtilleryRangeDispersionPct(artyA, 7), -4);
+  assert.strictEqual(ID.Helpers.getArtilleryRangeDispersionPct(artyA, 9), -12);
+  assert.strictEqual(ID.Helpers.getArtilleryRangeDispersionPct(artyA, 12), -20);
+
+  artyA.pos = 2; infB.pos = 3; // Total dist = 5 (0% dispersion)
+  const statDist5 = ID.Combat.computeUnitTotalStat(artyA, infB, 'A', 'B', 'attack', 30, 5, 0, tacBreak, tacDef, false);
+  artyA.pos = 6; infB.pos = 3; // Total dist = 9 (-12% without spotter)
+  const statDist9NoSpot = ID.Combat.computeUnitTotalStat(artyA, infB, 'A', 'B', 'attack', 30, 5, 0, tacBreak, tacDef, false);
+  assert.strictEqual(statDist5.netPct - statDist9NoSpot.netPct, 12, 'Artillery at dist 9 without spotter should lose 12% Atk');
+  assert.strictEqual(statDist9NoSpot.artDispPct, -12);
+
+  spotA.defeated = false; // activate spotter -> compare dist 5 vs dist 9 with identical Force Power
+  assert.strictEqual(ID.Helpers.getArtilleryRangeDispersionPct(artyA, 9), -6);
+  artyA.pos = 2; infB.pos = 3; // Total dist = 5 (0% dispersion with active spotter)
+  const statDist5Spot = ID.Combat.computeUnitTotalStat(artyA, infB, 'A', 'B', 'attack', 30, 5, 0, tacBreak, tacDef, false);
+  artyA.pos = 6; infB.pos = 3; // Total dist = 9 (-6% dispersion with active spotter)
+  const statDist9Spot = ID.Combat.computeUnitTotalStat(artyA, infB, 'A', 'B', 'attack', 30, 5, 0, tacBreak, tacDef, false);
+  assert.strictEqual(statDist5Spot.netPct - statDist9Spot.netPct, 6, 'Artillery at dist 9 with spotter should lose 6% Atk');
+  assert.strictEqual(statDist9Spot.artDispPct, -6);
+
+  // 5e. Mountain pre-contact guardrail (frontline inf marches without pre-contact burn while artillery fires from pos 6) + Overwatch <=5 cap
+  ID.App.emptyBattlefield(true);
+  ID.state.environment.terrain = 'Mountain';
+  ID.state.environment.weather = 'Clear';
+  ID.state.battle.attackerSide = 'A';
+  const mtnInfA = ID.Combat.createCombatUnitInstance(getTpl(ID, 'inf'), 'A');
+  const mtnArtyA = ID.Combat.createCombatUnitInstance(getTpl(ID, 'arty'), 'A');
+  const mtnInfB = ID.Combat.createCombatUnitInstance(getTpl(ID, 'inf'), 'B');
+  const mtnArtyB = ID.Combat.createCombatUnitInstance(getTpl(ID, 'arty'), 'B');
+  mtnInfA.pos = 4; mtnArtyA.pos = 6;
+  mtnInfB.pos = 4; mtnArtyB.pos = 4; // mtnArtyB at Total Dist 8 vs marching mtnInfA (must NOT Overwatch at >5)
+  const startSupInfA = mtnInfA.supply;
+  ID.state.battle.sideA.units = [mtnInfA, mtnArtyA];
+  ID.state.battle.sideB.units = [mtnInfB, mtnArtyB];
+  ID.Combat.runSingleRound();
+  assert.strictEqual(mtnArtyA.pos, 6, 'Artillery with range <=12 must not march forward in Mountain terrain');
+  assert.strictEqual(mtnInfA.pos, 3, 'Infantry must advance 1 step in Mountain terrain');
+  assert(ID.state.battle.logs.some(l => l.text.includes('Approach March')), 'Frontline out-of-range infantry should trigger pre-contact Approach March log');
+  assert.strictEqual(mtnInfA.supply, startSupInfA, 'Marching infantry must keep base ammo paused during Approach March');
+  assert(!ID.state.battle.logs.some(l => l.text.includes('[Defensive Overwatch]') && l.text.includes(mtnArtyB.name)), 'Defending artillery at dist >5 must NOT fire Defensive Overwatch');
+
+  // Verify defending artillery CAN fire Defensive Overwatch at close range <=5
+  ID.App.emptyBattlefield(true);
+  ID.state.environment.terrain = 'Plains';
+  ID.state.environment.weather = 'Clear';
+  ID.state.battle.attackerSide = 'A';
+  const closeInfA = ID.Combat.createCombatUnitInstance(getTpl(ID, 'inf'), 'A');
+  const closeInfB = ID.Combat.createCombatUnitInstance(getTpl(ID, 'inf'), 'B');
+  const closeArtyB = ID.Combat.createCombatUnitInstance(getTpl(ID, 'arty'), 'B');
+  closeInfA.pos = 3; // total dist to closeInfB = 6 (>2, so closeInfA marches 3->2), total dist to closeArtyB after moving is 5 <= 5
+  closeInfB.pos = 3;
+  closeArtyB.pos = 3;
+  ID.state.battle.sideA.units = [closeInfA];
+  ID.state.battle.sideB.units = [closeInfB, closeArtyB];
+  ID.Combat.runSingleRound();
+  assert(ID.state.battle.logs.some(l => l.text.includes('[Defensive Overwatch]') && l.text.includes(closeArtyB.name)), 'Defending artillery at Total Dist <=5 should still be eligible for Defensive Overwatch');
+
+  console.log('PASS [5]: Combat edge cases, Return Fire Cover Save, artillery range/dispersion/guardrails, and recon spotter checks verified.');
 }
 
 // =========================================================================

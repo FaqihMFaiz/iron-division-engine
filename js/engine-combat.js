@@ -762,14 +762,19 @@ window.IronDivision = window.IronDivision || {};
       if (atkState.barrageCooldown > 0 && atkTactic.id !== 'urb_atk_barrage') atkState.barrageCooldown--;
       if (defState.barrageCooldown > 0) defState.barrageCooldown--;
 
-      // Check if any unit on either side is within engagement range before burning combat ammo
+      // Check if any frontline/maneuver unit (or any unit in artillery-only fights) is within engagement range before burning combat ammo
       const preActiveA = ID.state.battle.sideA.units.filter(isUnitActive);
       const preActiveB = ID.state.battle.sideB.units.filter(isUnitActive);
       const tacA = atkSide === 'A' ? atkTactic : defTactic;
       const tacB = atkSide === 'B' ? atkTactic : defTactic;
+      const hasAnyNonArty =
+        preActiveA.some(u => u.category !== 'artillery') ||
+        preActiveB.some(u => u.category !== 'artillery');
+      const contactCheckA = hasAnyNonArty ? preActiveA.filter(u => u.category !== 'artillery') : preActiveA;
+      const contactCheckB = hasAnyNonArty ? preActiveB.filter(u => u.category !== 'artillery') : preActiveB;
       const anyUnitInRange =
-        preActiveA.some(uA => preActiveB.some(uB => H.canUnitEngageTarget(uA, uB, tacA))) ||
-        preActiveB.some(uB => preActiveA.some(uA => H.canUnitEngageTarget(uB, uA, tacB)));
+        contactCheckA.some(uA => preActiveB.some(uB => H.canUnitEngageTarget(uA, uB, tacA))) ||
+        contactCheckB.some(uB => preActiveA.some(uA => H.canUnitEngageTarget(uB, uA, tacB)));
       const isPreContact = !anyUnitInRange;
 
       // 2. Supply Upkeep, DOW & Rallying
@@ -852,7 +857,11 @@ window.IronDivision = window.IronDivision || {};
             return tVig + expVig;
           };
           const overwatchCandidates = currentDefenders
-            .filter(defUnit => !overwatchFiredThisRound.has(defUnit.instanceId) && H.canUnitEngageTarget(defUnit, atkUnit, defTactic))
+            .filter(defUnit =>
+              !overwatchFiredThisRound.has(defUnit.instanceId) &&
+              H.canUnitEngageTarget(defUnit, atkUnit, defTactic) &&
+              (defUnit.category !== 'artillery' || H.getTotalDistance(defUnit, atkUnit) <= 5)
+            )
             .sort((a, b) => {
               const distDiff = H.getTotalDistance(a, atkUnit) - H.getTotalDistance(b, atkUnit);
               if (distDiff !== 0) return distDiff;
@@ -1136,9 +1145,12 @@ window.IronDivision = window.IronDivision || {};
       const expObj = D.EXPERIENCE_TIERS[u.experience] || D.EXPERIENCE_TIERS.Regular;
 
       if (!u.isMonster && !u.isZombie) {
-        if (!isUncontestedFrontline && !isPreContact) {
+        const isArtyPreContactFire = !isUncontestedFrontline && isPreContact && u.category === 'artillery' &&
+          enemyActiveUnits.some(e => H.canUnitEngageTarget(u, e, chosenTactic));
+        if (!isUncontestedFrontline && (!isPreContact || isArtyPreContactFire)) {
           const envFx = H.getActiveEnvironmentEffects ? H.getActiveEnvironmentEffects() : { extraSupplyDrain: 0, hasHeatstroke: false, hasDeepFreeze: false };
-          let drain = sideRollD3 + (terr.supplyDrain || 0) + (feat.supplyAdd || 0) + (weath.supplyAdd || 0) + (chosenTactic.supplyAdd || 0) + (envFx.extraSupplyDrain || 0);
+          const opDrainBase = isArtyPreContactFire ? 1 : sideRollD3;
+          let drain = opDrainBase + (terr.supplyDrain || 0) + (feat.supplyAdd || 0) + (weath.supplyAdd || 0) + (chosenTactic.supplyAdd || 0) + (envFx.extraSupplyDrain || 0);
           if (envFx.hasHeatstroke && u.category === 'infantry') drain += 2;
           if (chosenTactic.id === 'urb_atk_armour_supported' && u.maxArmor > 0) drain += 1;
           const supplyCut = getCommanderUnitBonus(side, u, 'supplyDrainReduction');
@@ -2032,7 +2044,7 @@ window.IronDivision = window.IronDivision || {};
 
     H.addLog(
       'rolls',
-      `[OP] [Clash] ${attacker.name} Atk: Base(${combinedBaseAtk.toFixed(1)}) + d${atkDieSides}(${atkDieRoll}) + Flat(${atkTotals.flatBonus}) × Mod(${atkTotals.netPct >= 0 ? '+' : ''}${atkTotals.netPct}%) = ${atkTotals.finalValue} ` +
+      `[OP] [Clash] ${attacker.name} Atk: Base(${combinedBaseAtk.toFixed(1)}) + d${atkDieSides}(${atkDieRoll}) + Flat(${atkTotals.flatBonus}) × Mod(${atkTotals.netPct >= 0 ? '+' : ''}${atkTotals.netPct}%)${atkTotals.artDispPct < 0 ? ` [Range Disp ${atkTotals.artDispPct}%]` : ''} = ${atkTotals.finalValue} ` +
       `VS ${defender.name} Def: Base(${baseDef}) + d${defDieSides}(${defDieRoll}) + Flat(${defTotals.flatBonus}) × Mod(${defTotals.netPct >= 0 ? '+' : ''}${defTotals.netPct}%) = ${defTotals.finalValue}`
     );
 
@@ -2257,7 +2269,7 @@ window.IronDivision = window.IronDivision || {};
 
       H.addLog(
         'rolls',
-        `[RET] [Return Fire Clash] ${defender.name} RetAtk: Base(${retBaseAtk.toFixed(1)}) + d${retDieSides}(${retDieRoll}) + Flat(${defRetAtkTotals.flatBonus}) × Mod(${defRetAtkTotals.netPct >= 0 ? '+' : ''}${defRetAtkTotals.netPct}%) = ${defRetAtkTotals.finalValue} ` +
+        `[RET] [Return Fire Clash] ${defender.name} RetAtk: Base(${retBaseAtk.toFixed(1)}) + d${retDieSides}(${retDieRoll}) + Flat(${defRetAtkTotals.flatBonus}) × Mod(${defRetAtkTotals.netPct >= 0 ? '+' : ''}${defRetAtkTotals.netPct}%)${defRetAtkTotals.artDispPct < 0 ? ` [Range Disp ${defRetAtkTotals.artDispPct}%]` : ''} = ${defRetAtkTotals.finalValue} ` +
         `VS ${attacker.name} Breakthrough/Def: ${atkBreakTotals.finalValue}`
       );
 
@@ -2353,6 +2365,14 @@ window.IronDivision = window.IronDivision || {};
     }
     if (isReturnFire && opponent && opponent.traits.includes('melee_attack') && clashDist <= 1) {
       addPct(-30);
+    }
+
+    let artDispPct = 0;
+    if (role === 'attack' && unit.category === 'artillery') {
+      artDispPct = H.getArtilleryRangeDispersionPct ? H.getArtilleryRangeDispersionPct(unit, clashDist) : 0;
+      if (artDispPct < 0) {
+        addPct(artDispPct);
+      }
     }
 
     // Entrenchment defense bonus (melee bypasses 50% entrenchment)
@@ -2516,7 +2536,7 @@ window.IronDivision = window.IronDivision || {};
     const preMult = Math.max(0, baseStat + dieRoll + flatBonus);
     const finalValue = Math.round(preMult * (1 + netPct / 100) * 10) / 10;
 
-    return { flatBonus, posPct, negPct: cappedNegPct, netPct, finalValue };
+    return { flatBonus, posPct, negPct: cappedNegPct, netPct, finalValue, artDispPct };
   }
 
   // --------------------------------------------------------------------------

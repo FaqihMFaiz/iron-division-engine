@@ -171,7 +171,7 @@ When an attack fails to break through ($\text{Attack} \le \text{Defense}$), dama
 
 $$\text{Total Engagement Distance} = \text{Attacker Pos} + \text{Defender Pos}$$
 
-* **Max Engagement Ranges**: Zombies / pure melee `<= 1`; Infantry & standard Armored Vehicles `<= 2`; **Tanks & Anti-Tank Armored Vehicles (Tank Destroyers)** `<= 3`; Artillery `<= 6`. Fog and Night apply a **Visibility Cap (`VIS CAP`)** that clamps direct-fire sight range.
+* **Max Engagement Ranges**: Zombies / pure melee `<= 1`; Infantry & standard Armored Vehicles `<= 2`; **Tanks & Anti-Tank Armored Vehicles (Tank Destroyers)** `<= 3`; Artillery `<= 12` (with mild `-4%/step` range dispersion beyond `6`, capped `-20%`, halved with active `recon_support` spotter; defensive Overwatch capped at `<= 5`). Fog and Night apply a **Visibility Cap (`VIS CAP`)** that clamps direct-fire sight range.
 * **Close-Range Supply Raiding**: `[Supply Stolen]` is strictly gated to direct-fire close-range units (`category !== 'artillery'` and `Total Distance <= 2`).
 * **Advancing, Overwatch & Phase Lock**: Out-of-range units advance `1` step closer per round while defenders already in range open **Defensive Overwatch** fire. Tactical initiative stays locked on the attacking side until frontline units close into engagement range.
 

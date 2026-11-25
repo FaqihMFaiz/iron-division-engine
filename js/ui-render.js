@@ -3523,7 +3523,7 @@ window.IronDivision = window.IronDivision || {};
       tab: 'battlefield',
       selector: '#tactical-sector-panel',
       title: '2D Tactical Sector & Two-Way Map Linking',
-      body: 'Watch formations advance toward CONTACT LINE (0) in real time. Infantry and standard Armored Vehicles engage at Distance <= 2, Tanks and Tank Destroyers at <= 3, and Artillery up to <= 6. Click any NATO counter on the map to scroll straight to its unit card and flash it in amber.',
+      body: 'Watch formations advance toward CONTACT LINE (0) in real time. Infantry and standard Armored Vehicles engage at Distance <= 2, Tanks and Tank Destroyers at <= 3, and Artillery up to <= 12 (with mild dispersion past 6, halved by Recon spotters). Click any NATO counter on the map to scroll straight to its unit card and flash it in amber.',
       tip: 'TIP: Hover the Y-Axis triangles right below the map to inspect stacked units at any distance coordinate.'
     },
     {
