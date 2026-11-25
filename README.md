@@ -167,13 +167,15 @@ When an attack fails to break through ($\text{Attack} \le \text{Defense}$), dama
 
 * **Thresholds**: `< 40%` (`< 60%` in Forts) = **COMPLETELY IMMUNE (0 damage)**; `40%–49%` = `1` casualty; `50%–74%` = `1 + d2`; `75%–100%` = `1 + d3` (mitigated by `-2` in Forts and `-1` at Entrenchment Lvl 3+; Level 5 Deep Bunkers grant 100% grazing immunity).
 
-### Y-Axis Spatial Distance, Ranges & Close-Range Supply Raiding
+### 3-Lane 2D Spatial Distance, Flank Enfilade & Spatial Targeting
 
-$$\text{Total Engagement Distance} = \text{Attacker Pos} + \text{Defender Pos}$$
+$$\text{Total Engagement Distance} = (\text{Attacker Pos} + \text{Defender Pos}) + |\text{Lane}_A - \text{Lane}_B|$$
 
-* **Max Engagement Ranges**: Zombies / pure melee `<= 1`; Infantry & standard Armored Vehicles `<= 2`; **Tanks & Anti-Tank Armored Vehicles (Tank Destroyers)** `<= 3`; Artillery `<= 12` (with mild `-4%/step` range dispersion beyond `6`, capped `-20%`, halved with active `recon_support` spotter; defensive Overwatch capped at `<= 5`). Fog and Night apply a **Visibility Cap (`VIS CAP`)** that clamps direct-fire sight range.
+* **3-Lane Sector (`North / Center / South`) & Flank Enfilade**: Units deploy across **North (`0`)**, **Center (`1`)**, and **South (`2`)** lanes. Attacking across lanes adds `+1` distance per lane step; clearing all active enemy frontline forces in your own lane unlocks **Enfilade Flanking (`+15%` Attack, halves defender Entrenchment)** when striking into adjacent lanes, or triggers a **`[Flank Shift]`** maneuver if depth range is met.
+* **Max Engagement Ranges**: Zombies / pure melee `<= 1`; Infantry & standard Armored Vehicles `<= 2`; **Tanks & Anti-Tank Armored Vehicles (Tank Destroyers)** `<= 3`; Artillery `<= 12` (with mild `-4%/step` range dispersion beyond `6`, capped `-20%`, halved with active `recon_support` spotter; Inherent Battery Barrage replaces that round's Main Attack; defensive Overwatch capped at `<= 5`). Mortar support fires within `<= 5`, while Air Support stays theatre-wide. Fog and Night apply a **Visibility Cap (`VIS CAP`)** that clamps direct-fire sight range.
+* **Spatial Screening & Engagement Spread**: Frontliner screening is depth- and lane-aware (exposed forward units cannot hide behind rear screeners, while indirect artillery arcs over screens), and high-priority targets pick from weighted top candidates damped by `1 / (1 + 0.35 × engagedByCount)` to prevent unrealistic 12-on-1 focus-fire pile-ons.
 * **Close-Range Supply Raiding**: `[Supply Stolen]` is strictly gated to direct-fire close-range units (`category !== 'artillery'` and `Total Distance <= 2`).
-* **Advancing, Overwatch & Phase Lock**: Out-of-range units advance `1` step closer per round while defenders already in range open **Defensive Overwatch** fire. Tactical initiative stays locked on the attacking side until frontline units close into engagement range.
+* **Advancing, Hold Cover & Overwatch**: Out-of-range maneuver units advance `1` step (or **`2` steps** for fast vehicles `effectiveSpeed >= 4` in dry open terrain, slowed to `1` by Mud/Urban/Forest/Mountain) while defenders in range open **Defensive Overwatch** (`-15%` snap-fire penalty; capped at `2` shooters vs armored/fast advances, `1` vs *Armored Spearhead*). Entrenched defenders (`Dig-In >= 3` / `Fort` / defensive tactic) **hold their fortifications** when outranged instead of abandoning cover.
 
 ### Climate-Aware Dynamic Weather & Arbitrary-Era Calendar
 

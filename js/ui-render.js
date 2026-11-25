@@ -705,6 +705,9 @@ window.IronDivision = window.IronDivision || {};
       const tv = C.getUnitTargetValue ? C.getUnitTargetValue(u) : 0;
 
       const unitPos = (u.pos !== undefined && u.pos !== null) ? u.pos : (H.getUnitStartingPosition ? H.getUnitStartingPosition(u) : 2);
+      const unitLane = H.getUnitLane ? H.getUnitLane(u) : 1;
+      const laneLbl = H.getLaneLabel ? H.getLaneLabel(unitLane) : 'C';
+      const laneName = H.getLaneName ? H.getLaneName(unitLane) : 'Center';
       const unitRange = H.getUnitEngagementRange ? H.getUnitEngagementRange(u) : 2;
       const closestEnemyDist = activeEnemies.length > 0
         ? Math.min(...activeEnemies.map(e => H.getTotalDistance ? H.getTotalDistance(u, e) : 2))
@@ -734,7 +737,7 @@ window.IronDivision = window.IronDivision || {};
               <span class="${side === 'A' ? 'text-[#8ec0e8]' : 'text-[#e69894]'} shrink-0" title="${escapeHtml(u.category.toUpperCase())} NATO Symbol">${ID.Icons ? ID.Icons.get(u.category) : ''}</span>
               <span class="mil-dogtag" title="${escapeHtml(u.name)}"><span class="mil-dogtag-text">${escapeHtml(u.name)}</span></span>
               <span class="mil-rank-patch inline-flex items-center justify-center w-[22px] h-[22px] bg-[#1c2017] border border-[#594b27] text-[#d4b054] shrink-0" title="${escapeHtml(u.experience)} Rank Insignia">${ID.Icons && ID.Icons.getRank ? ID.Icons.getRank(u.experience) : escapeHtml(u.experience)}</span>
-              <span class="unit-compact-dist-pill hidden items-center px-1.5 py-0.5 bg-[#121613] border border-[#2c3a47] font-mono text-[9.5px] font-bold text-[#8ec0e8]" title="Y-Axis Distance">DIST ${unitPos}</span>
+              <span class="unit-compact-dist-pill hidden items-center px-1.5 py-0.5 bg-[#121613] border border-[#2c3a47] font-mono text-[9.5px] font-bold text-[#8ec0e8]" title="Depth &amp; Flank Lane (${laneName})">DIST ${unitPos}·${laneLbl}</span>
             </div>
             <button type="button" data-action="unit-remove" data-side="${side}" data-id="${safeInstId}" class="text-[#667065] hover:text-[#d46a64] font-mono text-xs px-1 shrink-0" title="Remove unit">[X]</button>
           </div>
@@ -754,7 +757,7 @@ window.IronDivision = window.IronDivision || {};
                 <div class="grid grid-cols-3 gap-1 font-mono text-[9.5px] text-center">
                   <div class="px-1.5 py-0.5 bg-[#181d19] border border-[#29312b]"><span class="text-[#7c877b] block text-[8.5px]">TV</span><span class="text-[#7cb377] font-bold">${tv}</span></div>
                   <div class="px-1.5 py-0.5 bg-[#181d19] border border-[#29312b]"><span class="text-[#7c877b] block text-[8.5px]">DIG-IN</span><span class="text-[#c8a24b] font-bold">${u.entrenchmentLevel || 0}/${entrenchCap}</span></div>
-                  <div class="px-1.5 py-0.5 bg-[#181d19] border border-[#29312b]"><span class="text-[#7c877b] block text-[8.5px]">DIST</span><span class="text-[#8ec0e8] font-bold">${side === 'A' ? 'A-' : 'B-'}${unitPos}</span></div>
+                  <div class="px-1.5 py-0.5 bg-[#181d19] border border-[#29312b]"><span class="text-[#7c877b] block text-[8.5px]">DIST</span><span class="text-[#8ec0e8] font-bold">${side}-${unitPos}·${laneLbl}</span></div>
                 </div>
                 <div class="grid grid-cols-2 gap-1 font-mono text-[9.5px]">
                   <div class="px-1.5 py-0.5 bg-[#181d19] border border-[#29312b] flex justify-between">
@@ -808,7 +811,7 @@ window.IronDivision = window.IronDivision || {};
           <div class="unit-stat-grid-3">
             <div class="unit-stat-cell" title="Target Value"><span class="unit-stat-label">TV</span><span class="unit-stat-val text-[#7cb377]">${tv}</span></div>
             <div class="unit-stat-cell" title="Entrenchment Level / Max Cap"><span class="unit-stat-label">Dig-In</span><span class="unit-stat-val text-[#c8a24b]">${u.entrenchmentLevel || 0}/${entrenchCap}</span></div>
-            <div class="unit-stat-cell" title="Y-Axis Coordinate: ${side === 'A' ? 'A-' : 'B-'}${unitPos}"><span class="unit-stat-label">Dist</span><span class="unit-stat-val text-[#8ec0e8]">${unitPos}</span></div>
+            <div class="unit-stat-cell" title="Coordinate: ${side}-${unitPos} · ${laneName} Flank"><span class="unit-stat-label">Dist</span><span class="unit-stat-val text-[#8ec0e8]">${unitPos}·${laneLbl}</span></div>
           </div>
 
           ${u.defeated ? `<div class="text-[10px] font-mono uppercase text-[#e69894] bg-[#2b1514] border border-[#6e3532] px-2 py-1">STATUS: OUT OF ACTION // ${escapeHtml(u.defeatReason)}</div>` : ''}
@@ -873,6 +876,7 @@ window.IronDivision = window.IronDivision || {};
               <button type="button" data-action="gm-adjust" data-side="${side}" data-id="${safeInstId}" data-field="org" data-delta="10" class="px-1.5 py-0.5 bg-[#1b201c] hover:bg-[#2a332c] border border-[#3a453c] text-[#8ec0e8]">ORG+10</button>
               <button type="button" data-action="gm-adjust" data-side="${side}" data-id="${safeInstId}" data-field="pos" data-delta="-1" class="px-1.5 py-0.5 bg-[#1b201c] hover:bg-[#2a332c] border border-[#3a453c] text-[#7cb377]" title="Move 1 closer to contact line">DIST-1</button>
               <button type="button" data-action="gm-adjust" data-side="${side}" data-id="${safeInstId}" data-field="pos" data-delta="1" class="px-1.5 py-0.5 bg-[#1b201c] hover:bg-[#2a332c] border border-[#3a453c] text-[#7cb377]" title="Move 1 further back">DIST+1</button>
+              <button type="button" data-action="gm-adjust" data-side="${side}" data-id="${safeInstId}" data-field="lane" data-delta="1" class="px-1.5 py-0.5 bg-[#1b201c] hover:bg-[#2a332c] border border-[#3a453c] text-[#b8a2d9]" title="Shift flank lane (N -> C -> S)">LANE ⟳</button>
               ${(u.isRallying || u.defeated) ? `<button type="button" data-action="gm-adjust" data-side="${side}" data-id="${safeInstId}" data-field="rally_now" data-delta="0" class="ml-auto px-1.5 py-0.5 bg-[#2d472b] hover:bg-[#385936] border border-[#4c7548] text-[#d9ead7] font-bold">RALLY NOW</button>` : ''}
             </div>
           ` : ''}
@@ -1079,7 +1083,8 @@ window.IronDivision = window.IronDivision || {};
       const barW = Math.round(w * persRatio);
       const opacity = isRear ? '0.45' : '0.96';
       const dash = isRear ? ' stroke-dasharray="2 2"' : '';
-      const tip = `${escapeHtml(u.name)} (${escapeHtml((u.category || '').toUpperCase())}) | PERS ${u.personnel}/${u.maxPersonnel} | ORG ${u.org}/${u.maxOrg} | POS ${u.pos ?? 2}`;
+      const tipLaneName = H.getLaneName ? H.getLaneName(H.getUnitLane ? H.getUnitLane(u) : 1) : 'Center';
+      const tip = `${escapeHtml(u.name)} (${escapeHtml((u.category || '').toUpperCase())}) | PERS ${u.personnel}/${u.maxPersonnel} | ORG ${u.org}/${u.maxOrg} | POS ${u.pos ?? 2} | ${tipLaneName.toUpperCase()} FLANK`;
       return `
         <g class="sector-counter" data-unit-id="${escapeHtml(u.instanceId)}" opacity="${opacity}">
           <title>${tip} — Click to locate card</title>
@@ -1092,29 +1097,33 @@ window.IronDivision = window.IronDivision || {};
     };
 
     const placeSideUnits = (units, side) => {
+      const getLane = H.getUnitLane || (u => (u && (u.lane === 0 || u.lane === 1 || u.lane === 2) ? u.lane : 1));
+      const laneCenters = [34, 83, 132];
       const buckets = {};
       units.forEach(u => {
         const p = (u.pos !== undefined && u.pos !== null) ? u.pos : 2;
+        const lane = getLane(u);
         const signed = side === 'A' ? -p : p;
-        const key = String(signed);
-        if (!buckets[key]) buckets[key] = [];
-        buckets[key].push(u);
+        const key = `${signed}|${lane}`;
+        if (!buckets[key]) buckets[key] = { signed, lane, list: [] };
+        buckets[key].list.push(u);
       });
       const placed = [];
-      Object.entries(buckets).forEach(([k, list]) => {
-        const baseX = coordToX(Number(k));
+      Object.values(buckets).forEach(({ signed, lane, list }) => {
+        const baseX = coordToX(signed);
+        const baseY = laneCenters[lane] ?? 83;
         const count = list.length;
         list.forEach((u, idx) => {
-          const cols = count > 4 ? 2 : 1;
+          const cols = count > 2 ? 2 : 1;
           const colIdx = idx % cols;
           const rowIdx = Math.floor(idx / cols);
           const rows = Math.ceil(count / cols);
-          const xOffset = cols === 2 ? (colIdx === 0 ? -14 : 14) : 0;
-          const spanY = Math.min(112, Math.max(24, rows * 25));
-          const startY = (H_SVG / 2) - (spanY / 2) + (spanY / (rows * 2));
-          const cy = rows === 1 ? H_SVG / 2 : startY + rowIdx * (spanY / rows);
+          const xOffset = cols === 2 ? (colIdx === 0 ? -13 : 13) : 0;
+          const yStep = rows > 1 ? Math.min(20, 36 / Math.max(1, rows - 1)) : 0;
+          const yOffset = rows === 1 ? 0 : (rowIdx - (rows - 1) / 2) * yStep;
+          const cy = Math.max(16, Math.min(H_SVG - 16, baseY + yOffset));
           const cx = Math.max(16, Math.min(W - 16, baseX + xOffset));
-          placed.push({ u, side, cx, cy });
+          placed.push({ u, side, lane, cx, cy });
         });
       });
       return placed;
@@ -1125,16 +1134,32 @@ window.IronDivision = window.IronDivision || {};
 
     let fireLinesSvg = '';
     if (placedA.length > 0 && placedB.length > 0) {
-      const leadA = placedA.slice(0, 3);
-      const leadB = placedB.slice(0, 3);
-      leadA.forEach(a => {
-        leadB.forEach(b => {
-          if (H.canUnitEngageTarget && H.canUnitEngageTarget(a.u, b.u)) {
-            fireLinesSvg += `<line x1="${a.cx.toFixed(1)}" y1="${a.cy.toFixed(1)}" x2="${b.cx.toFixed(1)}" y2="${b.cy.toFixed(1)}" stroke="#c8a24b" stroke-width="0.7" stroke-dasharray="2 3" opacity="0.32"/>`;
-          }
+      let linesDrawn = 0;
+      for (const ln of [0, 1, 2]) {
+        const laneA = placedA.filter(p => p.lane === ln).slice(0, 2);
+        const laneB = placedB.filter(p => p.lane === ln);
+        const oppB = laneB.length > 0 ? laneB.slice(0, 2) : placedB.slice(0, 2);
+        laneA.forEach(a => {
+          oppB.forEach(b => {
+            if (linesDrawn < 9 && H.canUnitEngageTarget && H.canUnitEngageTarget(a.u, b.u)) {
+              const stroke = a.lane === b.lane ? '#c8a24b' : '#e6a84c';
+              fireLinesSvg += `<line x1="${a.cx.toFixed(1)}" y1="${a.cy.toFixed(1)}" x2="${b.cx.toFixed(1)}" y2="${b.cy.toFixed(1)}" stroke="${stroke}" stroke-width="0.75" stroke-dasharray="2 3" opacity="0.36"/>`;
+              linesDrawn++;
+            }
+          });
         });
-      });
+      }
     }
+
+    const laneBandY1 = (H_SVG / 3).toFixed(1);
+    const laneBandY2 = ((H_SVG * 2) / 3).toFixed(1);
+    const lanesSvg = `
+      <line x1="2" y1="${laneBandY1}" x2="${W - 2}" y2="${laneBandY1}" stroke="#273229" stroke-width="0.9" stroke-dasharray="3 4" opacity="0.8"/>
+      <line x1="2" y1="${laneBandY2}" x2="${W - 2}" y2="${laneBandY2}" stroke="#273229" stroke-width="0.9" stroke-dasharray="3 4" opacity="0.8"/>
+      <text x="5" y="34" fill="#5e6b5e" font-family="IBM Plex Mono, monospace" font-size="7.5" font-weight="700" opacity="0.85">N</text>
+      <text x="5" y="86" fill="#5e6b5e" font-family="IBM Plex Mono, monospace" font-size="7.5" font-weight="700" opacity="0.85">C</text>
+      <text x="5" y="135" fill="#5e6b5e" font-family="IBM Plex Mono, monospace" font-size="7.5" font-weight="700" opacity="0.85">S</text>
+    `;
 
     const countersSvg = [
       ...placedA.map(p => drawCounter(p.u, 'A', p.cx, p.cy, false)),
@@ -1158,6 +1183,7 @@ window.IronDivision = window.IronDivision || {};
         <rect x="0" y="0" width="${W}" height="${H_SVG}" fill="url(#sec-grid)"/>
         <rect x="2" y="2" width="${midX - 4}" height="${H_SVG - 4}" fill="rgba(45, 92, 134, 0.09)" stroke="#243c52" stroke-width="1"/>
         <rect x="${midX + 2}" y="2" width="${midX - 4}" height="${H_SVG - 4}" fill="url(#sec-hatch-b)" stroke="#5c2320" stroke-width="1"/>
+        ${lanesSvg}
         <line x1="${midX}" y1="0" x2="${midX}" y2="${H_SVG}" stroke="#c8a24b" stroke-width="1.6" stroke-dasharray="5 3" opacity="0.85"/>
         ${terrainSvg}
         ${fireLinesSvg}
@@ -3523,7 +3549,7 @@ window.IronDivision = window.IronDivision || {};
       tab: 'battlefield',
       selector: '#tactical-sector-panel',
       title: '2D Tactical Sector & Two-Way Map Linking',
-      body: 'Watch formations advance toward CONTACT LINE (0) in real time. Infantry and standard Armored Vehicles engage at Distance <= 2, Tanks and Tank Destroyers at <= 3, and Artillery up to <= 12 (with mild dispersion past 6, halved by Recon spotters). Click any NATO counter on the map to scroll straight to its unit card and flash it in amber.',
+      body: 'Watch formations advance across 3 flank lanes (North / Center / South) toward CONTACT LINE (0). Infantry and standard Armored Vehicles engage at Total Distance <= 2, Tanks and Tank Destroyers at <= 3, and Artillery up to <= 12 (with mild dispersion past 6, halved by Recon spotters). Clearing a lane lets units flank adjacent lanes for +15% Attack and half cover! Click any NATO counter on the map to scroll straight to its unit card.',
       tip: 'TIP: Hover the Y-Axis triangles right below the map to inspect stacked units at any distance coordinate.'
     },
     {

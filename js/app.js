@@ -728,7 +728,8 @@ window.IronDivision = window.IronDivision || {};
         ID.state.battle.isOver = false;
         ID.state.battle.winner = null;
       }
-      H.addLog('rolls', `[GM] [Mid-Battle Reinforcement] ${newUnit.name} deployed to Side ${side} at Dist ${newUnit.pos}.`);
+      const laneLbl = H.getLaneName ? H.getLaneName(H.getUnitLane ? H.getUnitLane(newUnit) : 1) : 'Center';
+      H.addLog('rolls', `[GM] [Mid-Battle Reinforcement] ${newUnit.name} deployed to Side ${side} at Dist ${newUnit.pos} (${laneLbl}).`);
     }
     H.showToast(`Deployed ${tpl.name} to Side ${side}`, 'success');
 
@@ -1376,6 +1377,12 @@ window.IronDivision = window.IronDivision || {};
       const curPos = (u.pos !== undefined && u.pos !== null) ? u.pos : 2;
       u.pos = H.clamp(curPos + delta, -7, 7);
       H.addLog('rolls', `[GM] Repositioned ${u.name} on Y-Axis (Dist: ${curPos} -> ${u.pos}).`);
+    } else if (field === 'lane') {
+      const curLane = H.getUnitLane ? H.getUnitLane(u) : 1;
+      const d = Number(delta) || 1;
+      u.lane = ((curLane + d) % 3 + 3) % 3;
+      const laneName = H.getLaneName ? H.getLaneName(u.lane) : (u.lane === 0 ? 'North' : u.lane === 2 ? 'South' : 'Center');
+      H.addLog('rolls', `[GM] Shifted ${u.name} to ${laneName} flank.`);
     } else if (field === 'rally_now') {
       u.isRallying = false;
       u.defeated = false;

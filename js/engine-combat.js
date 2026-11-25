@@ -19,7 +19,7 @@ window.IronDivision = window.IronDivision || {};
   // 1. Unit Factory & Lifecycle Helpers
   // --------------------------------------------------------------------------
 
-  function createCombatUnitInstance(template, side) {
+  function createCombatUnitInstance(template, side, laneOverride = null) {
     const traitObjs = (template.traits || []).map(tid => getTraitById(tid)).filter(Boolean);
     const isMonster = traitObjs.some(t => t.isMonster);
     const isZombie = traitObjs.some(t => t.isZombie);
@@ -48,6 +48,13 @@ window.IronDivision = window.IronDivision || {};
     if (template.category === 'artillery') {
       traitSet.add('explosive_weapon');
     }
+
+    const existingSideUnits = side === 'A'
+      ? (ID.state?.battle?.sideA?.units || [])
+      : (ID.state?.battle?.sideB?.units || []);
+    const assignedLane = (laneOverride === 0 || laneOverride === 1 || laneOverride === 2)
+      ? laneOverride
+      : (H.getUnitStartingLane ? H.getUnitStartingLane(template, existingSideUnits) : 1);
 
     return {
       instanceId: `unit_${Date.now()}_${instanceCounter++}`,
@@ -97,6 +104,7 @@ window.IronDivision = window.IronDivision || {};
         air_support: 0
       },
       pos: H.getUnitStartingPosition ? H.getUnitStartingPosition(template) : 2,
+      lane: assignedLane,
       meleeDistance: null,
       mobilityClassPenalty: 0,
       entrenchmentLevel: 0,
@@ -125,7 +133,8 @@ window.IronDivision = window.IronDivision || {};
         lostTenPctLastRound: false,
         fortifiedOrgReductionUsed: false,
         inCover: false,
-        coverDenied: false
+        coverDenied: false,
+        firedInherentBarrage: false
       }
     };
   }
@@ -359,9 +368,16 @@ window.IronDivision = window.IronDivision || {};
 
     // 4. Unit Category Priority Multiplier
     let categoryMultiplier = 1.0;
-    if (target.category === 'artillery') categoryMultiplier = 1.35;
-    else if (target.category === 'tank') categoryMultiplier = 1.25;
-    else if (target.category === 'armored_vehicle') categoryMultiplier = 1.15;
+    const isArtilleryShooter = !!(attacker && attacker.category === 'artillery');
+    if (isArtilleryShooter) {
+      if (target.category === 'artillery') categoryMultiplier = 1.50;
+      else if (target.category === 'tank') categoryMultiplier = 1.25;
+      else if (target.category === 'armored_vehicle') categoryMultiplier = 1.15;
+    } else {
+      if (target.category === 'artillery') categoryMultiplier = 1.35;
+      else if (target.category === 'tank') categoryMultiplier = 1.25;
+      else if (target.category === 'armored_vehicle') categoryMultiplier = 1.15;
+    }
 
     // 5. Entrenchment Level
     const entrenchLvl = target.entrenchmentLevel || 0;
@@ -372,7 +388,9 @@ window.IronDivision = window.IronDivision || {};
       atkTactic.id === 'urb_atk_barrage'
     );
 
-    if (isBunkerBustingTactic) {
+    if (isArtilleryShooter) {
+      entrenchmentMod = entrenchLvl * 15; // Artillery targets dug-in concentrations
+    } else if (isBunkerBustingTactic) {
       entrenchmentMod = entrenchLvl * 25;
     } else {
       if (entrenchLvl === 0) entrenchmentMod = +60;
@@ -382,21 +400,30 @@ window.IronDivision = window.IronDivision || {};
       else if (entrenchLvl >= 4) entrenchmentMod = -70;
     }
 
-    // 6. Frontliner Screening Magnet
-    const frontlinerBonus = isFrontlinerActive(target) ? 200 : 0;
+    // 6. Frontliner Screening Magnet (bypassed by indirect artillery fire)
+    const frontlinerBonus = (!isArtilleryShooter && isFrontlinerActive(target)) ? 200 : 0;
 
     const baseTV = (sizeScore + threatScore + orgScore) * categoryMultiplier + entrenchmentMod + frontlinerBonus;
 
-    // 7. Y-Axis Proximity Multiplier
+    // 7. 2D Proximity, Same-Lane Anchor & Engagement Spread Multiplier
     const effectiveDist = attacker
       ? H.getTotalDistance(attacker, target)
       : Math.max(0, (target.pos !== undefined ? target.pos : H.getUnitStartingPosition(target)));
 
-    const distMultiplier = (attacker && H.canUnitIgnoreDistance(attacker, atkTactic))
-      ? 1.50
-      : H.getDistanceTargetMultiplier(effectiveDist);
+    let distMultiplier;
+    if (isArtilleryShooter) {
+      distMultiplier = effectiveDist <= 6 ? 1.0 : (effectiveDist <= 8 ? 0.90 : 0.80);
+    } else {
+      distMultiplier = (attacker && H.canUnitIgnoreDistance(attacker, atkTactic))
+        ? 1.50
+        : H.getDistanceTargetMultiplier(effectiveDist);
+    }
 
-    return Math.max(10, Math.round(baseTV * distMultiplier));
+    const sameLaneBoost = (attacker && !isArtilleryShooter && H.getUnitLane && H.getUnitLane(attacker) === H.getUnitLane(target)) ? 1.20 : 1.0;
+    const engagedCount = attacker ? ((target.roundTemp && target.roundTemp.engagedByCount) || 0) : 0;
+    const spreadFactor = 1 / (1 + 0.35 * engagedCount);
+
+    return Math.max(10, Math.round(baseTV * distMultiplier * sameLaneBoost * spreadFactor));
   }
 
   function getCategoryPursuitRetreatBonus(category) {
@@ -741,6 +768,7 @@ window.IronDivision = window.IronDivision || {};
         u.roundTemp.fortifiedOrgReductionUsed = false;
         u.roundTemp.inCover = false;
         u.roundTemp.coverDenied = false;
+        u.roundTemp.firedInherentBarrage = false;
         u.roundTemp.lostTenPctPrevRound = !!u.roundTemp.lostTenPctLastRound;
         u.roundTemp.lostTenPctLastRound = false;
       });
@@ -819,11 +847,18 @@ window.IronDivision = window.IronDivision || {};
       }
 
       let frontlineInRangeThisRound = false;
+      let anyAttackerHeldPosition = false;
       const overwatchFiredThisRound = new Set();
 
       for (const atkUnit of attackers) {
         const currentDefenders = defState.units.filter(isUnitActive);
         if (currentDefenders.length === 0) break;
+
+        if (atkUnit.category === 'artillery' && atkUnit.roundTemp && atkUnit.roundTemp.firedInherentBarrage) {
+          if (!hasManeuverUnits) frontlineInRangeThisRound = true;
+          H.addLog('support', `[FS-ART] [Battery Reloading] ${atkUnit.name} already executed its Inherent Battery Barrage fire mission this round (Main Attack replaced).`);
+          continue;
+        }
 
         if (atkUnit.pos === undefined || atkUnit.pos === null) {
           atkUnit.pos = H.getUnitStartingPosition(atkUnit);
@@ -835,27 +870,84 @@ window.IronDivision = window.IronDivision || {};
         const eligibleDefenders = currentDefenders.filter(d => H.canUnitEngageTarget(atkUnit, d, atkTactic));
 
         if (eligibleDefenders.length === 0) {
-          const minDefenderPos = Math.min(...currentDefenders.map(d => d.pos));
-          const oldPos = atkUnit.pos;
-          const unitRange = H.getUnitEngagementRange(atkUnit);
+          const theatreAtk = (ID.state.environment && ID.state.environment.theatreAttackerSide) || 'A';
+          const isTheatreDefender = atkSide !== theatreAtk;
+          const isFortifiedUnit = (ID.state.environment.feature === 'Fort') && ((atkUnit.entrenchmentLevel || 0) >= 1);
+          const shouldHoldCover = (atkTactic.role === 'defense') ||
+            (isTheatreDefender && ((atkUnit.entrenchmentLevel || 0) >= 3 || isFortifiedUnit));
 
-          const moveRate = (atkUnit.traits.includes('melee_attack') && (oldPos + minDefenderPos) > 2) ? 2 : 1;
-          const minAllowedPos = 1 - minDefenderPos;
-          atkUnit.pos = Math.max(minAllowedPos, oldPos - moveRate);
-          atkUnit.entrenchmentLevel = 0;
+          if (shouldHoldCover) {
+            anyAttackerHeldPosition = true;
+            H.addLog(
+              'rolls',
+              `[HOLD] [Holding Cover] ${atkUnit.name} holds its entrenched position (Dig-In ${atkUnit.entrenchmentLevel || 0}, Dist ${atkUnit.pos}) instead of abandoning cover while outranged.`
+            );
+            continue;
+          }
 
-          const newClosestDist = H.getTotalDistance(atkUnit, currentDefenders.reduce((a, b) => (a.pos < b.pos ? a : b)));
-          H.addLog(
-            'rolls',
-            `[MOV] [Advancing on Y-Axis] ${atkUnit.name} (Max Range ≤${unitRange}) has no enemy in range and moves ${oldPos - atkUnit.pos} distance forward (Dist: ${oldPos} -> ${atkUnit.pos} | Closest Enemy Total Dist: ${newClosestDist}).`
+          const getLane = H.getUnitLane || (u => (u && (u.lane === 0 || u.lane === 1 || u.lane === 2) ? u.lane : 1));
+          const getDepth = H.getDepthDistance || H.getTotalDistance;
+          const closestEnemy = currentDefenders.reduce((best, d) =>
+            (H.getTotalDistance(atkUnit, d) < H.getTotalDistance(atkUnit, best) ? d : best), currentDefenders[0]
           );
+          const atkLane = getLane(atkUnit);
+          const enLane = getLane(closestEnemy);
+          const unitRange = H.getUnitEngagementRange(atkUnit);
+          const depthToClosest = getDepth(atkUnit, closestEnemy);
+          let movedSteps = 0;
 
-          // Defensive Overwatch: up to 3 in-range defenders fire uncontested volleys (prioritizing closest, then highest vigilance)
+          if (atkLane !== enLane && depthToClosest <= unitRange) {
+            const oldLane = atkLane;
+            atkUnit.lane = atkLane + Math.sign(enLane - atkLane);
+            atkUnit.entrenchmentLevel = 0;
+            const laneLblFn = H.getLaneName || (l => (l === 0 ? 'North' : l === 2 ? 'South' : 'Center'));
+            H.addLog(
+              'rolls',
+              `[MOV] [Flank Shift] ${atkUnit.name} shifts from ${laneLblFn(oldLane)} -> ${laneLblFn(atkUnit.lane)} flank toward ${closestEnemy.name} (Total Dist: ${H.getTotalDistance(atkUnit, closestEnemy)}).`
+            );
+          } else {
+            const laneDefenders = currentDefenders.filter(d => getLane(d) === atkLane);
+            const targetPoolForAdvance = laneDefenders.length > 0 ? laneDefenders : currentDefenders;
+            const minDefenderPos = Math.min(...targetPoolForAdvance.map(d => d.pos));
+            const oldPos = atkUnit.pos;
+
+            const moveEnvFx = H.getActiveEnvironmentEffects ? H.getActiveEnvironmentEffects() : { hasMud: false };
+            const moveTerr = ID.state?.environment?.terrain || 'Plains';
+            const effSpeed = H.getUnitEffectiveSpeed ? H.getUnitEffectiveSpeed(atkUnit) : 1;
+            const isFastVehicle = (atkUnit.category === 'tank' || atkUnit.category === 'armored_vehicle') &&
+              effSpeed >= 4 && !moveEnvFx.hasMud && !['Urban', 'Forest', 'Mountain', 'Jungle', 'Marsh'].includes(moveTerr);
+            const gapToTarget = oldPos + minDefenderPos;
+            const moveRate = (
+              (atkUnit.traits.includes('melee_attack') && gapToTarget > 2) ||
+              (isFastVehicle && gapToTarget > unitRange + 1)
+            ) ? 2 : 1;
+            const minAllowedPos = 1 - minDefenderPos;
+            atkUnit.pos = Math.max(minAllowedPos, oldPos - moveRate);
+            atkUnit.entrenchmentLevel = 0;
+            movedSteps = oldPos - atkUnit.pos;
+
+            const newClosestDist = H.getTotalDistance(atkUnit, currentDefenders.reduce((a, b) =>
+              (H.getTotalDistance(atkUnit, a) <= H.getTotalDistance(atkUnit, b) ? a : b)
+            ));
+            const speedNote = (movedSteps >= 2 && isFastVehicle) ? ` [Fast Advance, Spd ${effSpeed}]` : '';
+            H.addLog(
+              'rolls',
+              `[MOV] [Advancing on Y-Axis] ${atkUnit.name} (Max Range ≤${unitRange}) has no enemy in range and moves ${movedSteps} distance forward${speedNote} (Dist: ${oldPos} -> ${atkUnit.pos} | Closest Enemy Total Dist: ${newClosestDist}).`
+            );
+          }
+
+          // Defensive Overwatch: capped at 3 vs foot, 2 vs armored/fast advances, 1 vs armored_spearhead; artillery Overwatch <=5
           const getUnitVigScore = (unit) => {
             const tVig = (unit.traits || []).map(getTraitById).filter(Boolean).reduce((s, t) => s + (t.vigilance || 0), 0);
             const expVig = (D.EXPERIENCE_TIERS[unit.experience]?.recBonus || 0);
             return tVig + expVig;
           };
+          let maxOverwatchShooters = 3;
+          if ((atkUnit.traits || []).includes('armored_spearhead')) {
+            maxOverwatchShooters = 1;
+          } else if ((atkUnit.maxArmor > 0 && atkUnit.armor > 0) || movedSteps >= 2) {
+            maxOverwatchShooters = 2;
+          }
           const overwatchCandidates = currentDefenders
             .filter(defUnit =>
               !overwatchFiredThisRound.has(defUnit.instanceId) &&
@@ -867,7 +959,7 @@ window.IronDivision = window.IronDivision || {};
               if (distDiff !== 0) return distDiff;
               return getUnitVigScore(b) - getUnitVigScore(a);
             })
-            .slice(0, 3);
+            .slice(0, maxOverwatchShooters);
 
           for (const defUnit of overwatchCandidates) {
             if (!isUnitActive(atkUnit)) break;
@@ -896,10 +988,10 @@ window.IronDivision = window.IronDivision || {};
 
         resolveUnitEngagement(atkUnit, targetUnit, atkSide, defSide, atkTactic, defTactic, vigResult);
 
-        // Melee Rush: units with melee_attack step 1 closer into Total Distance 1 after firing
+        // Melee Rush: units with melee_attack step 1 closer along depth into Total Distance 1 after firing
         if (isUnitActive(atkUnit) && isUnitActive(targetUnit) && atkUnit.traits.includes('melee_attack')) {
-          const curDist = H.getTotalDistance(atkUnit, targetUnit);
-          if (curDist > 1) {
+          const curDepth = H.getDepthDistance ? H.getDepthDistance(atkUnit, targetUnit) : H.getTotalDistance(atkUnit, targetUnit);
+          if (curDepth > 1) {
             const prevPos = atkUnit.pos;
             atkUnit.pos = Math.max(1 - targetUnit.pos, atkUnit.pos - 1);
             if (atkUnit.pos !== prevPos) {
@@ -931,7 +1023,7 @@ window.IronDivision = window.IronDivision || {};
 
       // 8. Turn Progression & Phase Lock
       ID.state.battle.round++;
-      if (!frontlineInRangeThisRound && defenders.length > 0) {
+      if (!frontlineInRangeThisRound && !anyAttackerHeldPosition && defenders.length > 0) {
         H.addLog('rolls', `[HOLD] [Initiative Locked] Side ${atkSide} has not yet closed into frontline engagement range — Side ${atkSide} remains in the Attacking Phase while Side ${defSide} holds in the Defending Phase!`);
       } else {
         ID.state.battle.attackerSide = ID.state.battle.attackerSide === 'A' ? 'B' : 'A';
@@ -1537,100 +1629,111 @@ window.IronDivision = window.IronDivision || {};
       }
     }
 
-    const pickActiveTarget = () => {
-      const live = enemyState.units.filter(isUnitActive);
+    const pickActiveTarget = (shooter, maxRange = Infinity) => {
+      const live = enemyState.units.filter(eu =>
+        isUnitActive(eu) && (!Number.isFinite(maxRange) || H.getTotalDistance(shooter, eu) <= maxRange)
+      );
       return live.length > 0 ? live[Math.floor(Math.random() * live.length)] : null;
     };
 
     for (const u of firingState.units.filter(isUnitActive)) {
       if (!u.isMonster && !u.isZombie && u.supply < u.maxSupply * 0.5) continue;
 
-      let target = pickActiveTarget();
-      if (!target) break;
-
-      // Mortar Support
+      // Mortar Support (gated to Total Distance <= 5)
       if (u.traits.includes('mortar_support') && u.supportCooldowns.mortar <= 0) {
-        const cost = 1 + H.rollDie(2);
-        if (!u.isMonster && !u.isZombie) u.supply = Math.max(0, u.supply - cost);
-        u.supportCooldowns.mortar = 2;
+        const mortarTarget = pickActiveTarget(u, 5);
+        if (mortarTarget) {
+          const cost = 1 + H.rollDie(2);
+          if (!u.isMonster && !u.isZombie) u.supply = Math.max(0, u.supply - cost);
+          u.supportCooldowns.mortar = 2;
 
-        const isTargetArmored = (target.maxArmor > 0 && target.armorTier !== 'unarmored');
+          const isTargetArmored = (mortarTarget.maxArmor > 0 && mortarTarget.armorTier !== 'unarmored');
 
-        if (!isTargetArmored) {
-          const defRed = 3 + H.rollDie(6);
-          target.roundTemp.defMalus += defRed;
-          target.roundTemp.coverDenied = true;
-          const cas = 1 + H.rollDie(4);
-          applySupportCasualtiesAndArmor(target, cas, 0, 'Mortar Fragmentation', u, 'indirect');
+          if (!isTargetArmored) {
+            const defRed = 3 + H.rollDie(6);
+            mortarTarget.roundTemp.defMalus += defRed;
+            mortarTarget.roundTemp.coverDenied = true;
+            const cas = 1 + H.rollDie(4);
+            applySupportCasualtiesAndArmor(mortarTarget, cas, 0, 'Mortar Fragmentation', u, 'indirect');
 
-          let orgShock = 0;
-          if (!target.isMonster && !target.isZombie) {
-            orgShock = H.rollDie(3);
-            target.org = Math.max(0, target.org - orgShock);
-            checkAndMarkUnitDefeat(target);
-          }
-          H.addLog('support', `[FS-MORT] [Mortar Plunging Fire] ${u.name} -> ${target.name} (Infantry): Def -${defRed}, Entrenchment DENIED, ${cas} casualties, -${orgShock} Org suppression shock!`);
-        } else {
-          const defRed = 1 + H.rollDie(3);
-          target.roundTemp.defMalus += defRed;
+            let orgShock = 0;
+            if (!mortarTarget.isMonster && !mortarTarget.isZombie) {
+              orgShock = H.rollDie(3);
+              mortarTarget.org = Math.max(0, mortarTarget.org - orgShock);
+              checkAndMarkUnitDefeat(mortarTarget);
+            }
+            H.addLog('support', `[FS-MORT] [Mortar Plunging Fire] ${u.name} -> ${mortarTarget.name} (Infantry, Dist ${H.getTotalDistance(u, mortarTarget)}): Def -${defRed}, Entrenchment DENIED, ${cas} casualties, -${orgShock} Org suppression shock!`);
+          } else {
+            const defRed = 1 + H.rollDie(3);
+            mortarTarget.roundTemp.defMalus += defRed;
 
-          const d6 = H.rollDie(6);
-          if (d6 <= 4) {
-            H.addLog('support', `[FS-MORT] [Mortar Shells on Armor] ${u.name} -> ${target.name}: Shrapnel bounces off armor plate. 0 Hardness reduction. Def -${defRed} (Buttoned up).`);
-          } else if (d6 === 5) {
-            target.roundTemp.defMalus += 5;
-            const targetSideState = enemySide === 'A' ? ID.state.battle.sideA : ID.state.battle.sideB;
-            targetSideState.nextRoundVigMod -= 15;
-            H.addLog('support', `[TGT] [Mortar Optics Hit!] ${u.name} -> ${target.name}: Periscopes shattered! Def -${defRed + 5}, -15 Vigilance next round.`);
-          } else if (d6 === 6) {
-            processArmorLossAndCrewCasualties(target, 1, 'Mortar Track Hit', 'Mortar Mobility Hit', u, 'indirect');
-            target.mobilityClassPenalty = (target.mobilityClassPenalty || 0) + 2;
-            H.addLog('armor', `[BRCH] [MORTAR TRACK BLOWN!] ${u.name} lands direct shell on ${target.name}'s suspension! 1 vehicle immobilized, -2 Mobility Class!`);
+            const d6 = H.rollDie(6);
+            if (d6 <= 4) {
+              H.addLog('support', `[FS-MORT] [Mortar Shells on Armor] ${u.name} -> ${mortarTarget.name}: Shrapnel bounces off armor plate. 0 Hardness reduction. Def -${defRed} (Buttoned up).`);
+            } else if (d6 === 5) {
+              mortarTarget.roundTemp.defMalus += 5;
+              const targetSideState = enemySide === 'A' ? ID.state.battle.sideA : ID.state.battle.sideB;
+              targetSideState.nextRoundVigMod -= 15;
+              H.addLog('support', `[TGT] [Mortar Optics Hit!] ${u.name} -> ${mortarTarget.name}: Periscopes shattered! Def -${defRed + 5}, -15 Vigilance next round.`);
+            } else if (d6 === 6) {
+              processArmorLossAndCrewCasualties(mortarTarget, 1, 'Mortar Track Hit', 'Mortar Mobility Hit', u, 'indirect');
+              mortarTarget.mobilityClassPenalty = (mortarTarget.mobilityClassPenalty || 0) + 2;
+              H.addLog('armor', `[BRCH] [MORTAR TRACK BLOWN!] ${u.name} lands direct shell on ${mortarTarget.name}'s suspension! 1 vehicle immobilized, -2 Mobility Class!`);
+            }
           }
         }
       }
 
-      // Inherent or Attached Artillery Barrage
+      // Inherent or Attached Artillery Barrage (gated to extended artillery range <= 12)
       const canFireArtillery = (u.category === 'artillery' || u.traits.includes('heavy_artillery_support'));
 
       if (canFireArtillery && u.supportCooldowns.heavy_artillery <= 0) {
-        if (!isUnitActive(target)) {
-          target = pickActiveTarget();
-          if (!target) break;
-        }
-        const cost = 3 + H.rollDie(3);
-        if (!u.isMonster && !u.isZombie) u.supply = Math.max(0, u.supply - cost);
-        u.supportCooldowns.heavy_artillery = 1 + H.rollDie(2);
+        const artRange = u.category === 'artillery' ? H.getUnitEngagementRange(u) : 12;
+        const artTarget = pickActiveTarget(u, artRange);
+        if (artTarget) {
+          const cost = 3 + H.rollDie(3);
+          if (!u.isMonster && !u.isZombie) u.supply = Math.max(0, u.supply - cost);
+          u.supportCooldowns.heavy_artillery = 1 + H.rollDie(2);
+          if (u.category === 'artillery') {
+            u.roundTemp.firedInherentBarrage = true;
+          }
 
-        const d12 = H.rollDie(12);
-        const defRed = 4 + d12;
-        const hardRed = 2 + H.rollDie(6);
-        const baseArmDis = target.maxArmor > 0 ? H.rollDie(2) : 0;
-        target.roundTemp.defMalus += defRed;
-        target.roundTemp.hardMalus += hardRed;
+          const d12 = H.rollDie(12);
+          const defRed = 4 + d12;
+          const hardRed = 2 + H.rollDie(6);
+          const baseArmDis = artTarget.maxArmor > 0 ? H.rollDie(2) : 0;
+          artTarget.roundTemp.defMalus += defRed;
+          artTarget.roundTemp.hardMalus += hardRed;
 
-        let cas = 0;
-        let armDis = baseArmDis;
-        if (d12 >= 8 && d12 <= 10) {
-          cas = H.rollDie(6);
-        } else if (d12 >= 11) {
-          cas = 2 + H.rollDie(12);
-          if (target.maxArmor > 0) armDis += 1 + H.rollDie(3);
-        }
-        if (cas > 0 || armDis > 0) {
-          applySupportCasualtiesAndArmor(target, cas, armDis, 'Heavy Artillery Barrage', u, 'indirect');
-        }
+          let cas = 0;
+          let armDis = baseArmDis;
+          if (d12 >= 8 && d12 <= 10) {
+            cas = H.rollDie(6);
+          } else if (d12 >= 11) {
+            cas = 2 + H.rollDie(12);
+            if (artTarget.maxArmor > 0) armDis += 1 + H.rollDie(3);
+          }
+          if (cas > 0 || armDis > 0) {
+            applySupportCasualtiesAndArmor(artTarget, cas, armDis, 'Heavy Artillery Barrage', u, 'indirect');
+          }
 
-        const fireSourceLabel = u.category === 'artillery' ? 'Inherent Battery Barrage' : 'Off-Map Artillery Support';
-        H.addLog('support', `[FS-ART] [${fireSourceLabel}] ${u.name} -> ${target.name} (Roll d12=${d12}, Cost ${cost} Sup, CD ${u.supportCooldowns.heavy_artillery}): Def -${defRed}, Hardness -${hardRed}, Cas: ${cas}, Armor Dis: ${armDis}`);
+          let artOrgShock = 0;
+          if (u.category === 'artillery' && !artTarget.defeated && !artTarget.isRallying && !artTarget.isMonster && !artTarget.isZombie) {
+            artOrgShock = 1 + H.rollDie(2);
+            artTarget.org = Math.max(0, artTarget.org - artOrgShock);
+            checkAndMarkUnitDefeat(artTarget);
+          }
+
+          const fireSourceLabel = u.category === 'artillery' ? 'Inherent Battery Barrage' : 'Off-Map Artillery Support';
+          const shockNote = artOrgShock > 0 ? `, Org -${artOrgShock}` : '';
+          H.addLog('support', `[FS-ART] [${fireSourceLabel}] ${u.name} -> ${artTarget.name} (Roll d12=${d12}, Cost ${cost} Sup, CD ${u.supportCooldowns.heavy_artillery}): Def -${defRed}, Hardness -${hardRed}${shockNote}, Cas: ${cas}, Armor Dis: ${armDis}`);
+        }
       }
 
-      // Air Support & AA Interception (now weather & time-of-day aware via airMod)
+      // Air Support & AA Interception (theatre-wide, weather & time-of-day aware via airMod)
       if (u.traits.includes('air_support') && u.supportCooldowns.air_support <= 0 && !firingState.airstrikeDisabled) {
-        if (!isUnitActive(target)) {
-          target = pickActiveTarget();
-          if (!target) break;
-        }
+        const airTarget = pickActiveTarget(u, Infinity);
+        if (!airTarget) break;
         const enemyUnits = enemyState.units.filter(isUnitActive);
         if (enemyUnits.length === 0) break;
         const airEnvFx = H.getActiveEnvironmentEffects ? H.getActiveEnvironmentEffects() : { effectiveAirMod: 0, airEfficiency: 1.0 };
@@ -1684,27 +1787,27 @@ window.IronDivision = window.IronDivision || {};
           const rawHardRed = Math.round((4 + H.rollDie(10)) * airEff);
           const defRed = Math.max(0, rawDefRed - aaReduction);
           const hardRed = Math.max(0, rawHardRed - Math.floor(aaReduction / 2));
-          target.roundTemp.defMalus += defRed;
-          target.roundTemp.hardMalus += hardRed;
+          airTarget.roundTemp.defMalus += defRed;
+          airTarget.roundTemp.hardMalus += hardRed;
 
           let cas = 0;
           let armDis = 0;
           if (d20 >= 10 && d20 <= 14) {
             cas = H.rollDie(6);
-            if (target.maxArmor > 0) armDis = H.rollDie(2);
+            if (airTarget.maxArmor > 0) armDis = H.rollDie(2);
           } else if (d20 >= 15 && d20 <= 18) {
             cas = 2 + H.rollDie(12);
-            if (target.maxArmor > 0) armDis = 1 + H.rollDie(3);
+            if (airTarget.maxArmor > 0) armDis = 1 + H.rollDie(3);
           } else if (d20 >= 19) {
             cas = 6 + H.rollDie(20);
-            if (target.maxArmor > 0) armDis = 2 + H.rollDie(5);
+            if (airTarget.maxArmor > 0) armDis = 2 + H.rollDie(5);
           }
           cas = Math.max(0, Math.round(cas * airEff) - aaReduction);
           armDis = Math.max(0, Math.round(armDis * airEff));
           if (cas > 0 || armDis > 0) {
-            applySupportCasualtiesAndArmor(target, cas, armDis, 'Airstrike', u, 'air');
+            applySupportCasualtiesAndArmor(airTarget, cas, armDis, 'Airstrike', u, 'air');
           }
-          H.addLog('support', `[FS-AIR] [Air Support] ${u.name} -> ${target.name} (Roll d20=${d20}, Air Eff: ${airEffPct}%, AA Red: -${aaReduction}): Def -${defRed}, Hardness -${hardRed}, Cas: ${cas}, Armor Dis: ${armDis}`);
+          H.addLog('support', `[FS-AIR] [Air Support] ${u.name} -> ${airTarget.name} (Roll d20=${d20}, Air Eff: ${airEffPct}%, AA Red: -${aaReduction}): Def -${defRed}, Hardness -${hardRed}, Cas: ${cas}, Armor Dis: ${armDis}`);
         }
       }
     }
@@ -1808,11 +1911,58 @@ window.IronDivision = window.IronDivision || {};
     return (u.org / Math.max(1, u.maxOrg)) >= threshold;
   }
 
+  function getSpatiallyScreenedPool(attacker, defenders) {
+    if (!defenders || defenders.length === 0) return { frontliners: [], unscreened: [] };
+    if (attacker && attacker.category === 'artillery') {
+      return { frontliners: [], unscreened: defenders.slice() };
+    }
+    const getLane = H.getUnitLane || (u => (u && (u.lane === 0 || u.lane === 1 || u.lane === 2) ? u.lane : 1));
+    const activeFrontliners = defenders.filter(isFrontlinerActive);
+    if (activeFrontliners.length === 0) {
+      return { frontliners: [], unscreened: defenders.slice() };
+    }
+    const unscreened = [];
+    for (const d of defenders) {
+      if (activeFrontliners.includes(d)) {
+        unscreened.push(d);
+        continue;
+      }
+      const dLane = getLane(d);
+      const dPos = (d.pos !== undefined && d.pos !== null) ? d.pos : 2;
+      const sameLaneFronts = activeFrontliners.filter(f => getLane(f) === dLane);
+      const isScreened = sameLaneFronts.length > 0
+        ? sameLaneFronts.some(f => ((f.pos !== undefined && f.pos !== null) ? f.pos : 2) <= dPos)
+        : activeFrontliners.some(f => Math.abs(getLane(f) - dLane) <= 1 && ((f.pos !== undefined && f.pos !== null) ? f.pos : 2) < dPos);
+      if (!isScreened) unscreened.push(d);
+    }
+    return { frontliners: activeFrontliners, unscreened };
+  }
+
+  function pickWeightedTarget(candidates, attacker, atkTactic, attackerWonVig) {
+    if (!candidates || candidates.length === 0) return null;
+    if (candidates.length === 1) return candidates[0];
+    const scored = candidates
+      .map(u => ({ u, score: getUnitTargetValue(u, attacker, atkTactic) }))
+      .sort((a, b) => b.score - a.score);
+    const topK = scored.slice(0, attackerWonVig ? 2 : 3);
+    const weights = topK.map(item => (attackerWonVig ? item.score * item.score : item.score));
+    const totalW = weights.reduce((s, w) => s + w, 0);
+    if (totalW <= 0) return topK[0].u;
+    let roll = Math.random() * totalW;
+    for (let i = 0; i < topK.length; i++) {
+      roll -= weights[i];
+      if (roll <= 0) return topK[i].u;
+    }
+    return topK[0].u;
+  }
+
   function selectTargetUnit(attacker, defenders, atkTactic, defTactic, attackerWonVig) {
     if (defenders.length === 0) return null;
     if (defenders.length === 1) return defenders[0];
 
-    const activeFrontliners = defenders.filter(isFrontlinerActive);
+    const screenInfo = getSpatiallyScreenedPool(attacker, defenders);
+    const activeFrontliners = screenInfo.frontliners;
+    const unscreenedPool = screenInfo.unscreened;
 
     // Infiltration Bypass
     let bypassChance = atkTactic.bypassChance || 0;
@@ -1822,25 +1972,26 @@ window.IronDivision = window.IronDivision || {};
     if (bypassChance > 0 && Math.random() * 100 < bypassChance) {
       const backline = defenders.filter(d => !isFrontlinerActive(d) || d.category === 'artillery');
       if (backline.length > 0) {
-        backline.sort((a, b) => getUnitTargetValue(b, attacker, atkTactic) - getUnitTargetValue(a, attacker, atkTactic));
-        const picked = backline[0];
+        const picked = pickWeightedTarget(backline, attacker, atkTactic, true);
         H.addLog('rolls', `[INFIL] [Bypass Success] ${attacker.name} bypasses frontline screening to strike high-value ${picked.name} (TV ${getUnitTargetValue(picked, attacker, atkTactic)})!`);
         return picked;
       }
     }
 
-    // Anti-Unit Trait Priority
+    // Anti-Unit Trait Priority (respects spatial screening: unscreened enemies are engaged directly)
     const antiTraits = attacker.traits.map(getTraitById).filter(t => t && t.antiCategory);
     if (antiTraits.length > 0) {
       const desiredCat = antiTraits[0].antiCategory;
       const desiredTargets = defenders.filter(d => d.category === desiredCat);
       if (desiredTargets.length > 0) {
-        desiredTargets.sort((a, b) => getUnitTargetValue(b, attacker, atkTactic) - getUnitTargetValue(a, attacker, atkTactic));
-        const desiredUnit = desiredTargets[0];
+        const desiredUnit = pickWeightedTarget(desiredTargets, attacker, atkTactic, attackerWonVig);
 
-        if (activeFrontliners.length > 0 && !activeFrontliners.includes(desiredUnit)) {
-          activeFrontliners.sort((a, b) => getUnitTargetValue(b, attacker, atkTactic) - getUnitTargetValue(a, attacker, atkTactic));
-          const bestFrontliner = activeFrontliners[0];
+        if (activeFrontliners.length > 0 && !unscreenedPool.includes(desiredUnit)) {
+          const getLane = H.getUnitLane || (u => (u && (u.lane === 0 || u.lane === 1 || u.lane === 2) ? u.lane : 1));
+          const sameLaneFront = activeFrontliners.filter(f => getLane(f) === getLane(desiredUnit));
+          const blockingFronts = sameLaneFront.length > 0 ? sameLaneFront : activeFrontliners;
+          blockingFronts.sort((a, b) => getUnitTargetValue(b, attacker, atkTactic) - getUnitTargetValue(a, attacker, atkTactic));
+          const bestFrontliner = blockingFronts[0];
           if (getUnitTargetValue(bestFrontliner, attacker, atkTactic) > getUnitTargetValue(desiredUnit, attacker, atkTactic)) {
             H.addLog('rolls', `[DEF] [Frontliner Intercept] ${bestFrontliner.name} (TV ${getUnitTargetValue(bestFrontliner, attacker, atkTactic)}) intercepts Anti-Unit attack aimed at ${desiredUnit.name}!`);
             return bestFrontliner;
@@ -1858,29 +2009,23 @@ window.IronDivision = window.IronDivision || {};
       }
     }
 
+    const effectivePool = unscreenedPool.length > 0 ? unscreenedPool : defenders;
+
     if (!attackerWonVig) {
       if (activeFrontliners.length > 0) {
-        activeFrontliners.sort((a, b) => getUnitTargetValue(b, attacker, atkTactic) - getUnitTargetValue(a, attacker, atkTactic));
-        return activeFrontliners[0];
+        return pickWeightedTarget(effectivePool, attacker, atkTactic, false);
       }
-      const randTarget = defenders[Math.floor(Math.random() * defenders.length)];
+      const randTarget = effectivePool[Math.floor(Math.random() * effectivePool.length)];
       H.addLog('rolls', `[RNG] [Failed Vigilance] ${attacker.name} acquires targets blindly, firing at ${randTarget.name}.`);
       return randTarget;
     }
 
-    if (activeFrontliners.length > 0) {
-      activeFrontliners.sort((a, b) => getUnitTargetValue(b, attacker, atkTactic) - getUnitTargetValue(a, attacker, atkTactic));
-      return activeFrontliners[0];
-    }
-
-    const sorted = [...defenders].sort((a, b) => getUnitTargetValue(b, attacker, atkTactic) - getUnitTargetValue(a, attacker, atkTactic));
-
     if (atkTactic.id === 'atk_blitz') {
-      const lowOrgTargets = [...defenders].sort((a, b) => a.org - b.org);
-      return lowOrgTargets[0];
+      const lowOrgTargets = [...effectivePool].sort((a, b) => a.org - b.org).slice(0, 2);
+      return lowOrgTargets.length > 1 && Math.random() < 0.25 ? lowOrgTargets[1] : lowOrgTargets[0];
     }
 
-    return sorted[0];
+    return pickWeightedTarget(effectivePool, attacker, atkTactic, true);
   }
 
   // --------------------------------------------------------------------------
@@ -2028,7 +2173,7 @@ window.IronDivision = window.IronDivision || {};
 
     const atkTotals = computeUnitTotalStat(
       attacker, defender, atkSide, defSide, 'attack',
-      combinedBaseAtk, atkDieRoll, vigBoostAtk, atkTactic, defTactic, false
+      combinedBaseAtk, atkDieRoll, vigBoostAtk, atkTactic, defTactic, false, isOverwatch
     );
 
     // STEP E: Roll Defense Die
@@ -2039,12 +2184,12 @@ window.IronDivision = window.IronDivision || {};
 
     const defTotals = computeUnitTotalStat(
       defender, attacker, defSide, atkSide, 'defense',
-      baseDef, defDieRoll, vigBoostDef, defTactic, atkTactic, false
+      baseDef, defDieRoll, vigBoostDef, defTactic, atkTactic, false, isOverwatch
     );
 
     H.addLog(
       'rolls',
-      `[OP] [Clash] ${attacker.name} Atk: Base(${combinedBaseAtk.toFixed(1)}) + d${atkDieSides}(${atkDieRoll}) + Flat(${atkTotals.flatBonus}) × Mod(${atkTotals.netPct >= 0 ? '+' : ''}${atkTotals.netPct}%)${atkTotals.artDispPct < 0 ? ` [Range Disp ${atkTotals.artDispPct}%]` : ''} = ${atkTotals.finalValue} ` +
+      `[OP] [Clash] ${attacker.name} Atk: Base(${combinedBaseAtk.toFixed(1)}) + d${atkDieSides}(${atkDieRoll}) + Flat(${atkTotals.flatBonus}) × Mod(${atkTotals.netPct >= 0 ? '+' : ''}${atkTotals.netPct}%)${atkTotals.artDispPct < 0 ? ` [Range Disp ${atkTotals.artDispPct}%]` : ''}${atkTotals.isFlanking ? ' [FLANK +15%]' : ''}${atkTotals.isOverwatch ? ' [Overwatch -15%]' : ''} = ${atkTotals.finalValue} ` +
       `VS ${defender.name} Def: Base(${baseDef}) + d${defDieSides}(${defDieRoll}) + Flat(${defTotals.flatBonus}) × Mod(${defTotals.netPct >= 0 ? '+' : ''}${defTotals.netPct}%) = ${defTotals.finalValue}`
     );
 
@@ -2330,7 +2475,19 @@ window.IronDivision = window.IronDivision || {};
   // 11. Aggregate Statistic Calculations
   // --------------------------------------------------------------------------
 
-  function computeUnitTotalStat(unit, opponent, mySide, enemySide, role, baseStat, dieRoll, vigFlatBoost, myTactic, enemyTactic, isReturnFire) {
+  function isEnfiladeFlankAttack(attacker, defender, enemySideKey, isReturnFire = false) {
+    if (!attacker || !defender || isReturnFire || attacker.category === 'artillery') return false;
+    const getLane = H.getUnitLane || (u => (u && (u.lane === 0 || u.lane === 1 || u.lane === 2) ? u.lane : 1));
+    const attLane = getLane(attacker);
+    const defLane = getLane(defender);
+    if (attLane === defLane) return false;
+    const enemyUnits = enemySideKey === 'A'
+      ? (ID.state?.battle?.sideA?.units || [])
+      : (ID.state?.battle?.sideB?.units || []);
+    return !enemyUnits.some(eu => isUnitActive(eu) && eu.category !== 'artillery' && getLane(eu) === attLane);
+  }
+
+  function computeUnitTotalStat(unit, opponent, mySide, enemySide, role, baseStat, dieRoll, vigFlatBoost, myTactic, enemyTactic, isReturnFire, isOverwatch = false) {
     const myState = mySide === 'A' ? ID.state.battle.sideA : ID.state.battle.sideB;
     const traits = unit.traits.map(getTraitById).filter(Boolean);
     const exp = D.EXPERIENCE_TIERS[unit.experience] || D.EXPERIENCE_TIERS.Regular;
@@ -2366,6 +2523,9 @@ window.IronDivision = window.IronDivision || {};
     if (isReturnFire && opponent && opponent.traits.includes('melee_attack') && clashDist <= 1) {
       addPct(-30);
     }
+    if (role === 'attack' && isOverwatch) {
+      addPct(-15);
+    }
 
     let artDispPct = 0;
     if (role === 'attack' && unit.category === 'artillery') {
@@ -2375,9 +2535,17 @@ window.IronDivision = window.IronDivision || {};
       }
     }
 
-    // Entrenchment defense bonus (melee bypasses 50% entrenchment)
+    const isFlanking = (role === 'attack') && isEnfiladeFlankAttack(unit, opponent, enemySide, isReturnFire);
+    if (isFlanking) {
+      addPct(15);
+    }
+
+    const isBeingFlanked = (role === 'defense') && isEnfiladeFlankAttack(opponent, unit, mySide, isReturnFire);
+
+    // Entrenchment defense bonus (melee close-range and enfilade flanking bypass 50% entrenchment)
     if (role === 'defense' && unit.entrenchmentLevel > 0) {
-      const effEntrench = (opponent && opponent.traits.includes('melee_attack') && clashDist <= 1)
+      const bypassHalf = (opponent && opponent.traits.includes('melee_attack') && clashDist <= 1) || isBeingFlanked;
+      const effEntrench = bypassHalf
         ? Math.floor(unit.entrenchmentLevel * 0.5)
         : unit.entrenchmentLevel;
       addPct(effEntrench * 5);
@@ -2536,7 +2704,7 @@ window.IronDivision = window.IronDivision || {};
     const preMult = Math.max(0, baseStat + dieRoll + flatBonus);
     const finalValue = Math.round(preMult * (1 + netPct / 100) * 10) / 10;
 
-    return { flatBonus, posPct, negPct: cappedNegPct, netPct, finalValue, artDispPct };
+    return { flatBonus, posPct, negPct: cappedNegPct, netPct, finalValue, artDispPct, isFlanking, isOverwatch: !!(role === 'attack' && isOverwatch) };
   }
 
   // --------------------------------------------------------------------------
@@ -2797,6 +2965,8 @@ window.IronDivision = window.IronDivision || {};
     applySupportCasualtiesAndArmor,
     getUnitArmorRecoveryBonus,
     isFrontlinerActive,
+    getSpatiallyScreenedPool,
+    isEnfiladeFlankAttack,
     selectTargetUnit,
     resolveUnitEngagement,
     computeUnitTotalStat,

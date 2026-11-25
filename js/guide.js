@@ -266,7 +266,7 @@ window.IronDivision = window.IronDivision || {};
 
             <p class="tradoc-para">
               <span class="tradoc-para-id">5-1.</span>
-              <strong>Y-Axis Distance &amp; Engagement Range (NO, YOU CANNOT SNIPE WITH AN M4 AT 2 KILOMETERS!):</strong> Look at the horizontal <strong>Y-AXIS CONTACT (0)</strong> strip in the center column. Side A starts on the negative side and Side B on the positive side. Add both positions together to get <strong>Total Distance</strong>.
+              <strong>3-Lane 2D Distance, Enfilade Flanking &amp; Spatial Targeting:</strong> Look at the horizontal <strong>CONTACT LINE (0)</strong> strip across <strong>North (N)</strong>, <strong>Center (C)</strong>, and <strong>South (S)</strong> lanes in the 2D Sector. Add both depths plus lane offset (<code>posA + posB + |laneA - laneB|</code>) to get <strong>Total Distance</strong>. Clear all enemy maneuver units from your own lane to flank adjacent lanes for <strong>+15% Attack &amp; half entrenchment</strong>!
             </p>
             <div class="tradoc-callout">
               <strong>LISTEN UP, SOLDIER:</strong> You cannot shoot an M4 rifle two kilometers straight and expect to hit anything — if you pull that off, I'll personally pin a medal on your forehead and give you a standing ovation! That is why <strong>Infantry &amp; standard Armored Vehicles must close to Distance &lt;= 2</strong>, <strong>Tanks AND Anti-Tank Tank Destroyers engage at Distance &lt;= 3</strong>, and <strong>Artillery shells clear across the sector up to Distance &lt;= 12</strong> (taking a mild <strong>-4%/step</strong> dispersion malus past Distance 6, capped at -20%, halved when an active Recon Spotter guides the battery). And if Fog or Night triggers a <strong>VIS CAP</strong>, even your tanks and unspotted howitzers lose sight range!
@@ -435,8 +435,8 @@ window.IronDivision = window.IronDivision || {};
               </thead>
               <tbody>
                 <tr>
-                  <td><strong>Y-Axis Range &amp; Close Raiding</strong></td>
-                  <td><code>Total Distance = posA + posB</code>. Base ranges: <code>Infantry / standard AV &lt;= 2</code>, <code>Tank &amp; anti_tank AV (TDs) &lt;= 3</code>, <code>Artillery &lt;= 12</code> (<code>-4%/step</code> dispersion beyond dist <code>6</code>, capped <code>-20%</code>, halved by active <code>recon_support</code>; Overwatch capped at <code>&lt;= 5</code>), <code>Zombie &lt;= 1</code>. Supply raiding (<code>[Supply Stolen]</code>) is strictly gated to <code>category !== 'artillery' &amp;&amp; totalDist &lt;= 2</code>.</td>
+                  <td><strong>3-Lane 2D Distance &amp; Flank Enfilade</strong></td>
+                  <td><code>Total Distance = (posA + posB) + |laneA - laneB|</code> across <code>North (0) / Center (1) / South (2)</code>. Base ranges: <code>Infantry / standard AV &lt;= 2</code>, <code>Tank &amp; anti_tank AV (TDs) &lt;= 3</code>, <code>Artillery &lt;= 12</code> (<code>-4%/step</code> dispersion beyond dist <code>6</code>, capped <code>-20%</code>, halved by active <code>recon_support</code>; Inherent Barrage replaces that round's Main Attack; Overwatch capped at <code>&lt;= 5</code>), <code>Mortar Support &lt;= 5</code>, <code>Air Support</code> theatre-wide, <code>Zombie &lt;= 1</code>. Clearing a lane grants <strong>+15% Enfilade Atk</strong> &amp; halves defender entrenchment across lanes; fast vehicles (<code>effSpeed &gt;= 4</code> in dry open terrain) advance <code>2</code> steps/rd (slowed to <code>1</code> by Mud/close terrain); entrenched defenders (<code>Dig-In &gt;= 3</code> / <code>Fort</code> / defensive tactic) hold cover when outranged; Overwatch takes <code>-15%</code> Atk (max <code>2</code> vs armor/fast, <code>1</code> vs Spearhead).</td>
                 </tr>
                 <tr>
                   <td><strong>Arbitrary-Era Calendar &amp; 24H Clock</strong></td>

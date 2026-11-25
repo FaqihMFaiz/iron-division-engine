@@ -452,7 +452,209 @@ console.log('PASS [1]: All 9 js/*.js files pass `node --check`.');
   ID.Combat.runSingleRound();
   assert(ID.state.battle.logs.some(l => l.text.includes('[Defensive Overwatch]') && l.text.includes(closeArtyB.name)), 'Defending artillery at Total Dist <=5 should still be eligible for Defensive Overwatch');
 
-  console.log('PASS [5]: Combat edge cases, Return Fire Cover Save, artillery range/dispersion/guardrails, and recon spotter checks verified.');
+  // 5f. True 3-Lane 2D Distance, Balanced Scenario Lanes, Spatial Screening, Spread, Enfilade & Flank Shift
+  const frontId = ID.Data.DEFAULT_TRAITS.find(t => t.isFrontliner).id;
+
+  // Distance math across lanes: same lane = posA+posB, adjacent = +1, opposite = +2
+  const lU0 = { pos: 2, lane: 0 };
+  const lU1 = { pos: 2, lane: 1 };
+  const lU2 = { pos: 2, lane: 2 };
+  assert.strictEqual(ID.Helpers.getTotalDistance(lU0, { pos: 2, lane: 0 }), 4);
+  assert.strictEqual(ID.Helpers.getTotalDistance(lU0, lU1), 5);
+  assert.strictEqual(ID.Helpers.getTotalDistance(lU0, lU2), 6);
+
+  // Scenario balanced 3-lane deployment (both Arracourt and San Marino occupy North, Center, South lanes)
+  ID.App.loadArracourtScenario();
+  const arrLanesA = new Set(ID.state.battle.sideA.units.map(u => u.lane));
+  const arrLanesB = new Set(ID.state.battle.sideB.units.map(u => u.lane));
+  assert.strictEqual(arrLanesA.size, 3, 'Arracourt Side A must deploy across all 3 lanes');
+  assert.strictEqual(arrLanesB.size, 3, 'Arracourt Side B must deploy across all 3 lanes');
+
+  // Spatial Frontliner Screening: rear frontliner cannot shield exposed forward non-frontliner; level/forward frontliner shields rear; artillery bypasses screen
+  ID.App.emptyBattlefield(true);
+  const attackerInf = ID.Combat.createCombatUnitInstance(getTpl(ID, 'inf'), 'A');
+  const attackerArty = ID.Combat.createCombatUnitInstance(getTpl(ID, 'arty'), 'A');
+  const rearFront = ID.Combat.createCombatUnitInstance(getTpl(ID, 'inf'), 'B');
+  rearFront.traits = [frontId]; rearFront.pos = 3; rearFront.lane = 1;
+  const exposedFwd = ID.Combat.createCombatUnitInstance(getTpl(ID, 'inf'), 'B');
+  exposedFwd.traits = []; exposedFwd.pos = 1; exposedFwd.lane = 1;
+  const screenedRear = ID.Combat.createCombatUnitInstance(getTpl(ID, 'inf'), 'B');
+  screenedRear.traits = []; screenedRear.pos = 4; screenedRear.lane = 1;
+  const screenCheck = ID.Combat.getSpatiallyScreenedPool(attackerInf, [rearFront, exposedFwd, screenedRear]);
+  assert(screenCheck.unscreened.includes(rearFront), 'Frontliner is always in unscreened target pool');
+  assert(screenCheck.unscreened.includes(exposedFwd), 'Forward non-frontliner ahead of its frontliner must NOT be screened');
+  assert(!screenCheck.unscreened.includes(screenedRear), 'Rear non-frontliner behind same-lane frontliner MUST be screened');
+  const artyScreenCheck = ID.Combat.getSpatiallyScreenedPool(attackerArty, [rearFront, exposedFwd, screenedRear]);
+  assert.strictEqual(artyScreenCheck.unscreened.length, 3, 'Artillery indirect fire bypasses frontliner screening');
+
+  // Engagement Saturation Spread: TV drops smoothly as engagedByCount increases
+  ID.App.emptyBattlefield(true);
+  attackerInf.pos = 1; attackerInf.lane = 1;
+  const tvTarget = ID.Combat.createCombatUnitInstance(getTpl(ID, 'inf'), 'B');
+  tvTarget.pos = 1; tvTarget.lane = 1;
+  tvTarget.roundTemp.engagedByCount = 0;
+  const tvFresh = ID.Combat.getUnitTargetValue(tvTarget, attackerInf, tacDef);
+  tvTarget.roundTemp.engagedByCount = 2;
+  const tvSaturated = ID.Combat.getUnitTargetValue(tvTarget, attackerInf, tacDef);
+  assert(tvSaturated < tvFresh, `Engagement spread should lower saturated target TV (${tvSaturated} < ${tvFresh})`);
+
+  // Enfilade Flanking: +15% Attack & halves defender entrenchment when attacker's lane has no active non-artillery enemies
+  ID.App.emptyBattlefield(true);
+  ID.state.environment.terrain = 'Plains';
+  ID.state.environment.weather = 'Clear';
+  const flanker = ID.Combat.createCombatUnitInstance(getTpl(ID, 'tank'), 'A');
+  flanker.pos = 1; flanker.lane = 0; // North lane (no Side B non-artillery here -> cleared flank!)
+  const dugDefender = ID.Combat.createCombatUnitInstance(getTpl(ID, 'inf'), 'B');
+  dugDefender.pos = 1; dugDefender.lane = 1; dugDefender.entrenchmentLevel = 4;
+  ID.state.battle.sideA.units = [flanker];
+  ID.state.battle.sideB.units = [dugDefender];
+  assert.strictEqual(ID.Combat.isEnfiladeFlankAttack(flanker, dugDefender, 'B', false), true);
+  const flankAtkStat = ID.Combat.computeUnitTotalStat(flanker, dugDefender, 'A', 'B', 'attack', 30, 5, 0, tacBreak, tacDef, false);
+  const flankedDefStat = ID.Combat.computeUnitTotalStat(dugDefender, flanker, 'B', 'A', 'defense', 20, 5, 0, tacDef, tacBreak, false);
+  flanker.lane = 1; // move to Center lane (same lane -> no flank bonus, full entrenchment)
+  const frontalAtkStat = ID.Combat.computeUnitTotalStat(flanker, dugDefender, 'A', 'B', 'attack', 30, 5, 0, tacBreak, tacDef, false);
+  const frontalDefStat = ID.Combat.computeUnitTotalStat(dugDefender, flanker, 'B', 'A', 'defense', 20, 5, 0, tacDef, tacBreak, false);
+  assert.strictEqual(flankAtkStat.isFlanking, true);
+  assert.strictEqual(flankAtkStat.netPct - frontalAtkStat.netPct, 15, 'Enfilade attack should grant +15% Attack');
+  assert.strictEqual(frontalDefStat.netPct - flankedDefStat.netPct, 10, 'Enfilade should halve defender Lvl 4 entrenchment (+20% -> +10%)');
+
+  // Flank Shift maneuver: unit in cleared opposite lane within depth range shifts 1 lane toward enemy
+  ID.App.emptyBattlefield(true);
+  ID.state.environment.terrain = 'Plains';
+  ID.state.environment.weather = 'Clear';
+  ID.state.battle.attackerSide = 'A';
+  const shiftInf = ID.Combat.createCombatUnitInstance(getTpl(ID, 'inf'), 'A');
+  const oppInf = ID.Combat.createCombatUnitInstance(getTpl(ID, 'inf'), 'B');
+  shiftInf.pos = 1; shiftInf.lane = 0; // North lane
+  oppInf.pos = 1; oppInf.lane = 2;   // South lane -> depth=2 <= range(2), totalDist=4 > 2
+  ID.state.battle.sideA.units = [shiftInf];
+  ID.state.battle.sideB.units = [oppInf];
+  ID.Combat.runSingleRound();
+  assert.strictEqual(shiftInf.lane, 1, 'Out-of-lane unit within depth range must shift 1 lane (0 -> 1) toward enemy');
+  assert(ID.state.battle.logs.some(l => l.text.includes('[Flank Shift]')), 'Flank shift must log [Flank Shift]');
+
+  // GM live lane cycling (0 -> 1 -> 2 -> 0) & SVG 3-lane rendering
+  ID.App.gmAdjustUnit('A', shiftInf.instanceId, 'lane', 1);
+  assert.strictEqual(shiftInf.lane, 2);
+  ID.App.gmAdjustUnit('A', shiftInf.instanceId, 'lane', 1);
+  assert.strictEqual(shiftInf.lane, 0);
+  ID.UI.renderTacticalSectorCanvas();
+  const sectorSvg = s.__elements.get('tactical-sector-canvas').innerHTML;
+  assert(sectorSvg.includes('>N</text>') && sectorSvg.includes('>C</text>') && sectorSvg.includes('>S</text>'), '2D Sector SVG must render N/C/S lane markers');
+
+  // 5g. Entrenched defenders hold bunkers when outranged + hand initiative back cleanly
+  ID.App.emptyBattlefield(true);
+  ID.state.environment.terrain = 'Plains';
+  ID.state.environment.feature = 'Normal';
+  ID.state.environment.weather = 'Clear';
+  ID.state.environment.theatreAttackerSide = 'B';
+  ID.state.battle.attackerSide = 'A';
+  const holdInfA = ID.Combat.createCombatUnitInstance(getTpl(ID, 'inf'), 'A');
+  const tankB = ID.Combat.createCombatUnitInstance(getTpl(ID, 'tank'), 'B');
+  holdInfA.pos = 2; holdInfA.lane = 1; holdInfA.entrenchmentLevel = 4; // dist 3 > range(2)
+  tankB.pos = 1; tankB.lane = 1;
+  ID.state.battle.sideA.units = [holdInfA];
+  ID.state.battle.sideB.units = [tankB];
+  ID.Combat.runSingleRound();
+  assert.strictEqual(holdInfA.pos, 2, 'Entrenched defender must NOT abandon bunker position when outranged');
+  assert.strictEqual(holdInfA.entrenchmentLevel, 4, 'Entrenchment level must stay intact while holding cover');
+  assert(ID.state.battle.logs.some(l => l.text.includes('[Holding Cover]')), 'Must log [Holding Cover]');
+  assert(!ID.state.battle.logs.some(l => l.text.includes('[Defensive Overwatch]')), 'Holding defender must not walk into Overwatch');
+  assert.strictEqual(ID.state.battle.attackerSide, 'B', 'Holding cover must flip initiative back to Side B');
+
+  // 5h. Unit speed & Mud combat movement: fast tank advances 2 in dry Plains vs 1 in HeavyRain (Mud)
+  ID.App.emptyBattlefield(true);
+  ID.state.environment.terrain = 'Plains';
+  ID.state.environment.feature = 'Normal';
+  ID.state.environment.weather = 'Clear';
+  ID.state.environment.theatreAttackerSide = 'A';
+  ID.state.battle.attackerSide = 'A';
+  const fastTankDry = ID.Combat.createCombatUnitInstance(getTpl(ID, 'tank'), 'A');
+  const farInfDry = ID.Combat.createCombatUnitInstance(getTpl(ID, 'inf'), 'B');
+  fastTankDry.pos = 5; farInfDry.pos = 3; // gap = 8 > range(3)+1
+  ID.state.battle.sideA.units = [fastTankDry];
+  ID.state.battle.sideB.units = [farInfDry];
+  ID.Combat.runSingleRound();
+  assert.strictEqual(fastTankDry.pos, 3, 'Fast tank in dry Plains must advance 2 steps (5 -> 3)');
+
+  ID.App.emptyBattlefield(true);
+  ID.state.environment.terrain = 'Plains';
+  ID.state.environment.weather = 'HeavyRain'; // triggers Mud on Plains
+  ID.state.environment.theatreAttackerSide = 'A';
+  ID.state.battle.attackerSide = 'A';
+  const fastTankMud = ID.Combat.createCombatUnitInstance(getTpl(ID, 'tank'), 'A');
+  const farInfMud = ID.Combat.createCombatUnitInstance(getTpl(ID, 'inf'), 'B');
+  fastTankMud.pos = 5; farInfMud.pos = 3;
+  ID.state.battle.sideA.units = [fastTankMud];
+  ID.state.battle.sideB.units = [farInfMud];
+  ID.Combat.runSingleRound();
+  assert.strictEqual(fastTankMud.pos, 4, 'Fast tank in Mud must slow to 1 step advance (5 -> 4)');
+
+  // 5i. Support fire ranges: mortar gated <=5 while air_support remains theatre-wide
+  ID.App.emptyBattlefield(true);
+  ID.state.environment.terrain = 'Plains';
+  ID.state.environment.weather = 'Clear';
+  const supShooter = ID.Combat.createCombatUnitInstance(getTpl(ID, 'inf'), 'A');
+  supShooter.traits = ['mortar_support', 'air_support'];
+  supShooter.pos = 4;
+  const supEnemy = ID.Combat.createCombatUnitInstance(getTpl(ID, 'inf'), 'B');
+  supEnemy.pos = 4; // Total Dist = 8 (>5)
+  ID.state.battle.sideA.units = [supShooter];
+  ID.state.battle.sideB.units = [supEnemy];
+  ID.Combat.processSideSupportFire('A', 'B');
+  assert.strictEqual(supShooter.supportCooldowns.mortar, 0, 'Mortar at Total Dist 8 must NOT fire (cooldown stays 0)');
+  assert(supShooter.supportCooldowns.air_support > 0, 'Air support must still fire theatre-wide at Total Dist 8');
+  supShooter.pos = 2; supEnemy.pos = 2; // Total Dist = 4 <= 5
+  ID.Combat.processSideSupportFire('A', 'B');
+  assert(supShooter.supportCooldowns.mortar > 0, 'Mortar at Total Dist 4 <= 5 MUST fire');
+
+  // 5j. Overwatch -15% snap-fire penalty & armored_spearhead max 1 Overwatch cap
+  ID.App.emptyBattlefield(true);
+  ID.state.environment.terrain = 'Plains';
+  ID.state.environment.weather = 'Clear';
+  ID.state.environment.theatreAttackerSide = 'A';
+  ID.state.battle.attackerSide = 'A';
+  const owTank = ID.Combat.createCombatUnitInstance(getTpl(ID, 'tank'), 'A');
+  owTank.traits = ['armored_spearhead'];
+  owTank.pos = 5;
+  const owTarget1 = ID.Combat.createCombatUnitInstance(getTpl(ID, 'inf'), 'B');
+  const owTarget2 = ID.Combat.createCombatUnitInstance(getTpl(ID, 'inf'), 'B');
+  const owTarget3 = ID.Combat.createCombatUnitInstance(getTpl(ID, 'inf'), 'B');
+  // Put 3 tanks on B at pos 1 within range 3 of owTank after advance (5 -> 3 => dist 4... put at pos 0 => after 5->3 dist=3!)
+  const owDef1 = ID.Combat.createCombatUnitInstance(getTpl(ID, 'tank'), 'B'); owDef1.pos = 0; owDef1.lane = 1;
+  const owDef2 = ID.Combat.createCombatUnitInstance(getTpl(ID, 'tank'), 'B'); owDef2.pos = 0; owDef2.lane = 1;
+  const owDef3 = ID.Combat.createCombatUnitInstance(getTpl(ID, 'tank'), 'B'); owDef3.pos = 0; owDef3.lane = 1;
+  ID.state.battle.sideA.units = [owTank];
+  ID.state.battle.sideB.units = [owDef1, owDef2, owDef3];
+  const normalAtk = ID.Combat.computeUnitTotalStat(owDef1, owTank, 'B', 'A', 'attack', 30, 5, 0, tacDef, tacBreak, false, false);
+  const owAtk = ID.Combat.computeUnitTotalStat(owDef1, owTank, 'B', 'A', 'attack', 30, 5, 0, tacDef, tacBreak, false, true);
+  assert.strictEqual(normalAtk.netPct - owAtk.netPct, 15, 'Overwatch must impose -15% Attack penalty');
+  assert.strictEqual(owAtk.isOverwatch, true);
+  ID.Combat.runSingleRound();
+  const owLogs = ID.state.battle.logs.filter(l => l.text.includes('[Defensive Overwatch]'));
+  assert(owLogs.length <= 1, `armored_spearhead must cap Overwatch to at most 1 shooter, got ${owLogs.length}`);
+
+  // 5k. No Artillery double-dip: Inherent Battery Barrage replaces Main Attack on barrage rounds, fires Main Attack on cooldown
+  ID.App.emptyBattlefield(true);
+  ID.state.environment.terrain = 'Plains';
+  ID.state.environment.weather = 'Clear';
+  ID.state.environment.theatreAttackerSide = 'A';
+  ID.state.battle.attackerSide = 'A';
+  const soloArty = ID.Combat.createCombatUnitInstance(getTpl(ID, 'arty'), 'A');
+  const soloInf = ID.Combat.createCombatUnitInstance(getTpl(ID, 'inf'), 'B');
+  soloArty.pos = 4; soloInf.pos = 2; // Total Dist = 6 <= 12
+  ID.state.battle.sideA.units = [soloArty];
+  ID.state.battle.sideB.units = [soloInf];
+  ID.Combat.runSingleRound();
+  assert(ID.state.battle.logs.some(l => l.text.includes('[Inherent Battery Barrage]') && l.text.includes(soloArty.name)), 'Round 1 artillery must fire Inherent Battery Barrage');
+  assert(ID.state.battle.logs.some(l => l.text.includes('[Battery Reloading]') && l.text.includes(soloArty.name)), 'Round 1 barrage must replace Step 5 Main Attack');
+  assert(!ID.state.battle.logs.some(l => l.text.includes('[Clash]') && l.text.includes(`${soloArty.name} Atk:`)), 'Artillery must NOT also fire Main Attack [Clash] on barrage round');
+  ID.state.battle.attackerSide = 'A';
+  ID.state.battle.logs = [];
+  ID.Combat.runSingleRound();
+  assert(ID.state.battle.logs.some(l => l.text.includes('[Clash]') && l.text.includes(`${soloArty.name} Atk:`)), 'Artillery on barrage cooldown must fire Main Attack [Clash]');
+
+  console.log('PASS [5]: Combat edge cases, Return Fire Cover Save, artillery range/dispersion/no-double-dip, 3-lane 2D, hold cover, speed/mud, support ranges, and Overwatch verified.');
 }
 
 // =========================================================================

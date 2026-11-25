@@ -492,6 +492,47 @@ window.IronDivision = window.IronDivision || {};
     return baseDist;
   }
 
+  const LANE_LABELS = ['N', 'C', 'S'];
+  const LANE_NAMES = ['North', 'Center', 'South'];
+
+  function getUnitLane(u) {
+    return (u && (u.lane === 0 || u.lane === 1 || u.lane === 2)) ? u.lane : 1;
+  }
+
+  function getLaneLabel(lane) {
+    return LANE_LABELS[lane === 0 || lane === 1 || lane === 2 ? lane : 1];
+  }
+
+  function getLaneName(lane) {
+    return LANE_NAMES[lane === 0 || lane === 1 || lane === 2 ? lane : 1];
+  }
+
+  function getUnitStartingLane(u, sideUnits = []) {
+    const list = Array.isArray(sideUnits) ? sideUnits : [];
+    if (list.length === 0) return 1; // 1v1 / single-unit skirmishes align on Center lane
+
+    const isArty = u && u.category === 'artillery';
+    const isFlanker = u && !isArty && (
+      (u.traits || []).includes('recon_support') ||
+      (u.category === 'armored_vehicle' && !(u.traits || []).includes('anti_tank'))
+    );
+    const counts = [0, 0, 0];
+    list.forEach(eu => {
+      if (isArty && eu.category !== 'artillery') return;
+      counts[getUnitLane(eu)]++;
+    });
+    const order = isFlanker ? [0, 2, 1] : [1, 0, 2];
+    let bestLane = order[0];
+    let bestCount = Infinity;
+    for (const ln of order) {
+      if (counts[ln] < bestCount) {
+        bestCount = counts[ln];
+        bestLane = ln;
+      }
+    }
+    return bestLane;
+  }
+
   function getUnitStartingPosition(u) {
     const baseDist = getBaseTerrainDistance();
     if (u && u.category === 'artillery') {
@@ -528,10 +569,16 @@ window.IronDivision = window.IronDivision || {};
     return baseRange;
   }
 
-  function getTotalDistance(unitA, unitB) {
+  function getDepthDistance(unitA, unitB) {
     const posA = (unitA && unitA.pos !== undefined && unitA.pos !== null) ? unitA.pos : getUnitStartingPosition(unitA);
     const posB = (unitB && unitB.pos !== undefined && unitB.pos !== null) ? unitB.pos : getUnitStartingPosition(unitB);
     return Math.max(0, posA + posB);
+  }
+
+  function getTotalDistance(unitA, unitB) {
+    const depth = getDepthDistance(unitA, unitB);
+    const laneDiff = Math.abs(getUnitLane(unitA) - getUnitLane(unitB));
+    return depth + laneDiff;
   }
 
   function canUnitIgnoreDistance(u, sideTactic = null) {
@@ -807,9 +854,14 @@ window.IronDivision = window.IronDivision || {};
     getUnitMaxEntrenchmentCap,
     getTerrainOperationalMods,
     getBaseTerrainDistance,
+    getUnitLane,
+    getLaneLabel,
+    getLaneName,
+    getUnitStartingLane,
     getUnitStartingPosition,
     isMeleeUnit,
     getUnitEngagementRange,
+    getDepthDistance,
     getTotalDistance,
     canUnitIgnoreDistance,
     canUnitEngageTarget,
