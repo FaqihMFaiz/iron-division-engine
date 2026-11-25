@@ -517,7 +517,10 @@ window.IronDivision = window.IronDivision || {};
     if (envFx.visCap !== null) {
       if (u.category === 'artillery') {
         const sideUnits = u.side === 'A' ? (ID.state?.battle?.sideA?.units || []) : (ID.state?.battle?.sideB?.units || []);
-        const hasSpotter = sideUnits.some(su => !su.isRouted && su.personnel > 0 && su.traits && su.traits.includes('recon_support'));
+        const isAct = (ID.Combat && typeof ID.Combat.isUnitActive === 'function')
+          ? ID.Combat.isUnitActive
+          : (su => !su.defeated && !su.isRallying && su.personnel > 0);
+        const hasSpotter = sideUnits.some(su => isAct(su) && su.traits && su.traits.includes('recon_support'));
         return hasSpotter ? baseRange : Math.min(baseRange, envFx.visCap + 1);
       }
       return Math.min(baseRange, envFx.visCap);

@@ -1060,7 +1060,7 @@ window.IronDivision = window.IronDivision || {};
           if (passedRally) {
             u.isRallying = false;
             u.ralliedOnce = true;
-            u.personnel = u.ralliedPersonnel;
+            u.ralliedPersonnel = u.personnel;
             u.pos = H.getUnitStartingPosition(u);
 
             const rawD10 = H.rollDie(10);
@@ -1482,6 +1482,11 @@ window.IronDivision = window.IronDivision || {};
     const statBoost = Math.floor(diff / 10);
     const attackerWonVig = atkTotal >= defTotal;
 
+    const atkStateRef = atkSide === 'A' ? ID.state.battle.sideA : ID.state.battle.sideB;
+    const defStateRef = defSide === 'A' ? ID.state.battle.sideA : ID.state.battle.sideB;
+    atkStateRef.wonVigMarginThisRound = attackerWonVig ? diff : -diff;
+    defStateRef.wonVigMarginThisRound = !attackerWonVig ? diff : -diff;
+
     H.addLog(
       'rolls',
       `[REC] [Vigilance/Recon Roll] Side ${atkSide}: d100(${atkRoll}) ${atkMod >= 0 ? '+' : '-'} ${Math.abs(atkMod)} = ${atkTotal} vs Side ${defSide}: d100(${defRoll}) ${defMod >= 0 ? '+' : '-'} ${Math.abs(defMod)} = ${defTotal} -> ` +
@@ -1489,8 +1494,7 @@ window.IronDivision = window.IronDivision || {};
     );
 
     if (!attackerWonVig && defTactic.id === 'urb_def_ambush' && diff >= 15) {
-      const atkState = atkSide === 'A' ? ID.state.battle.sideA : ID.state.battle.sideB;
-      atkState.nextRoundVigMod -= 10;
+      atkStateRef.nextRoundVigMod -= 10;
       H.addLog('rolls', `[TGT] [Urban Ambush] ${H.getSideName(defSide)} won Vigilance by >=15! ${H.getSideName(atkSide)} suffers -10 Vigilance next round.`);
     }
 
@@ -1521,12 +1525,16 @@ window.IronDivision = window.IronDivision || {};
       }
     }
 
+    const pickActiveTarget = () => {
+      const live = enemyState.units.filter(isUnitActive);
+      return live.length > 0 ? live[Math.floor(Math.random() * live.length)] : null;
+    };
+
     for (const u of firingState.units.filter(isUnitActive)) {
       if (!u.isMonster && !u.isZombie && u.supply < u.maxSupply * 0.5) continue;
 
-      const enemyUnits = enemyState.units.filter(isUnitActive);
-      if (enemyUnits.length === 0) break;
-      const target = enemyUnits[Math.floor(Math.random() * enemyUnits.length)];
+      let target = pickActiveTarget();
+      if (!target) break;
 
       // Mortar Support
       if (u.traits.includes('mortar_support') && u.supportCooldowns.mortar <= 0) {
@@ -1547,6 +1555,7 @@ window.IronDivision = window.IronDivision || {};
           if (!target.isMonster && !target.isZombie) {
             orgShock = H.rollDie(3);
             target.org = Math.max(0, target.org - orgShock);
+            checkAndMarkUnitDefeat(target);
           }
           H.addLog('support', `[FS-MORT] [Mortar Plunging Fire] ${u.name} -> ${target.name} (Infantry): Def -${defRed}, Entrenchment DENIED, ${cas} casualties, -${orgShock} Org suppression shock!`);
         } else {
@@ -1573,6 +1582,10 @@ window.IronDivision = window.IronDivision || {};
       const canFireArtillery = (u.category === 'artillery' || u.traits.includes('heavy_artillery_support'));
 
       if (canFireArtillery && u.supportCooldowns.heavy_artillery <= 0) {
+        if (!isUnitActive(target)) {
+          target = pickActiveTarget();
+          if (!target) break;
+        }
         const cost = 3 + H.rollDie(3);
         if (!u.isMonster && !u.isZombie) u.supply = Math.max(0, u.supply - cost);
         u.supportCooldowns.heavy_artillery = 1 + H.rollDie(2);
@@ -1602,6 +1615,12 @@ window.IronDivision = window.IronDivision || {};
 
       // Air Support & AA Interception (now weather & time-of-day aware via airMod)
       if (u.traits.includes('air_support') && u.supportCooldowns.air_support <= 0 && !firingState.airstrikeDisabled) {
+        if (!isUnitActive(target)) {
+          target = pickActiveTarget();
+          if (!target) break;
+        }
+        const enemyUnits = enemyState.units.filter(isUnitActive);
+        if (enemyUnits.length === 0) break;
         const airEnvFx = H.getActiveEnvironmentEffects ? H.getActiveEnvironmentEffects() : { effectiveAirMod: 0, airEfficiency: 1.0 };
         const airEff = airEnvFx.airEfficiency;
         const airEffPct = Math.round(airEff * 100);
@@ -1748,10 +1767,10 @@ window.IronDivision = window.IronDivision || {};
   }
 
   function applySupportCasualtiesAndArmor(target, casualties, armorDisabled, sourceLabel, sourceUnit = null, channel = 'indirect') {
-    if (casualties > 0) {
+    if (casualties > 0 && !target.defeated && !target.isRallying) {
       applyPersonnelCasualties(target, casualties, true, true, sourceLabel, {}, {}, false, sourceUnit, channel);
     }
-    if (armorDisabled > 0 && target.maxArmor > 0 && target.armor > 0) {
+    if (!target.defeated && !target.isRallying && armorDisabled > 0 && target.maxArmor > 0 && target.armor > 0) {
       processArmorLossAndCrewCasualties(target, armorDisabled, 'Support Strike', sourceLabel, sourceUnit, channel);
     }
   }
@@ -1855,6 +1874,35 @@ window.IronDivision = window.IronDivision || {};
   // --------------------------------------------------------------------------
   // 10. Main Combat Engagement & Resolution
   // --------------------------------------------------------------------------
+
+  function tryRaidEnemySupply(raider, victim, raiderTraits, raiderTactic) {
+    if (!raider || !victim || raider.category === 'artillery') return;
+    if (victim.isMonster || victim.isZombie) return;
+    const raidTotalDist = H.getTotalDistance(raider, victim);
+    if (raidTotalDist > 2) return;
+
+    const hasRaiders = raiderTraits.some(t => t.id === 'supply_raiders');
+    const stealTrait = raiderTraits.find(t => t.supplySteal > 0);
+    if (!hasRaiders && !stealTrait && raiderTactic?.id !== 'def_guerrilla') return;
+
+    const rollAmount = hasRaiders ? (2 + H.rollDie(4)) : (1 + H.rollDie(3));
+    const stolen = Math.min(victim.supply, rollAmount);
+    if (stolen <= 0) return;
+
+    const wasBelow50 = (victim.supply / Math.max(1, victim.maxSupply)) < 0.50;
+    victim.supply -= stolen;
+    raider.supply = Math.min(raider.maxSupply, raider.supply + stolen);
+    const raiderSideObj = raider.side === 'A' ? ID.state.battle.sideA : ID.state.battle.sideB;
+    raiderSideObj.supplyRaidedTotal = (raiderSideObj.supplyRaidedTotal || 0) + stolen;
+    H.addLog('support', `[RAID] [Supply Stolen] ${raider.name} steals ${stolen} Supply from ${victim.name}!`);
+
+    if (hasRaiders && wasBelow50 && !victim.defeated && !victim.isRallying) {
+      const depotShock = H.rollDie(4);
+      victim.org = Math.max(0, victim.org - depotShock);
+      H.addLog('damage', `[SHK] [Supply Depot Sabotaged] ${victim.name} was below 50% supply! Supply Raiders inflict -${depotShock} Org shock on ammo depots!`);
+      checkAndMarkUnitDefeat(victim);
+    }
+  }
 
   function resolveUnitEngagement(attacker, defender, atkSide, defSide, atkTactic, defTactic, vigResult, isOverwatch = false) {
     const atkTraits = attacker.traits.map(getTraitById).filter(Boolean);
@@ -2025,12 +2073,12 @@ window.IronDivision = window.IronDivision || {};
     } else if (atkTotals.finalValue > defTotals.finalValue) {
       const margin = Math.max(1, Math.round(atkTotals.finalValue - defTotals.finalValue));
       inflictCombatDamage(attacker, defender, margin, atkSide, defSide, atkTactic, defTactic, isOverwatch ? 'Overwatch Volley' : 'Main Attack', pierced);
-      if (defender.defeated || defender.isRallying || attacker.defeated || attacker.isRallying) return;
+      if (attacker.defeated || attacker.isRallying) return;
 
       const inflictedRatio = (prevDefPersonnel - defender.personnel) / Math.max(1, defender.maxPersonnel);
       if (!attacker.isMonster && !attacker.isZombie) {
         let orgGain = atkTactic.hitOrgHeal || 0;
-        if (defender.defeated || inflictedRatio >= 0.10) {
+        if (defender.defeated || defender.isRallying || inflictedRatio >= 0.10) {
           orgGain += H.rollDie(2);
           H.addLog('damage', `[BRK] [Decisive Breakthrough] ${attacker.name} gains +${orgGain} Org for smashing ${defender.name}!`);
         }
@@ -2038,54 +2086,35 @@ window.IronDivision = window.IronDivision || {};
       }
 
       // Wire atk_blitz: blocks target Org recovery next round on hit
-      if (atkTactic.deniesEnemyOrgRec && !defender.isMonster && !defender.isZombie) {
+      if (atkTactic.deniesEnemyOrgRec && !defender.defeated && !defender.isMonster && !defender.isZombie) {
         defender.orgRecoveryBlockedRounds = Math.max(defender.orgRecoveryBlockedRounds || 0, 1);
         H.addLog('damage', `[SHK] [Blitz Disruption] ${attacker.name} disrupts ${defender.name}'s command net — Org recovery blocked next round!`);
       }
 
-      // Wire atk_breakthrough: +10% Attack next round if target loses >=10% personnel in 1 round
+      // Wire atk_breakthrough: +10% Attack next round if target loses >=10% personnel or is broken in 1 round
       const atkSideStateRef = atkSide === 'A' ? ID.state.battle.sideA : ID.state.battle.sideB;
-      if (atkTactic.id === 'atk_breakthrough' && inflictedRatio >= 0.10 && !atkSideStateRef.breakthroughTriggeredThisRound) {
+      if (atkTactic.id === 'atk_breakthrough' && (inflictedRatio >= 0.10 || defender.defeated) && !atkSideStateRef.breakthroughTriggeredThisRound) {
         atkSideStateRef.breakthroughTriggeredThisRound = true;
         atkSideStateRef.nextRoundAtkMod = (atkSideStateRef.nextRoundAtkMod || 0) + 10;
         H.addLog('rolls', `[BRK] [Breakthrough Exploitation] ${attacker.name} inflicted >=10% losses on ${defender.name} — ${H.getSideName(atkSide)} gains +10% Attack next round!`);
       }
 
-      const hasRaiders = atkTraits.some(t => t.id === 'supply_raiders');
-      const stealTrait = atkTraits.find(t => t.supplySteal > 0);
-
-      const raidTotalDist = H.getTotalDistance(attacker, defender);
-      if (attacker.category !== 'artillery' && raidTotalDist <= 2 && (hasRaiders || stealTrait || atkTactic.id === 'def_guerrilla')) {
-        const rollAmount = hasRaiders ? (2 + H.rollDie(4)) : (1 + H.rollDie(3));
-        const stolen = Math.min(defender.supply, rollAmount);
-
-        if (stolen > 0 && !defender.isMonster && !defender.isZombie) {
-          const wasBelow50 = (defender.supply / Math.max(1, defender.maxSupply)) < 0.50;
-          defender.supply -= stolen;
-          attacker.supply = Math.min(attacker.maxSupply, attacker.supply + stolen);
-          const atkSideObj = attacker.side === 'A' ? ID.state.battle.sideA : ID.state.battle.sideB;
-          atkSideObj.supplyRaidedTotal = (atkSideObj.supplyRaidedTotal || 0) + stolen;
-          H.addLog('support', `[RAID] [Supply Stolen] ${attacker.name} steals ${stolen} Supply from ${defender.name}!`);
-
-          if (hasRaiders && wasBelow50) {
-            const depotShock = H.rollDie(4);
-            defender.org = Math.max(0, defender.org - depotShock);
-            H.addLog('damage', `[SHK] [Supply Depot Sabotaged] ${defender.name} was below 50% supply! Supply Raiders inflict -${depotShock} Org shock on ammo depots!`);
-          }
-        }
-      }
+      tryRaidEnemySupply(attacker, defender, atkTraits, atkTactic);
 
       const defSideState = defSide === 'A' ? ID.state.battle.sideA : ID.state.battle.sideB;
       if (atkTactic.enemyNextVigMalus) defSideState.nextRoundVigMod -= atkTactic.enemyNextVigMalus;
-      if (atkTactic.id === 'atk_unexpected_thrust' && ID.state.battle.round === 1) defSideState.nextRoundVigMod -= 10;
+      if (atkTactic.id === 'atk_unexpected_thrust' && (atkSideStateRef.repeatTacticCount || 0) === 0) defSideState.nextRoundVigMod -= 10;
       if (atkTactic.id === 'urb_atk_barrage') {
         defSideState.nextRoundVigMod -= 10;
-        const bRoll = H.rollDie(6);
-        if (bRoll >= 5) {
-          const extraCas = H.rollDie(6);
-          applyPersonnelCasualties(defender, extraCas, false, true, 'Street-by-Street Barrage', {}, {}, false, attacker, 'direct');
+        if (!defender.defeated && !defender.isRallying) {
+          const bRoll = H.rollDie(6);
+          if (bRoll >= 5) {
+            const extraCas = H.rollDie(6);
+            applyPersonnelCasualties(defender, extraCas, false, true, 'Street-by-Street Barrage', {}, {}, false, attacker, 'direct');
+          }
         }
       }
+      if (defender.defeated || defender.isRallying) return;
     } else {
       const grazeResult = H.calculateGrazingCasualties(attacker, defender, atkTotals.finalValue, defTotals.finalValue, pierced, false);
 
@@ -2129,58 +2158,79 @@ window.IronDivision = window.IronDivision || {};
       const retDieSides = getCombatDieSides(defender, 'attack');
       const retDieRoll = H.rollDie(retDieSides);
 
-      const retPierceDie = H.rollDie(6);
-      const retHardDie = H.rollDie(6);
-
-      let retEffPiercing = defender.piercing + defTraits.reduce((s, t) => s + (t.pierceFlat || 0), 0) + (defTactic.flatPierce || 0) + getCommanderUnitBonus(defSide, defender, 'pierceFlat');
-      if (defTactic.id === 'urb_atk_street_fighting' && defender.traits.includes('anti_tank')) {
-        retEffPiercing = Math.round(retEffPiercing * 1.10);
-      }
-
-      const defTraitHardMalus = defTraits.reduce((s, t) => s + (t.enemyHardMalus || 0), 0);
-      const retEffHardness = getEffectiveUnitHardness(attacker, defender, defTraitHardMalus);
-
-      const retPierceRoll = retPierceDie + retEffPiercing;
-      const retHardRoll = retHardDie + retEffHardness;
-      const retPierced = retPierceRoll > retHardRoll;
-
-      H.addLog(
-        'armor',
-        `[AP] [Return Fire Piercing Check] ${defender.name} (d6[${retPierceDie}]+${retEffPiercing}=${retPierceRoll}) vs ${attacker.name} Eff.Hardness (d6[${retHardDie}]+${retEffHardness}=${retHardRoll}) -> ` +
-        (retPierced ? `PIERCED! (Diff: +${retPierceRoll - retHardRoll})` : `ARMOR HELD (Unpierced — Soft/Close-Assault Chip Active)`)
-      );
-
-      let pendingRetArmorHit = null;
-      if (retPierced && attacker.maxArmor > 0 && attacker.armor > 0) {
-        const retDiff = retPierceRoll - retHardRoll;
-        const retH = Math.max(1, retEffHardness);
-        const retRatio = retDiff / retH;
-        let rawRetDisabled = 0;
-        let retBracketDesc = '';
-
-        if (retRatio <= 0.25) {
-          rawRetDisabled = H.rollDie(3);
-          retBracketDesc = '<= 1/4 Hardness (d3)';
-        } else if (retRatio <= 0.50) {
-          rawRetDisabled = 1 + H.rollDie(4);
-          retBracketDesc = '1/4 to 2/4 Hardness (1+d4)';
-        } else if (retRatio <= 0.75) {
-          rawRetDisabled = 2 + H.rollDie(6);
-          retBracketDesc = '2/4 to 3/4 Hardness (2+d6)';
-        } else {
-          rawRetDisabled = 3 + H.rollDie(8);
-          retBracketDesc = '> 3/4 Hardness (3+d8)';
-        }
-
-        const retFleetCap = Math.max(2, Math.ceil(attacker.maxArmor * 0.15));
-        const cappedRetDisabled = Math.min(rawRetDisabled, retFleetCap);
-        if (cappedRetDisabled < rawRetDisabled) {
-          retBracketDesc += `, Fleet Cap ${retFleetCap}`;
-        }
-        pendingRetArmorHit = { disabledRoll: cappedRetDisabled, bracketDesc: retBracketDesc };
-      }
-
       const isReturnTargetUnarmored = (attacker.armorTier === 'unarmored' || attacker.maxArmor <= 0);
+      let retPierced = false;
+      let pendingRetArmorHit = null;
+
+      if (isReturnTargetUnarmored) {
+        if (attacker.isZombie) {
+          attacker.roundTemp.inCover = false;
+          H.addLog('rolls', `[CVR] [Return Fire Exposed Horde] ${attacker.name} advances in a dense, exposed mass (No Cover Save vs Return Fire).`);
+        } else {
+          const retCoverD20 = H.rollDie(20);
+          let retCoverRating = attacker.roundTemp.coverDenied ? 0 : H.getTerrainCoverRating(attacker);
+          if (!attacker.roundTemp.coverDenied) {
+            retCoverRating += (attacker.entrenchmentLevel || 0);
+          }
+          const retCoverDC = 12 + (retDefVig > retAtkVig ? 2 : 0) + (defender.traits.includes('recon_support') ? 2 : 0);
+          const totalRetCover = retCoverD20 + retCoverRating;
+          const retInCover = totalRetCover >= retCoverDC;
+          attacker.roundTemp.inCover = retInCover;
+
+          H.addLog(
+            'rolls',
+            `[CVR] [Return Fire Cover & Dispersion] ${attacker.name} makes Cover Save: d20(${retCoverD20}) + Cover(${retCoverRating}) = ${totalRetCover} vs DC ${retCoverDC} -> ` +
+            (retInCover ? `DUG-IN / IN DEFILADE (Half soft damage, explosive negated)` : `CAUGHT IN OPEN (Exposed to full return fire & suppression shock!)`)
+          );
+        }
+      } else {
+        const retPierceDie = H.rollDie(6);
+        const retHardDie = H.rollDie(6);
+
+        const retEffPiercing = defender.piercing + defTraits.reduce((s, t) => s + (t.pierceFlat || 0), 0) + (defTactic.flatPierce || 0) + getCommanderUnitBonus(defSide, defender, 'pierceFlat');
+        const defTraitHardMalus = defTraits.reduce((s, t) => s + (t.enemyHardMalus || 0), 0);
+        const retEffHardness = getEffectiveUnitHardness(attacker, defender, defTraitHardMalus);
+
+        const retPierceRoll = retPierceDie + retEffPiercing;
+        const retHardRoll = retHardDie + retEffHardness;
+        retPierced = retPierceRoll > retHardRoll;
+
+        H.addLog(
+          'armor',
+          `[AP] [Return Fire Piercing Check] ${defender.name} (d6[${retPierceDie}]+${retEffPiercing}=${retPierceRoll}) vs ${attacker.name} Eff.Hardness (d6[${retHardDie}]+${retEffHardness}=${retHardRoll}) -> ` +
+          (retPierced ? `PIERCED! (Diff: +${retPierceRoll - retHardRoll})` : `ARMOR HELD (Unpierced — Soft/Close-Assault Chip Active)`)
+        );
+
+        if (retPierced && attacker.maxArmor > 0 && attacker.armor > 0) {
+          const retDiff = retPierceRoll - retHardRoll;
+          const retH = Math.max(1, retEffHardness);
+          const retRatio = retDiff / retH;
+          let rawRetDisabled = 0;
+          let retBracketDesc = '';
+
+          if (retRatio <= 0.25) {
+            rawRetDisabled = H.rollDie(3);
+            retBracketDesc = '<= 1/4 Hardness (d3)';
+          } else if (retRatio <= 0.50) {
+            rawRetDisabled = 1 + H.rollDie(4);
+            retBracketDesc = '1/4 to 2/4 Hardness (1+d4)';
+          } else if (retRatio <= 0.75) {
+            rawRetDisabled = 2 + H.rollDie(6);
+            retBracketDesc = '2/4 to 3/4 Hardness (2+d6)';
+          } else {
+            rawRetDisabled = 3 + H.rollDie(8);
+            retBracketDesc = '> 3/4 Hardness (3+d8)';
+          }
+
+          const retFleetCap = Math.max(2, Math.ceil(attacker.maxArmor * 0.15));
+          const cappedRetDisabled = Math.min(rawRetDisabled, retFleetCap);
+          if (cappedRetDisabled < rawRetDisabled) {
+            retBracketDesc += `, Fleet Cap ${retFleetCap}`;
+          }
+          pendingRetArmorHit = { disabledRoll: cappedRetDisabled, bracketDesc: retBracketDesc };
+        }
+      }
+
       const atkArmorSplit = getEffectiveArmorSplit(attacker);
       const defSoft = defender.softAttack + defTraits.reduce((s, t) => s + (t.softFlat || 0), 0) + getCommanderUnitBonus(defSide, defender, 'softFlat');
       const defHard = defender.hardAttack + defTraits.reduce((s, t) => s + (t.hardFlat || 0), 0) + getCommanderUnitBonus(defSide, defender, 'hardFlat');
@@ -2237,11 +2287,13 @@ window.IronDivision = window.IronDivision || {};
         H.addLog('rolls', `[RET] [Return Fire Hit!] ${defender.name} (RetAtk ${defRetAtkTotals.finalValue} > Breakthrough ${atkBreakTotals.finalValue}) strikes back at ${attacker.name}!`);
         inflictCombatDamage(defender, attacker, retMargin, defSide, atkSide, defTactic, atkTactic, 'Return Fire', retPierced);
 
+        tryRaidEnemySupply(defender, attacker, defTraits, defTactic);
+
         if (defTactic.id === 'def_counterattack' && !defender.isMonster && !defender.isZombie) {
           defender.org = Math.min(defender.maxOrg, defender.org + 2);
           H.addLog('damage', `[SHK] [Counterattack] ${defender.name} gains +2 Organization!`);
         }
-        if (defTactic.id === 'urb_def_ambush') {
+        if (defTactic.id === 'urb_def_ambush' && !attacker.defeated && !attacker.isRallying) {
           const ambRoll = H.rollDie(6);
           if (ambRoll >= 5) {
             applyPersonnelCasualties(attacker, H.rollDie(6), false, false, 'Urban Ambush Bonus', {}, {}, false, defender, 'direct');
@@ -2279,7 +2331,7 @@ window.IronDivision = window.IronDivision || {};
       flatBonus += traits.reduce((s, t) => s + (t.atkFlat || 0), 0) + (myTactic.flatAtk || 0);
     } else {
       flatBonus += traits.reduce((s, t) => s + (t.defFlat || 0), 0) + (myTactic.flatDef || 0);
-      if (enemyTactic.id === 'urb_atk_armour_supported' && unit.category === 'infantry') {
+      if (myTactic.id === 'urb_atk_armour_supported' && unit.category === 'infantry') {
         flatBonus += 2;
       }
       if (unit.entrenchmentLevel >= 2) {
@@ -2394,9 +2446,17 @@ window.IronDivision = window.IronDivision || {};
           else if (myActive >= enActive * 1.5) tacAtk = 30;
           else tacAtk = 5;
         }
+        if (myTactic.id === 'atk_infiltration') {
+          const isSupportTarget = opponent.category === 'artillery' || (opponent.traits || []).some(tid =>
+            ['logistic_support', 'recon_support', 'mortar_support', 'heavy_artillery_support', 'field_medic', 'repair_crew'].includes(tid)
+          );
+          if (myTactic.antiSupportAtkPct && isSupportTarget) tacAtk += myTactic.antiSupportAtkPct;
+          if (feat.fortified) tacAtk -= 10;
+        }
         if (myTactic.id === 'atk_unexpected_thrust') {
+          const enState = enemySide === 'A' ? ID.state.battle.sideA : ID.state.battle.sideB;
           if (myState.repeatTacticCount > 0) tacAtk = -10;
-          else if (enemyTactic.id === 'def_ambush') tacAtk = 10;
+          else if (enemyTactic.id === 'def_ambush' && (enState.wonVigMarginThisRound || 0) > 0) tacAtk = 10;
         }
         if (myTactic.id === 'atk_well_planned') {
           if (ID.state.battle.round === 1 && ID.state.environment.unexpectedInitiative) tacAtk -= 10;
@@ -2413,22 +2473,40 @@ window.IronDivision = window.IronDivision || {};
           else if (unit.category === 'infantry' && hasArmorAlly) tacAtk = 20;
           else tacAtk = 0;
         }
-        if (myTactic.id === 'def_backhand_blow' && (opponent.roundTemp.lostTenPctPrevRound || opponent.roundTemp.lostTenPctLastRound)) {
-          tacAtk += 10;
+        if (myTactic.id === 'def_ambush') {
+          if (ID.state.battle.round === 1) {
+            tacAtk = (myState.wonVigMarginThisRound || 0) >= 15 ? 30 : 20;
+          } else {
+            tacAtk = -10;
+          }
         }
-        if (myTactic.id === 'def_guerrilla' && (opponent.supply / Math.max(1, opponent.maxSupply)) < 0.50) {
-          tacAtk += 10;
+        if (myTactic.id === 'def_backhand_blow') {
+          if (!isReturnFire && !opponent.roundTemp.attackedThisRound) {
+            tacAtk = -10;
+          } else if (opponent.roundTemp.lostTenPctPrevRound || opponent.roundTemp.lostTenPctLastRound) {
+            tacAtk += 10;
+          }
+        }
+        if (myTactic.id === 'def_guerrilla') {
+          const roughTerrains = ['Forest', 'Jungle', 'Mountain', 'Urban'];
+          tacAtk = roughTerrains.includes(ID.state.environment.terrain) ? 15 : -15;
+          if ((opponent.supply / Math.max(1, opponent.maxSupply)) < 0.50) {
+            tacAtk += 10;
+          }
         }
         addPct(applyTacticBoost(tacAtk));
       }
     } else {
       let tacDef = isReturnFire ? (myTactic.returnFireDefPct || myTactic.breakthroughPct || myTactic.defPct || 0) : (myTactic.defPct || 0);
       if (myTactic.id === 'def_defend' && feat.fortified) tacDef += 10;
+      if (myTactic.id === 'def_ambush' && ID.state.battle.round > 1) tacDef = 0;
+      if (myTactic.id === 'atk_unexpected_thrust' && myState.repeatTacticCount > 0) tacDef -= 10;
+      if (myTactic.id === 'urb_atk_armour_supported' && unit.maxArmor > 0 && myState.units.some(u => isUnitActive(u) && u.category === 'infantry')) tacDef += 10;
       if (myTactic.id === 'urb_def_city' && unit.category === 'infantry') tacDef += 10;
       if (myTactic.id === 'urb_def_fortified' && unit.traits.includes('fortification_engineer')) tacDef += 10;
       tacDef = applyTacticBoost(tacDef);
       if (enemyTactic.id === 'atk_assault') tacDef -= 10;
-      if (enemyTactic.id === 'atk_encirclement' && opponent.roundTemp.engagedByCount > 1) tacDef -= 10;
+      if (enemyTactic.id === 'atk_encirclement' && unit.roundTemp.engagedByCount > 1) tacDef -= 10;
       addPct(tacDef);
     }
 
@@ -2528,6 +2606,9 @@ window.IronDivision = window.IronDivision || {};
     }
 
     defender.personnel -= actualDowned;
+    if (defender.isRallying) {
+      defender.ralliedPersonnel = defender.personnel;
+    }
 
     if (defender.isMonster) {
       defender.dead += actualDowned;

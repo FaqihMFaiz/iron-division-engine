@@ -179,13 +179,15 @@ window.IronDivision = window.IronDivision || {};
 
     // Theatre Command & Environment Bar
     'THEATRE //': 'TEATER //',
-    'THEATRE COMMAND & ENVIRONMENT': 'KOMANDO TEATER & LINGKUNGAN',
     '▲ COLLAPSE': '▲ LIPAT',
     '▼ EXPAND': '▼ BUKA',
+    'Base terrain': 'Medan Dasar',
     'Base Terrain': 'Medan Dasar',
+    'Terrain feature': 'Fitur Medan',
     'Terrain Feature': 'Fitur Medan',
     'Weather': 'Cuaca',
     'DYN': 'DINAMIS',
+    'Theatre role': 'Peran Teater',
     'Theatre Role': 'Peran Teater',
     'Side A Invades / B Entrenched': 'Pihak A Menyerang / B Bertahan',
     'Side B Invades / A Entrenched': 'Pihak B Menyerang / A Bertahan',
@@ -213,13 +215,14 @@ window.IronDivision = window.IronDivision || {};
     'INITIATIVE': 'INISIATIF',
     'REACTING': 'BEREAKSI',
     'COMMANDING OFFICER': 'KOMANDAN PASUKAN',
+    'Tactic selection': 'Pilihan Taktik',
     'Tactic Selection': 'Pilihan Taktik',
     '+ DEPLOY': '+ KERAHKAN',
     'COMPACT': 'RINGKAS',
     'FULL': 'PENUH',
-    'ACTIVE FORMATIONS': 'FORMASI AKTIF',
-    'EFF. STRENGTH / AFV': 'KEKUATAN EFEKTIF / RANPUR',
-    'LOSSES (KIA+WIA)': 'KORBAN (GUGUR+LUKA)',
+    'Formations': 'Formasi',
+    'Eff. strength / AFV': 'Kekuatan / Ranpur',
+    'Losses (KIA+WIA)': 'Korban (Gugur+Luka)',
     'UNARMORED // FOOT ELEMENT': 'NON-BAJA // INFANTERI KAKI',
     'EXPERIENCE TIER': 'PENGALAMAN',
     'BASE RECOVERY': 'PEMULIHAN DASAR',
@@ -231,8 +234,9 @@ window.IronDivision = window.IronDivision || {};
     'INITIATIVE VECTOR': 'ARAH INISIATIF',
     '▶ EXECUTE ROUND': '▶ JALANKAN RONDE',
     'AUTO-OPS': 'OTOMATIS',
-    'STOP AUTO': 'BERHENTI',
+    'PAUSE OPS': 'JEDA OPS',
     'GM LIVE': 'MODE GM',
+    'GM LIVE: ON': 'MODE GM: AKTIF',
     'AAR REPORT': 'LAPORAN AAR',
     'RESET': 'ULANG',
     'CLEAR': 'KOSONGKAN',
@@ -242,11 +246,15 @@ window.IronDivision = window.IronDivision || {};
     'Y-AXIS CONTACT (0)': 'GARIS KONTAK (0)',
     'CONTACT LINE (0)': 'GARIS KONTAK (0)',
     'SITREP // COMBAT LOG': 'SITREP // LOG PERTEMPURAN',
-    'ALL LOGS': 'SEMUA LOG',
-    'DAMAGE': 'KERUSAKAN',
+    'ALL CHANNELS': 'SEMUA KANAL',
+    'RECON & CLASH': 'INTAI & BENTROK',
+    'INITIATIVE / TACTICS': 'INISIATIF / TAKTIK',
+    'CASUALTIES / ORG': 'KORBAN / ORG',
+    'ARMOR / AP': 'BAJA / AP',
+    'LOGISTICS / FS': 'LOGISTIK / DUKTEM',
+    'SYS ERRORS': 'GALAT SISTEM',
     'ARMOR': 'RANPUR/BAJA',
     'SUPPORT': 'DUKUNGAN',
-    'ROLLS': 'DADU/TAKTIK',
     'EXPAND': 'PERBESAR',
     'COPY': 'SALIN',
     'CLR': 'HAPUS',
@@ -255,7 +263,7 @@ window.IronDivision = window.IronDivision || {};
 
     // Tab 2: ORBAT
     'Create / Edit Unit Template': 'Buat / Sunting Templat Unit',
-    '+ New Unit': '+ Unit Baru',
+    '+ New Blank': '+ Kosong Baru',
     '01 // IDENTITY & CLASSIFICATION': '01 // IDENTITAS & KLASIFIKASI',
     'Unit Name': 'Nama Unit',
     'Unit Category (Combat Die)': 'Kategori Unit (Dadu Tempur)',
@@ -341,15 +349,15 @@ window.IronDivision = window.IronDivision || {};
     'Restore Defaults': 'Pulihkan Bawaan',
     'Create / Edit Commander Trait': 'Buat / Sunting Sifat Komandan',
     'Cancel': 'Batal',
-    'Save Trait': 'Simpan Sifat',
+    'SAVE COMMANDER TRAIT': 'SIMPAN SIFAT KOMANDAN',
 
     // Tab 5: Terrain
-    'Terrain Configuration Editor': 'Editor Pengaturan Medan',
+    'Customize Base Terrain': 'Sunting Medan Dasar',
     'Select Terrain to Edit': 'Pilih Medan untuk Disunting',
-    'Save Terrain Modifiers': 'Simpan Pengubah Medan',
+    'SAVE TERRAIN': 'SIMPAN MEDAN',
     'Base Terrains Matrix': 'Matriks Medan Dasar',
-    'Terrain Features': 'Fitur Medan',
-    'Weather Conditions': 'Kondisi Cuaca',
+    'Features Matrix': 'Matriks Fitur Medan',
+    'Weather Matrix': 'Matriks Cuaca',
     'Time-of-Day Cycle': 'Siklus Waktu Harian',
     'Compound Hazards (Terrain × Weather)': 'Bahaya Gabungan (Medan × Cuaca)',
 
@@ -383,8 +391,8 @@ window.IronDivision = window.IronDivision || {};
     'READ THE FIELD MANUAL': 'BACA BUKU SAKU',
     'SITREP // EXPANDED COMBAT LOG': 'SITREP // LOG PERTEMPURAN LENGKAP',
     'OPERATION CONCLUDED': 'OPERASI SELESAI',
-    'EXPORT PDF (FORM DA-774)': 'EKSPOR PDF (FORM DA-774)',
-    'RESET BATTLE': 'ULANG PERTEMPURAN',
+    'DOWNLOAD OFFICIAL AAR (PDF)': 'UNDUH AAR RESMI (PDF)',
+    'RESET OPERATION': 'ULANG OPERASI',
     'CLOSE': 'TUTUP',
 
     // Interactive UI Tutorial Controls & Steps (Casual Subordinate Tone)
@@ -459,9 +467,12 @@ window.IronDivision = window.IronDivision || {};
     'Filter units...': 'Saring unit...',
     'Filter traits...': 'Saring sifat...',
     'Filter generals...': 'Saring jenderal...',
-    'Search combat logs...': 'Cari log pertempuran...',
+    'Search log entries...': 'Cari catatan log...',
+    'Search general...': 'Cari jenderal...',
+    'Search unit template...': 'Cari templat unit...',
     'e.g. 1st Panzer Grenadiers': 'cth. Batalyon Infanteri 1',
-    'e.g. Field Marshal Zhukov': 'cth. Jenderal Sudirman'
+    'e.g. Field Marshal Zhukov': 'cth. Jenderal Sudirman',
+    'e.g. Master of Armored Maneuver': 'cth. Ahli Manuver Lapis Baja'
   };
 
   // --------------------------------------------------------------------------
@@ -946,6 +957,26 @@ window.IronDivision = window.IronDivision || {};
     dataBackups.saved = true;
   }
 
+  function localizeField(kind, id, field, currentValue) {
+    if (currentLang !== 'id' || !id) return currentValue;
+    backupEnglishDataOnce();
+    const idMap = kind === 'terrain'
+      ? ID_TERRAINS
+      : (kind === 'trait' ? ID_TRAITS : (kind === 'cmdTrait' ? ID_CMD_TRAITS : null));
+    const enMap = kind === 'terrain'
+      ? dataBackups.terrains
+      : (kind === 'trait' ? dataBackups.traits : (kind === 'cmdTrait' ? dataBackups.cmdTraits : null));
+    if (!idMap || !enMap) return currentValue;
+    const translated = idMap[id] && idMap[id][field];
+    if (translated === undefined) return currentValue;
+    const defaultEn = enMap[id] && enMap[id][field];
+    // Preserve custom user edits: only return localized label if value still matches built-in English default
+    if (defaultEn !== undefined && currentValue !== undefined && currentValue !== defaultEn) {
+      return currentValue;
+    }
+    return translated;
+  }
+
   function applyDataLocalization(lang) {
     if (!ID.Data) return;
     backupEnglishDataOnce();
@@ -974,17 +1005,13 @@ window.IronDivision = window.IronDivision || {};
       });
     };
 
-    patchObjMap(D.DEFAULT_TERRAINS, ID_TERRAINS, dataBackups.terrains);
-    patchObjMap(ID.state?.terrains, ID_TERRAINS, dataBackups.terrains);
+    // Only localize non-persisted read-only reference registries.
+    // ID.state.{terrains, traits, commanderTraits} and D.DEFAULT_* remain untouched
+    // so localStorage, JSON exports, and custom user edits stay language-neutral.
     patchObjMap(D.TERRAIN_FEATURES, ID_FEATURES, dataBackups.features);
     patchObjMap(D.WEATHER_TYPES, ID_WEATHER, dataBackups.weather);
     patchObjMap(D.TIME_OF_DAY_TYPES, ID_TOD, dataBackups.tod);
     patchObjMap(D.COMPOUND_HAZARDS, ID_HAZARDS, dataBackups.hazards);
-
-    patchArr(D.DEFAULT_TRAITS, ID_TRAITS, dataBackups.traits);
-    patchArr(ID.state?.traits, ID_TRAITS, dataBackups.traits);
-    patchArr(D.DEFAULT_COMMANDER_TRAITS, ID_CMD_TRAITS, dataBackups.cmdTraits);
-    patchArr(ID.state?.commanderTraits, ID_CMD_TRAITS, dataBackups.cmdTraits);
     patchArr(D.TACTICS_DB, ID_TACTICS, dataBackups.tactics);
   }
 
@@ -1045,7 +1072,7 @@ window.IronDivision = window.IronDivision || {};
     [/\[Depot Exhausted\] (.+?)'s Supply Depot is empty — frontline units cannot draw brigade resupply!/g, '[Depot Kosong] Depot Logistik $1 habis — unit garis depan tidak bisa menarik pasokan brigade!'],
     [/Supply dropped below 50%! One-time ([^ ]+) Org damage & -10% malus!/g, 'Logistik turun di bawah 50%! Penalti sekali jalan $1 Org & malus -10%!'],
     [/Supply dropped below 20%! One-time ([^ ]+) Org damage & -20% malus!/g, 'Logistik turun di bawah 20%! Penalti sekali jalan $1 Org & malus -20%!'],
-    [/\[Weather Shift\] Theatre weather shifts from (.+?) -> ([^(!]+?)!/g, '[Perubahan Cuaca] Cuaca teater bergeser dari $1 ke $2!'],
+    [/\[Weather Shift\] Theatre weather shifts from (.+?) -> ([^(!]+?)(?:\s*\(([^)]+)\))?!/g, (_, fromW, toW, ctx) => `[Perubahan Cuaca] Cuaca teater bergeser dari ${fromW.trim()} ke ${toW.trim()}${ctx ? ` (${ctx})` : ''}!`],
     [/\[Vigilance\/Recon Roll\] Side ([AB]): (.+?) vs Side ([AB]): (.+?) -> Side ([AB]) wins by (\d+) \(\+(\d+) flat Stat Boost!\)/g, '[Pengintaian] Pihak $1: $2 vs Pihak $3: $4 -> Pihak $5 unggul $6 (+$7 Bonus Stat!)'],
     [/\[Vigilance\/Recon Roll\]/g, '[Pengintaian]'],
     [/\[Initiative Locked\] Side ([AB]) has not yet closed into frontline engagement range — Side ([AB]) remains in the Attacking Phase while Side ([AB]) holds in the Defending Phase!/g, '[Inisiatif Terkunci] Pihak $1 belum masuk jarak tembak — Pihak $2 tetap menyerang sementara Pihak $3 bertahan!'],
@@ -1621,6 +1648,7 @@ window.IronDivision = window.IronDivision || {};
     setLanguage,
     toggleLanguage,
     getLanguage: () => currentLang,
+    localizeField,
     translateText,
     translateCombatLogText,
     buildTniAdPrintableAARHtml,

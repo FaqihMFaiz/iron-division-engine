@@ -337,7 +337,7 @@ window.IronDivision = window.IronDivision || {};
     },
     {
       id: 'aa_gun', name: 'Anti-Air Gun Battery',
-      desc: 'Reduces enemy Airstrike by 4 + d8. On d8 roll 5-7: adds +d2 cooldown to enemy Airstrike; on roll 8: shoots down strike wing (+4 rounds cooldown).',
+      desc: 'Reduces enemy Airstrike by 4 + d8. On d8 roll 5-7: adds +d2 cooldown to enemy Airstrike; on roll 8: shoots down strike wing (disables enemy Air Support for the rest of the battle).',
       atkPct: 0, atkFlat: 0, defPct: 5, defFlat: 0, softFlat: 2, hardFlat: 4, pierceFlat: 4, hardnessFlat: 0,
       vigilance: 0, orgRegen: 0, supplyRegen: 0, supplySteal: 0, recBonus: 0, armorRecBonus: 0,
       enemyDefMalus: 0, enemyHardMalus: 0, terrainTarget: '', terrainBonus: 0, antiCategory: '', antiBonus: 0,
@@ -599,7 +599,7 @@ window.IronDivision = window.IronDivision || {};
     },
     {
       id: 'urb_atk_armour_supported', name: 'Armour-Supported Urban Assault (Urban)', role: 'attack', urbanOnly: true, personality: 'Balanced',
-      atkPct: 20, defPct: 0, vigMod: -10, flatAtk: 0, flatDef: 2, flatPierce: 0, supplyAdd: 1,
+      atkPct: 20, defPct: 0, vigMod: -10, flatAtk: 0, flatDef: 0, flatPierce: 0, supplyAdd: 0,
       bestAgainst: 'Mixed infantry and fortified defenders when attacker has both infantry and armor.',
       summary: 'Urban Only: +20% Inf Atk when friendly armor active, +2 flat Inf Def, +10% Armor Def with Inf support. Malus: -15% Tank Atk, -10 Vig, +1 Supply per armor.'
     },

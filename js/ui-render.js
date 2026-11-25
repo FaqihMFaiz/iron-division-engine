@@ -45,7 +45,9 @@ window.IronDivision = window.IronDivision || {};
       sideB_cmdHash: '',
       sideA_tplHash: '',
       sideB_tplHash: '',
-      terrainHash: ''
+      terrainHash: '',
+      featureHash: '',
+      weatherHash: ''
     },
     renderedLogIds: new Set(),
     tacticsPage: 0,
@@ -85,6 +87,13 @@ window.IronDivision = window.IronDivision || {};
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
+  }
+
+  function loc(kind, id, field, val) {
+    if (ID.I18n && typeof ID.I18n.localizeField === 'function') {
+      return ID.I18n.localizeField(kind, id, field, val);
+    }
+    return val;
   }
 
   // Safe accessor shortcuts for combat and data functions
@@ -250,32 +259,38 @@ window.IronDivision = window.IronDivision || {};
     const wSel = document.getElementById('bf-weather');
     if (!tSel || !fSel || !wSel) return;
 
-    const terrainHash = Object.keys(state.terrains || {}).map(k => {
+    const langKey = (ID.I18n && typeof ID.I18n.getLanguage === 'function') ? ID.I18n.getLanguage() : 'en';
+    const terrainHash = `${langKey}|` + Object.keys(state.terrains || {}).map(k => {
       const t = state.terrains[k];
       return `${k}:${t?.name || ''}:${t?.isUrban ? 1 : 0}`;
     }).join('|');
     if (uiState.selectCache.terrainHash !== terrainHash || tSel.children.length === 0) {
       tSel.innerHTML = Object.keys(state.terrains || {}).map(k => {
         const t = state.terrains[k];
-        return `<option value="${escapeHtml(k)}">${escapeHtml(t.name)}${t.isUrban ? ' (Urban Tactics Enabled)' : ''}</option>`;
+        const dispName = loc('terrain', k, 'name', t.name);
+        return `<option value="${escapeHtml(k)}">${escapeHtml(dispName)}${t.isUrban ? ' (Urban Tactics Enabled)' : ''}</option>`;
       }).join('');
       uiState.selectCache.terrainHash = terrainHash;
     }
     tSel.value = state.environment.terrain;
 
-    if (fSel.children.length === 0) {
+    const featureHash = `${langKey}|` + Object.keys(D.TERRAIN_FEATURES || {}).map(k => `${k}:${D.TERRAIN_FEATURES[k]?.name || ''}`).join('|');
+    if (uiState.selectCache.featureHash !== featureHash || fSel.children.length === 0) {
       fSel.innerHTML = Object.keys(D.TERRAIN_FEATURES || {}).map(k => {
         const f = D.TERRAIN_FEATURES[k];
-        return `<option value="${k}">${f.name}</option>`;
+        return `<option value="${escapeHtml(k)}">${escapeHtml(f.name)}</option>`;
       }).join('');
+      uiState.selectCache.featureHash = featureHash;
     }
     fSel.value = state.environment.feature;
 
-    if (wSel.children.length === 0) {
+    const weatherHash = `${langKey}|` + Object.keys(D.WEATHER_TYPES || {}).map(k => `${k}:${D.WEATHER_TYPES[k]?.name || ''}`).join('|');
+    if (uiState.selectCache.weatherHash !== weatherHash || wSel.children.length === 0) {
       wSel.innerHTML = Object.keys(D.WEATHER_TYPES || {}).map(k => {
         const w = D.WEATHER_TYPES[k];
-        return `<option value="${k}">${w.name}</option>`;
+        return `<option value="${escapeHtml(k)}">${escapeHtml(w.name)}</option>`;
       }).join('');
+      uiState.selectCache.weatherHash = weatherHash;
     }
     wSel.value = state.environment.weather;
 
@@ -315,7 +330,7 @@ window.IronDivision = window.IronDivision || {};
       ? `<span class="px-2 py-0.5 bg-[#1b1824] border border-[#5b4d82] text-[#c7b8f5]">VIS CAP // ${envFx.visCap}</span>`
       : '';
     const hazardBadges = (envFx && envFx.hazards && envFx.hazards.length > 0)
-      ? envFx.hazards.map(hz => `<span class="px-2 py-0.5 bg-[#331a19] border border-[#8a3c38] text-[#f2a6a2] font-bold" title="${escapeHtml(hz.desc)}">HAZARD // ${hz.shortLabel}</span>`).join('')
+      ? envFx.hazards.map(hz => `<span class="px-2 py-0.5 bg-[#331a19] border border-[#8a3c38] text-[#f2a6a2] font-bold" title="${escapeHtml(hz.desc)}">HAZARD // ${escapeHtml(hz.shortLabel)}</span>`).join('')
       : '';
 
     const simClockDate = H.getSimulatedBattleDate ? H.getSimulatedBattleDate(state.battle?.round || 1) : new Date();
@@ -343,14 +358,15 @@ window.IronDivision = window.IronDivision || {};
       );
     }
 
+    const terrDisplayName = loc('terrain', state.environment.terrain, 'name', terr.name || 'Plains');
     const summaryBar = document.getElementById('env-summary-bar');
     if (summaryBar) {
       summaryBar.innerHTML = `
         <div class="flex flex-wrap items-center gap-1.5 font-mono text-[10.5px]">
-          <span class="px-2 py-0.5 bg-[#121613] border border-[#4d4224] text-[#e0be6a] font-bold">CLOCK // ${simClockStr} HRS · ${dayOrdinal} (${durLabel})</span>
-          <span class="px-2 py-0.5 bg-[#121613] border border-[#2e3730] text-[#c8a24b]">TERR // ${(terr.name || 'Plains').toUpperCase()}: INF ${terr.infAtk >= 0 ? '+' : ''}${terr.infAtk || 0}/${terr.infDef >= 0 ? '+' : ''}${terr.infDef || 0}% | TNK ${terr.tankAtk >= 0 ? '+' : ''}${terr.tankAtk || 0}/${terr.tankDef >= 0 ? '+' : ''}${terr.tankDef || 0}% | DIG ${maxDig} | OUTNUM ${outCap}%</span>
-          <span class="px-2 py-0.5 bg-[#121613] border border-[#2e3730] text-[#8ec0e8]">FEAT // ${(feat.name || 'Normal').toUpperCase()}: ATK ×${feat.atkMult || 1} DEF ×${feat.defMult || 1}</span>
-          <span class="px-2 py-0.5 bg-[#121613] border border-[#2e3730] text-[#89b884]">METEO // ${(weath.name || 'Sunny').toUpperCase()} · ${todPhaseLabel} · AIR ${airPct}%${state.environment.dynamicWeather ? ' [DYN]' : ''}</span>
+          <span class="px-2 py-0.5 bg-[#121613] border border-[#4d4224] text-[#e0be6a] font-bold">CLOCK // ${escapeHtml(simClockStr)} HRS · ${escapeHtml(dayOrdinal)} (${escapeHtml(durLabel)})</span>
+          <span class="px-2 py-0.5 bg-[#121613] border border-[#2e3730] text-[#c8a24b]">TERR // ${escapeHtml(terrDisplayName.toUpperCase())}: INF ${terr.infAtk >= 0 ? '+' : ''}${terr.infAtk || 0}/${terr.infDef >= 0 ? '+' : ''}${terr.infDef || 0}% | TNK ${terr.tankAtk >= 0 ? '+' : ''}${terr.tankAtk || 0}/${terr.tankDef >= 0 ? '+' : ''}${terr.tankDef || 0}% | DIG ${maxDig} | OUTNUM ${outCap}%</span>
+          <span class="px-2 py-0.5 bg-[#121613] border border-[#2e3730] text-[#8ec0e8]">FEAT // ${escapeHtml((feat.name || 'Normal').toUpperCase())}: ATK ×${feat.atkMult || 1} DEF ×${feat.defMult || 1}</span>
+          <span class="px-2 py-0.5 bg-[#121613] border border-[#2e3730] text-[#89b884]">METEO // ${escapeHtml((weath.name || 'Sunny').toUpperCase())} · ${escapeHtml(todPhaseLabel)} · AIR ${airPct}%${state.environment.dynamicWeather ? ' [DYN]' : ''}</span>
           ${visBadge}
           ${hazardBadges}
         </div>
@@ -360,7 +376,7 @@ window.IronDivision = window.IronDivision || {};
 
     const collapsedSum = document.getElementById('theatre-collapsed-summary');
     if (collapsedSum) {
-      collapsedSum.textContent = `CLOCK // ${simClockStr} HRS · ${dayOrdinal} (${todPhaseLabel})  |  TERR // ${(terr.name || 'Plains').toUpperCase()} (${(feat.name || 'Normal').toUpperCase()})  |  METEO // ${(weath.name || 'Sunny').toUpperCase()}${state.environment.dynamicWeather ? ' [DYN]' : ''}`;
+      collapsedSum.textContent = `CLOCK // ${simClockStr} HRS · ${dayOrdinal} (${todPhaseLabel})  |  TERR // ${terrDisplayName.toUpperCase()} (${(feat.name || 'Normal').toUpperCase()})  |  METEO // ${(weath.name || 'Sunny').toUpperCase()}${state.environment.dynamicWeather ? ' [DYN]' : ''}`;
     }
   }
 
@@ -385,7 +401,7 @@ window.IronDivision = window.IronDivision || {};
     if (cmdSel) {
       if (forceRebuild || uiState.selectCache[cmdHashKey] !== cmdHash || cmdSel.children.length === 0) {
         cmdSel.innerHTML = (state.commanders || []).map(c =>
-          `<option value="${c.id}">${c.name} [${c.personality}]</option>`
+          `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)} [${escapeHtml(c.personality)}]</option>`
         ).join('');
         uiState.selectCache[cmdHashKey] = cmdHash;
       }
@@ -404,7 +420,7 @@ window.IronDivision = window.IronDivision || {};
         const C = getCombat();
         const eligible = C.getEligibleTactics ? C.getEligibleTactics(role, isUrban) : [];
         tacSel.innerHTML = `<option value="auto">[AI] Commander Auto-Select</option>` +
-          eligible.map(t => `<option value="${t.id}">${t.name} (${t.personality})</option>`).join('');
+          eligible.map(t => `<option value="${escapeHtml(t.id)}">${escapeHtml(t.name)} (${escapeHtml(t.personality)})</option>`).join('');
         uiState.selectCache[roleKey] = role;
         uiState.selectCache[urbanKey] = isUrban;
       }
@@ -419,7 +435,7 @@ window.IronDivision = window.IronDivision || {};
       if (forceRebuild || uiState.selectCache[tplHashKey] !== tplHash || addSel.children.length === 0) {
         const cur = addSel.value;
         addSel.innerHTML = (state.unitTemplates || []).map(u =>
-          `<option value="${u.id}">${u.name} (${u.category.toUpperCase()} | ${u.personnel} HP)</option>`
+          `<option value="${escapeHtml(u.id)}">${escapeHtml(u.name)} (${escapeHtml((u.category || '').toUpperCase())} | ${u.personnel} HP)</option>`
         ).join('');
         if (cur) addSel.value = cur;
         uiState.selectCache[tplHashKey] = tplHash;
@@ -611,7 +627,7 @@ window.IronDivision = window.IronDivision || {};
         } else {
           const traitTags = (cmd.traits || []).map(tid => {
             const ct = C.getCommanderTraitById ? C.getCommanderTraitById(tid) : null;
-            return ct ? `<span class="mil-tag" title="${escapeHtml(ct.desc)}">${escapeHtml(ct.name)}</span>` : '';
+            return ct ? `<span class="mil-tag" title="${escapeHtml(loc('cmdTrait', tid, 'desc', ct.desc))}">${escapeHtml(loc('cmdTrait', tid, 'name', ct.name))}</span>` : '';
           }).join('');
           dossierEl.innerHTML = `
             <div class="grid grid-cols-4 gap-1 text-center">
@@ -697,7 +713,7 @@ window.IronDivision = window.IronDivision || {};
 
       const traitBadges = (u.traits || []).map(tid => {
         const t = C.getTraitById ? C.getTraitById(tid) : null;
-        return t ? `<span class="mil-tag" title="${escapeHtml(t.desc)}">${escapeHtml(t.name)}</span>` : '';
+        return t ? `<span class="mil-tag" title="${escapeHtml(loc('trait', tid, 'desc', t.desc))}">${escapeHtml(loc('trait', tid, 'name', t.name))}</span>` : '';
       }).join('');
 
       const purBonus = C.getUnitPursuitBonus ? C.getUnitPursuitBonus(u) : 0;
@@ -709,9 +725,10 @@ window.IronDivision = window.IronDivision || {};
       const statusAccentCls = isInactiveStatus
         ? 'unit-status-inactive'
         : (isStrainedStatus ? 'unit-status-strained' : (side === 'A' ? 'unit-status-ok-a' : 'unit-status-ok-b'));
+      const safeInstId = escapeHtml(u.instanceId);
 
       return `
-        <div class="unit-dossier ${u.defeated ? 'unit-dossier-defeated' : (side === 'A' ? 'unit-dossier-a' : 'unit-dossier-b')} ${statusAccentCls} p-2.5 space-y-2" data-unit-id="${u.instanceId}" onmouseenter="highlightMapCounter('${u.instanceId}', true)" onmouseleave="highlightMapCounter('${u.instanceId}', false)">
+        <div class="unit-dossier ${u.defeated ? 'unit-dossier-defeated' : (side === 'A' ? 'unit-dossier-a' : 'unit-dossier-b')} ${statusAccentCls} p-2.5 space-y-2" data-unit-id="${safeInstId}">
           <div class="flex items-start justify-between gap-2">
             <div class="flex items-center gap-1.5 flex-wrap min-w-0">
               <span class="${side === 'A' ? 'text-[#8ec0e8]' : 'text-[#e69894]'} shrink-0" title="${escapeHtml(u.category.toUpperCase())} NATO Symbol">${ID.Icons ? ID.Icons.get(u.category) : ''}</span>
@@ -719,7 +736,7 @@ window.IronDivision = window.IronDivision || {};
               <span class="mil-rank-patch inline-flex items-center justify-center w-[22px] h-[22px] bg-[#1c2017] border border-[#594b27] text-[#d4b054] shrink-0" title="${escapeHtml(u.experience)} Rank Insignia">${ID.Icons && ID.Icons.getRank ? ID.Icons.getRank(u.experience) : escapeHtml(u.experience)}</span>
               <span class="unit-compact-dist-pill hidden items-center px-1.5 py-0.5 bg-[#121613] border border-[#2c3a47] font-mono text-[9.5px] font-bold text-[#8ec0e8]" title="Y-Axis Distance">DIST ${unitPos}</span>
             </div>
-            <button type="button" onclick="removeUnitFromSide('${side}', '${u.instanceId}')" class="text-[#667065] hover:text-[#d46a64] font-mono text-xs px-1 shrink-0" title="Remove unit">[X]</button>
+            <button type="button" data-action="unit-remove" data-side="${side}" data-id="${safeInstId}" class="text-[#667065] hover:text-[#d46a64] font-mono text-xs px-1 shrink-0" title="Remove unit">[X]</button>
           </div>
 
           <!-- Hidden Tooltip Source for Cursor-Following Floating Dossier -->
@@ -850,13 +867,13 @@ window.IronDivision = window.IronDivision || {};
           ${state.gmMode ? `
             <div class="pt-1.5 mt-1 border-t border-[#3a453c] flex flex-wrap items-center gap-1 font-mono text-[9.5px]">
               <span class="text-[#c8a24b] font-bold mr-1">GM:</span>
-              <button type="button" onclick="gmAdjustUnit('${side}', '${u.instanceId}', 'supply', -10)" class="px-1.5 py-0.5 bg-[#1b201c] hover:bg-[#2a332c] border border-[#3a453c] text-[#d4b054]">SUP-10</button>
-              <button type="button" onclick="gmAdjustUnit('${side}', '${u.instanceId}', 'supply', 10)" class="px-1.5 py-0.5 bg-[#1b201c] hover:bg-[#2a332c] border border-[#3a453c] text-[#d4b054]">SUP+10</button>
-              <button type="button" onclick="gmAdjustUnit('${side}', '${u.instanceId}', 'org', -10)" class="px-1.5 py-0.5 bg-[#1b201c] hover:bg-[#2a332c] border border-[#3a453c] text-[#8ec0e8]">ORG-10</button>
-              <button type="button" onclick="gmAdjustUnit('${side}', '${u.instanceId}', 'org', 10)" class="px-1.5 py-0.5 bg-[#1b201c] hover:bg-[#2a332c] border border-[#3a453c] text-[#8ec0e8]">ORG+10</button>
-              <button type="button" onclick="gmAdjustUnit('${side}', '${u.instanceId}', 'pos', -1)" class="px-1.5 py-0.5 bg-[#1b201c] hover:bg-[#2a332c] border border-[#3a453c] text-[#7cb377]" title="Move 1 closer to contact line">DIST-1</button>
-              <button type="button" onclick="gmAdjustUnit('${side}', '${u.instanceId}', 'pos', 1)" class="px-1.5 py-0.5 bg-[#1b201c] hover:bg-[#2a332c] border border-[#3a453c] text-[#7cb377]" title="Move 1 further back">DIST+1</button>
-              ${(u.isRallying || u.defeated) ? `<button type="button" onclick="gmAdjustUnit('${side}', '${u.instanceId}', 'rally_now', 0)" class="ml-auto px-1.5 py-0.5 bg-[#2d472b] hover:bg-[#385936] border border-[#4c7548] text-[#d9ead7] font-bold">RALLY NOW</button>` : ''}
+              <button type="button" data-action="gm-adjust" data-side="${side}" data-id="${safeInstId}" data-field="supply" data-delta="-10" class="px-1.5 py-0.5 bg-[#1b201c] hover:bg-[#2a332c] border border-[#3a453c] text-[#d4b054]">SUP-10</button>
+              <button type="button" data-action="gm-adjust" data-side="${side}" data-id="${safeInstId}" data-field="supply" data-delta="10" class="px-1.5 py-0.5 bg-[#1b201c] hover:bg-[#2a332c] border border-[#3a453c] text-[#d4b054]">SUP+10</button>
+              <button type="button" data-action="gm-adjust" data-side="${side}" data-id="${safeInstId}" data-field="org" data-delta="-10" class="px-1.5 py-0.5 bg-[#1b201c] hover:bg-[#2a332c] border border-[#3a453c] text-[#8ec0e8]">ORG-10</button>
+              <button type="button" data-action="gm-adjust" data-side="${side}" data-id="${safeInstId}" data-field="org" data-delta="10" class="px-1.5 py-0.5 bg-[#1b201c] hover:bg-[#2a332c] border border-[#3a453c] text-[#8ec0e8]">ORG+10</button>
+              <button type="button" data-action="gm-adjust" data-side="${side}" data-id="${safeInstId}" data-field="pos" data-delta="-1" class="px-1.5 py-0.5 bg-[#1b201c] hover:bg-[#2a332c] border border-[#3a453c] text-[#7cb377]" title="Move 1 closer to contact line">DIST-1</button>
+              <button type="button" data-action="gm-adjust" data-side="${side}" data-id="${safeInstId}" data-field="pos" data-delta="1" class="px-1.5 py-0.5 bg-[#1b201c] hover:bg-[#2a332c] border border-[#3a453c] text-[#7cb377]" title="Move 1 further back">DIST+1</button>
+              ${(u.isRallying || u.defeated) ? `<button type="button" data-action="gm-adjust" data-side="${side}" data-id="${safeInstId}" data-field="rally_now" data-delta="0" class="ml-auto px-1.5 py-0.5 bg-[#2d472b] hover:bg-[#385936] border border-[#4c7548] text-[#d9ead7] font-bold">RALLY NOW</button>` : ''}
             </div>
           ` : ''}
         </div>
@@ -1062,9 +1079,9 @@ window.IronDivision = window.IronDivision || {};
       const barW = Math.round(w * persRatio);
       const opacity = isRear ? '0.45' : '0.96';
       const dash = isRear ? ' stroke-dasharray="2 2"' : '';
-      const tip = `${escapeHtml(u.name)} (${u.category.toUpperCase()}) | PERS ${u.personnel}/${u.maxPersonnel} | ORG ${u.org}/${u.maxOrg} | POS ${u.pos ?? 2}`;
+      const tip = `${escapeHtml(u.name)} (${escapeHtml((u.category || '').toUpperCase())}) | PERS ${u.personnel}/${u.maxPersonnel} | ORG ${u.org}/${u.maxOrg} | POS ${u.pos ?? 2}`;
       return `
-        <g class="sector-counter" data-unit-id="${u.instanceId}" opacity="${opacity}" onclick="focusUnitCard('${u.instanceId}')">
+        <g class="sector-counter" data-unit-id="${escapeHtml(u.instanceId)}" opacity="${opacity}">
           <title>${tip} — Click to locate card</title>
           <rect class="sector-counter-halo" x="${(x0 - 2.5).toFixed(1)}" y="${(y0 - 2.5).toFixed(1)}" width="${w + 5}" height="${h + 5}" rx="2" fill="none" stroke="#e6c46d" stroke-width="2" opacity="0"/>
           <rect x="${x0.toFixed(1)}" y="${y0.toFixed(1)}" width="${w}" height="${h}" fill="${fillCol}" stroke="${strokeCol}" stroke-width="1.3"${dash}/>
@@ -1428,10 +1445,10 @@ window.IronDivision = window.IronDivision || {};
       const currentChecked = Array.from(chkContainer.querySelectorAll('input:checked')).map(i => i.value);
       chkContainer.innerHTML = (state.traits || []).map(t => `
         <label class="flex items-start gap-1.5 p-1 rounded hover:bg-slate-900 cursor-pointer">
-          <input type="checkbox" value="${t.id}" class="unit-trait-chk mt-0.5 accent-amber-500" ${currentChecked.includes(t.id) ? 'checked' : ''}>
+          <input type="checkbox" value="${escapeHtml(t.id)}" class="unit-trait-chk mt-0.5 accent-amber-500" ${currentChecked.includes(t.id) ? 'checked' : ''}>
           <div>
-            <div class="font-semibold text-slate-200">${t.name}</div>
-            <div class="text-[10px] text-slate-400 leading-tight">${t.desc}</div>
+            <div class="font-semibold text-slate-200">${escapeHtml(loc('trait', t.id, 'name', t.name))}</div>
+            <div class="text-[10px] text-slate-400 leading-tight">${escapeHtml(loc('trait', t.id, 'desc', t.desc))}</div>
           </div>
         </label>
       `).join('');
@@ -1460,19 +1477,23 @@ window.IronDivision = window.IronDivision || {};
     }
 
     grid.innerHTML = filteredTemplates.map(u => {
-      const traitNames = (u.traits || []).map(tid => C.getTraitById ? C.getTraitById(tid)?.name : tid).filter(Boolean).join(', ');
+      const traitNames = (u.traits || []).map(tid => {
+        const tr = C.getTraitById ? C.getTraitById(tid) : null;
+        return tr ? loc('trait', tid, 'name', tr.name) : tid;
+      }).filter(Boolean).join(', ');
       const purBonus = C.getUnitPursuitBonus ? C.getUnitPursuitBonus(u) : 0;
       const retBonus = C.getUnitRetreatBonus ? C.getUnitRetreatBonus(u) : 0;
+      const safeUid = escapeHtml(u.id);
 
       return `
         <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 flex flex-col justify-between gap-2">
           <div>
             <div class="flex items-center justify-between gap-2">
               <h3 class="mil-dogtag mil-dogtag-lg" title="${escapeHtml(u.name)}"><span class="mil-dogtag-text">${escapeHtml(u.name)}</span></h3>
-              <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300">${u.experience}</span>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300">${escapeHtml(u.experience)}</span>
             </div>
             <div class="text-[11px] font-mono text-slate-400 mt-1">
-              ${u.category.toUpperCase()} | Armor: ${u.armorTier.toUpperCase()} (${u.armorCount} veh)
+              ${escapeHtml((u.category || '').toUpperCase())} | Armor: ${escapeHtml((u.armorTier || 'unarmored').toUpperCase())} (${u.armorCount} veh)
             </div>
             <div class="grid grid-cols-3 gap-1.5 mt-2 p-2 rounded bg-slate-900/80 text-[11px] font-mono">
               <div>HP: <b class="text-emerald-400">${u.personnel}</b></div>
@@ -1487,15 +1508,15 @@ window.IronDivision = window.IronDivision || {};
               <div class="col-span-3">Pur/Ret: <b class="text-purple-300">${purBonus >= 0 ? '+' : ''}${purBonus}/${retBonus >= 0 ? '+' : ''}${retBonus}</b></div>
             </div>
             <div class="text-[11px] text-slate-400 mt-1.5">
-              <b class="text-slate-300">Traits:</b> ${traitNames || 'None'}
+              <b class="text-slate-300">Traits:</b> ${escapeHtml(traitNames || 'None')}
             </div>
           </div>
           <div class="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-800 text-xs">
-            <button type="button" onclick="loadUnitIntoForm('${u.id}')" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200">✎ Edit</button>
-            <button type="button" onclick="duplicateUnitTemplate('${u.id}')" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700" title="Duplicate this template">⧉ Duplicate</button>
-            <button type="button" onclick="deployTemplateById('${u.id}', 'A')" class="px-2.5 py-1 rounded bg-sky-700 hover:bg-sky-600 text-white">+ Side A</button>
-            <button type="button" onclick="deployTemplateById('${u.id}', 'B')" class="px-2.5 py-1 rounded bg-rose-700 hover:bg-rose-600 text-white">+ Side B</button>
-            <button type="button" onclick="deleteUnitTemplate('${u.id}')" class="ml-auto px-2 py-1 rounded bg-[#1c1a1a] hover:bg-[#2b2020] border border-[#6e5252] text-[#d6a9a7]">Delete</button>
+            <button type="button" data-action="unit-edit" data-id="${safeUid}" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200">✎ Edit</button>
+            <button type="button" data-action="unit-dup" data-id="${safeUid}" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700" title="Duplicate this template">⧉ Duplicate</button>
+            <button type="button" data-action="unit-deploy" data-id="${safeUid}" data-side="A" class="px-2.5 py-1 rounded bg-sky-700 hover:bg-sky-600 text-white">+ Side A</button>
+            <button type="button" data-action="unit-deploy" data-id="${safeUid}" data-side="B" class="px-2.5 py-1 rounded bg-rose-700 hover:bg-rose-600 text-white">+ Side B</button>
+            <button type="button" data-action="unit-delete" data-id="${safeUid}" class="ml-auto px-2 py-1 rounded bg-[#1c1a1a] hover:bg-[#2b2020] border border-[#6e5252] text-[#d6a9a7]">Delete</button>
           </div>
         </div>
       `;
@@ -1527,7 +1548,9 @@ window.IronDivision = window.IronDivision || {};
     const allTraits = state.traits || [];
     const filteredTraits = allTraits.filter(t => {
       if (activeCat !== 'all' && classifyTraitCategory(t) !== activeCat) return false;
-      if (searchQ && !(t.name || '').toLowerCase().includes(searchQ) && !(t.desc || '').toLowerCase().includes(searchQ)) return false;
+      const dispName = loc('trait', t.id, 'name', t.name) || '';
+      const dispDesc = loc('trait', t.id, 'desc', t.desc) || '';
+      if (searchQ && !dispName.toLowerCase().includes(searchQ) && !dispDesc.toLowerCase().includes(searchQ) && !(t.name || '').toLowerCase().includes(searchQ)) return false;
       return true;
     });
     const tCountEl = document.getElementById('traits-dir-count');
@@ -1542,10 +1565,10 @@ window.IronDivision = window.IronDivision || {};
       <div class="bg-slate-950 border border-slate-800 rounded-lg p-3 flex flex-col justify-between gap-2">
         <div>
           <div class="flex items-center justify-between">
-            <span class="font-bold text-xs sm:text-sm text-amber-300">${t.name}</span>
-            <button type="button" onclick="loadTraitIntoForm('${t.id}')" class="text-xs px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200">✎ Edit</button>
+            <span class="font-bold text-xs sm:text-sm text-amber-300">${escapeHtml(loc('trait', t.id, 'name', t.name))}</span>
+            <button type="button" data-action="trait-edit" data-id="${escapeHtml(t.id)}" class="text-xs px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200">✎ Edit</button>
           </div>
-          <p class="text-[11px] text-slate-400 mt-1">${t.desc}</p>
+          <p class="text-[11px] text-slate-400 mt-1">${escapeHtml(loc('trait', t.id, 'desc', t.desc))}</p>
           <div class="flex flex-wrap gap-1 mt-2 text-[10px] font-mono text-slate-300">
             ${t.atkPct ? `<span class="px-1.5 py-0.5 rounded bg-slate-900">Atk ${t.atkPct > 0 ? '+' : ''}${t.atkPct}%</span>` : ''}
             ${t.defPct ? `<span class="px-1.5 py-0.5 rounded bg-slate-900">Def ${t.defPct > 0 ? '+' : ''}${t.defPct}%</span>` : ''}
@@ -1554,8 +1577,8 @@ window.IronDivision = window.IronDivision || {};
             ${t.vigilance ? `<span class="px-1.5 py-0.5 rounded bg-slate-900">Vig ${t.vigilance > 0 ? '+' : ''}${t.vigilance}</span>` : ''}
             ${t.pursueBonus ? `<span class="px-1.5 py-0.5 rounded bg-purple-950 text-purple-300">Pursuit ${t.pursueBonus > 0 ? '+' : ''}${t.pursueBonus}</span>` : ''}
             ${t.retreatBonus ? `<span class="px-1.5 py-0.5 rounded bg-indigo-950 text-indigo-300">Retreat ${t.retreatBonus > 0 ? '+' : ''}${t.retreatBonus}</span>` : ''}
-            ${t.terrainTarget ? `<span class="px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300">${t.terrainTarget} +${t.terrainBonus}%</span>` : ''}
-            ${t.antiCategory ? `<span class="px-1.5 py-0.5 rounded bg-rose-950 text-rose-300">Anti-${t.antiCategory} +${t.antiBonus}%</span>` : ''}
+            ${t.terrainTarget ? `<span class="px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300">${escapeHtml(t.terrainTarget)} +${t.terrainBonus}%</span>` : ''}
+            ${t.antiCategory ? `<span class="px-1.5 py-0.5 rounded bg-rose-950 text-rose-300">Anti-${escapeHtml(t.antiCategory)} +${t.antiBonus}%</span>` : ''}
           </div>
         </div>
       </div>
@@ -1579,23 +1602,27 @@ window.IronDivision = window.IronDivision || {};
 
     if (chkContainer) {
       const checked = Array.from(chkContainer.querySelectorAll('input:checked')).map(i => i.value);
-      chkContainer.innerHTML = traitsList.map(ct => `
+      chkContainer.innerHTML = traitsList.map(ct => {
+        const ctName = loc('cmdTrait', ct.id, 'name', ct.name);
+        const ctDesc = loc('cmdTrait', ct.id, 'desc', ct.desc);
+        return `
         <div class="flex items-start justify-between gap-2 p-1 rounded hover:bg-slate-900">
           <label class="flex items-start gap-2 cursor-pointer flex-1 min-w-0">
-            <input type="checkbox" value="${ct.id}" class="cmd-trait-chk mt-0.5 accent-amber-500" ${checked.includes(ct.id) ? 'checked' : ''}>
+            <input type="checkbox" value="${escapeHtml(ct.id)}" class="cmd-trait-chk mt-0.5 accent-amber-500" ${checked.includes(ct.id) ? 'checked' : ''}>
             <div class="min-w-0">
               <div class="font-semibold text-white flex items-center gap-1.5 flex-wrap">
-                ${ct.name}
+                ${escapeHtml(ctName)}
                 ${ct.rallyDurationRed ? `<span class="px-1.5 py-0.2 rounded bg-amber-950 text-amber-300 font-mono text-[9px] border border-amber-800">-${ct.rallyDurationRed} Rally Rd</span>` : ''}
                 ${ct.rallyCheckBonus ? `<span class="px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-300 font-mono text-[9px] border border-emerald-800">+${ct.rallyCheckBonus} Rally Roll</span>` : ''}
-                ${ct.targetUnitCategory ? `<span class="px-1.5 py-0.2 rounded bg-sky-950 text-sky-300 font-mono text-[9px] border border-sky-800">${ct.targetUnitCategory.toUpperCase()} ONLY</span>` : ''}
+                ${ct.targetUnitCategory ? `<span class="px-1.5 py-0.2 rounded bg-sky-950 text-sky-300 font-mono text-[9px] border border-sky-800">${escapeHtml(ct.targetUnitCategory.toUpperCase())} ONLY</span>` : ''}
               </div>
-              <div class="text-[11px] text-slate-400">${ct.desc}</div>
+              <div class="text-[11px] text-slate-400">${escapeHtml(ctDesc)}</div>
             </div>
           </label>
-          <button type="button" onclick="openCmdTraitModal('${ct.id}')" class="shrink-0 text-[11px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700" title="Edit or delete ${ct.name}">✎ Edit</button>
+          <button type="button" data-action="cmd-trait-edit" data-id="${escapeHtml(ct.id)}" class="shrink-0 text-[11px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700" title="Edit or delete ${escapeHtml(ctName)}">✎ Edit</button>
         </div>
-      `).join('');
+      `;
+      }).join('');
     }
 
     const listContainer = document.getElementById('commanders-list-container');
@@ -1624,8 +1651,12 @@ window.IronDivision = window.IronDivision || {};
     }
 
     listContainer.innerHTML = filteredCmds.map(c => {
-      const traitNames = (c.traits || []).map(tid => C.getCommanderTraitById ? C.getCommanderTraitById(tid)?.name : tid).filter(Boolean).join(', ');
+      const traitNames = (c.traits || []).map(tid => {
+        const ct = C.getCommanderTraitById ? C.getCommanderTraitById(tid) : null;
+        return ct ? loc('cmdTrait', tid, 'name', ct.name) : tid;
+      }).filter(Boolean).join(', ');
       const officerRank = resolveOfficerRank(c);
+      const safeCid = escapeHtml(c.id);
       return `
         <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 flex flex-col justify-between gap-2">
           <div>
@@ -1637,7 +1668,7 @@ window.IronDivision = window.IronDivision || {};
                   <span class="text-[10px] font-mono text-[#c8a24b] uppercase tracking-wider block">${escapeHtml(officerRank.title)} · TOTAL ${officerRank.total}</span>
                 </div>
               </div>
-              <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 shrink-0">${c.personality}</span>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 shrink-0">${escapeHtml(c.personality)}</span>
             </div>
 
             <div class="grid grid-cols-2 gap-1.5 my-2 p-2 rounded bg-slate-900 text-[10px] font-mono">
@@ -1647,11 +1678,11 @@ window.IronDivision = window.IronDivision || {};
               <div>LOG: <b class="text-[#c0a8d8]">Lvl ${c.logisticsLevel || 0} (+${((c.logisticsLevel || 0) * 2.5).toFixed(1)}%)</b></div>
             </div>
 
-            <p class="text-xs text-slate-400 mt-1"><b>Traits:</b> ${traitNames || 'None'}</p>
+            <p class="text-xs text-slate-400 mt-1"><b>Traits:</b> ${escapeHtml(traitNames || 'None')}</p>
           </div>
           <div class="flex items-center gap-2 pt-2 border-t border-slate-800 text-xs">
-            <button type="button" onclick="loadCommanderIntoForm('${c.id}')" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200">✎ Edit</button>
-            ${c.id !== 'cmd_none' ? `<button type="button" onclick="deleteCommander('${c.id}')" class="ml-auto px-2.5 py-1 rounded bg-[#1c1a1a] hover:bg-[#2b2020] border border-[#6e5252] text-[#d6a9a7]">Erase</button>` : ''}
+            <button type="button" data-action="cmd-edit" data-id="${safeCid}" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200">✎ Edit</button>
+            ${c.id !== 'cmd_none' ? `<button type="button" data-action="cmd-delete" data-id="${safeCid}" class="ml-auto px-2.5 py-1 rounded bg-[#1c1a1a] hover:bg-[#2b2020] border border-[#6e5252] text-[#d6a9a7]">Erase</button>` : ''}
           </div>
         </div>
       `;
@@ -1666,7 +1697,7 @@ window.IronDivision = window.IronDivision || {};
     if (editSel) {
       const cur = editSel.value || 'Plains';
       editSel.innerHTML = Object.keys(state.terrains || {}).map(k =>
-        `<option value="${k}" ${cur === k ? 'selected' : ''}>${state.terrains[k].name}</option>`
+        `<option value="${escapeHtml(k)}" ${cur === k ? 'selected' : ''}>${escapeHtml(loc('terrain', k, 'name', state.terrains[k].name))}</option>`
       ).join('');
       if (!document.getElementById('terr-name')?.value) {
         if (ID.App && ID.App.loadTerrainIntoForm) ID.App.loadTerrainIntoForm();
@@ -1690,7 +1721,7 @@ window.IronDivision = window.IronDivision || {};
         const t = state.terrains[k];
         return `
           <tr class="hover:bg-slate-950/60">
-            <td class="py-2 px-2 font-bold text-white">${t.name} ${t.isUrban ? '<span class="text-[10px] text-amber-400">(Urban)</span>' : ''}</td>
+            <td class="py-2 px-2 font-bold text-white">${escapeHtml(loc('terrain', k, 'name', t.name))} ${t.isUrban ? '<span class="text-[10px] text-amber-400">(Urban)</span>' : ''}</td>
             <td class="py-2 px-2 font-mono">${fmtMod(t.infAtk)} <span class="text-[#6c756b]">/</span> ${fmtMod(t.infDef)}</td>
             <td class="py-2 px-2 font-mono">${fmtMod(t.avAtk)} <span class="text-[#6c756b]">/</span> ${fmtMod(t.avDef)}</td>
             <td class="py-2 px-2 font-mono">${fmtMod(t.tankAtk)} <span class="text-[#6c756b]">/</span> ${fmtMod(t.tankDef)}</td>
@@ -1706,8 +1737,8 @@ window.IronDivision = window.IronDivision || {};
     if (featList) {
       featList.innerHTML = Object.values(D.TERRAIN_FEATURES || {}).map(f => `
         <div class="p-2 rounded bg-slate-950 border border-slate-800">
-          <div class="font-semibold text-white">${f.name}</div>
-          <div class="text-slate-400 text-[11px]">${f.desc}</div>
+          <div class="font-semibold text-white">${escapeHtml(f.name)}</div>
+          <div class="text-slate-400 text-[11px]">${escapeHtml(f.desc)}</div>
         </div>
       `).join('');
     }
@@ -1716,8 +1747,8 @@ window.IronDivision = window.IronDivision || {};
     if (weathList) {
       weathList.innerHTML = Object.values(D.WEATHER_TYPES || {}).map(w => `
         <div class="p-2 rounded bg-slate-950 border border-slate-800">
-          <div class="font-semibold text-white">${w.name} <span class="font-mono text-[10px] text-sky-400">(Air ${w.airMod || 0}%)</span></div>
-          <div class="text-slate-400 text-[11px]">${w.desc}</div>
+          <div class="font-semibold text-white">${escapeHtml(w.name)} <span class="font-mono text-[10px] text-sky-400">(Air ${w.airMod || 0}%)</span></div>
+          <div class="text-slate-400 text-[11px]">${escapeHtml(w.desc)}</div>
         </div>
       `).join('');
     }
@@ -1726,8 +1757,8 @@ window.IronDivision = window.IronDivision || {};
     if (todList) {
       todList.innerHTML = Object.values(D.TIME_OF_DAY_TYPES || {}).map(td => `
         <div class="p-2 rounded bg-slate-950 border border-slate-800">
-          <div class="font-semibold text-white">${td.name} <span class="font-mono text-[10px] text-emerald-400">(Air ${td.airMod || 0}%${td.visCap ? ' | Vis ' + td.visCap : ''})</span></div>
-          <div class="text-slate-400 text-[11px]">${td.desc}</div>
+          <div class="font-semibold text-white">${escapeHtml(td.name)} <span class="font-mono text-[10px] text-emerald-400">(Air ${td.airMod || 0}%${td.visCap ? ' | Vis ' + td.visCap : ''})</span></div>
+          <div class="text-slate-400 text-[11px]">${escapeHtml(td.desc)}</div>
         </div>
       `).join('');
     }
@@ -1736,9 +1767,9 @@ window.IronDivision = window.IronDivision || {};
     if (hazList) {
       hazList.innerHTML = Object.values(D.COMPOUND_HAZARDS || {}).map(hz => `
         <div class="p-2 rounded bg-slate-950 border border-slate-800">
-          <div class="font-semibold text-rose-300">${hz.name}</div>
-          <div class="text-amber-400/90 font-mono text-[10px] mb-0.5">${hz.trigger}</div>
-          <div class="text-slate-400 text-[11px]">${hz.desc}</div>
+          <div class="font-semibold text-rose-300">${escapeHtml(hz.name)}</div>
+          <div class="text-amber-400/90 font-mono text-[10px] mb-0.5">${escapeHtml(hz.trigger)}</div>
+          <div class="text-slate-400 text-[11px]">${escapeHtml(hz.desc)}</div>
         </div>
       `).join('');
     }
@@ -3310,6 +3341,88 @@ window.IronDivision = window.IronDivision || {};
   }
 
   initUnitCursorTooltip();
+
+  // Delegated Click & Hover Controller for Dynamic Cards, Editors & SVG Counters
+  let delegatedHandlersBound = false;
+  let hoveredDossierUnitId = null;
+
+  function initDelegatedUIHandlers() {
+    if (delegatedHandlersBound || typeof document === 'undefined' || !document.addEventListener) return;
+    delegatedHandlersBound = true;
+
+    document.addEventListener('click', (e) => {
+      if (!e.target || typeof e.target.closest !== 'function') return;
+
+      const actionBtn = e.target.closest('[data-action]');
+      if (actionBtn) {
+        const action = actionBtn.dataset.action;
+        const id = actionBtn.dataset.id || '';
+        const side = actionBtn.dataset.side || 'A';
+        const app = ID.App || {};
+        switch (action) {
+          case 'unit-edit':
+            if (app.loadUnitIntoForm) app.loadUnitIntoForm(id);
+            break;
+          case 'unit-dup':
+            if (app.duplicateUnitTemplate) app.duplicateUnitTemplate(id);
+            break;
+          case 'unit-deploy':
+            if (app.deployTemplateById) app.deployTemplateById(id, side);
+            break;
+          case 'unit-delete':
+            if (app.deleteUnitTemplate) app.deleteUnitTemplate(id);
+            break;
+          case 'trait-edit':
+            if (app.loadTraitIntoForm) app.loadTraitIntoForm(id);
+            break;
+          case 'cmd-trait-edit':
+            if (app.openCmdTraitModal) app.openCmdTraitModal(id);
+            break;
+          case 'cmd-edit':
+            if (app.loadCommanderIntoForm) app.loadCommanderIntoForm(id);
+            break;
+          case 'cmd-delete':
+            if (app.deleteCommander) app.deleteCommander(id);
+            break;
+          case 'unit-remove':
+            if (app.removeUnitFromSide) app.removeUnitFromSide(side, id);
+            break;
+          case 'gm-adjust':
+            if (app.gmAdjustUnit) app.gmAdjustUnit(side, id, actionBtn.dataset.field || '', Number(actionBtn.dataset.delta || 0));
+            break;
+        }
+        return;
+      }
+
+      const counterEl = e.target.closest('#tactical-sector-canvas .sector-counter[data-unit-id]');
+      if (counterEl && counterEl.dataset.unitId) {
+        focusUnitCard(counterEl.dataset.unitId);
+      }
+    });
+
+    document.addEventListener('mouseover', (e) => {
+      if (!e.target || typeof e.target.closest !== 'function') return;
+      const card = e.target.closest('.unit-dossier[data-unit-id]');
+      const uid = card ? card.dataset.unitId : null;
+      if (uid !== hoveredDossierUnitId) {
+        if (hoveredDossierUnitId) highlightMapCounter(hoveredDossierUnitId, false);
+        hoveredDossierUnitId = uid;
+        if (hoveredDossierUnitId) highlightMapCounter(hoveredDossierUnitId, true);
+      }
+    });
+
+    document.addEventListener('mouseout', (e) => {
+      if (!hoveredDossierUnitId) return;
+      const toEl = e.relatedTarget;
+      const stillInCard = toEl && typeof toEl.closest === 'function' ? toEl.closest('.unit-dossier[data-unit-id]') : null;
+      if (!stillInCard || stillInCard.dataset.unitId !== hoveredDossierUnitId) {
+        highlightMapCounter(hoveredDossierUnitId, false);
+        hoveredDossierUnitId = null;
+      }
+    });
+  }
+
+  initDelegatedUIHandlers();
 
   // --------------------------------------------------------------------------
   // Public Module API

@@ -427,6 +427,7 @@ window.IronDivision = window.IronDivision || {};
     sideObj.nextRoundAtkMod = 0;
     sideObj.activeRoundVigMod = 0;
     sideObj.activeRoundAtkMod = 0;
+    sideObj.wonVigMarginThisRound = 0;
     sideObj.breakthroughTriggeredThisRound = false;
     sideObj.airstrikeDisabled = false;
     sideObj.barrageCooldown = 0;
