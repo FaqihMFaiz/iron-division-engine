@@ -1582,43 +1582,43 @@ body.mil-ui ::selection {
 #view-battlefield {
   background-image:
     linear-gradient(rgba(14, 17, 15, 0.78), rgba(14, 17, 15, 0.86)),
-    url('../img/battlefield-bg.jpg');
+    url('../img/battlefield-bg.webp');
 }
 
 #view-terrain {
   background-image:
     linear-gradient(rgba(14, 17, 15, 0.78), rgba(14, 17, 15, 0.86)),
-    url('../img/terrain-bg.jpg');
+    url('../img/terrain-bg.webp');
 }
 
 #view-units {
   background-image:
     linear-gradient(rgba(14, 17, 15, 0.78), rgba(14, 17, 15, 0.86)),
-    url('../img/orbat-bg.jpg');
+    url('../img/orbat-bg.webp');
 }
 
 #view-traits {
   background-image:
     linear-gradient(rgba(14, 17, 15, 0.78), rgba(14, 17, 15, 0.86)),
-    url('../img/traits-bg.jpg');
+    url('../img/traits-bg.webp');
 }
 
 #view-commanders {
   background-image:
     linear-gradient(rgba(14, 17, 15, 0.78), rgba(14, 17, 15, 0.86)),
-    url('../img/command-bg.jpg');
+    url('../img/command-bg.webp');
 }
 
 #view-tactics {
   background-image:
     linear-gradient(rgba(14, 17, 15, 0.76), rgba(14, 17, 15, 0.85)),
-    url('../img/doctrine-bg.jpg');
+    url('../img/doctrine-bg.webp');
 }
 
 #view-guide {
   background-image:
     linear-gradient(rgba(14, 17, 15, 0.76), rgba(14, 17, 15, 0.85)),
-    url('../img/manual-bg.jpg');
+    url('../img/manual-bg.webp');
 }
 
 @media (max-width: 768px) {

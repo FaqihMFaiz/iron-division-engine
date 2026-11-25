@@ -282,7 +282,7 @@ window.IronDivision = window.IronDivision || {};
               <strong>Dismounting vs. Armor Withdrawal &amp; Unscreened Artillery:</strong> Not every mechanized formation fights the same way when its vehicles burn:
             </p>
             <ul class="list-disc pl-6 space-y-1 text-sm text-[#232a24]">
-              <li><strong>Armored Infantry &amp; Recon (<code>armored_vehicle</code> without <code>anti_tank</code>):</strong> When Org drops to <strong>&lt;= 20%</strong> (with &gt;= 50% personnel) or all transports are lost, the troops <strong>dismount and fight on foot</strong> as infantry (Field Repair Crews stop burning supply on dismounted units).</li>
+              <li><strong>Armored Infantry &amp; Recon (<code>armored_vehicle</code> without <code>anti_tank</code>):</strong> When all transports are lost (<strong>0 operational vehicles</strong>), provided Org is <strong>&gt;= 20%</strong> and Personnel is <strong>&gt;= 50%</strong>, the troops <strong>dismount and fight on foot</strong> as infantry (below those thresholds, surviving crews fall back to rally dismounted; Field Repair Crews stop burning supply on dismounted units).</li>
               <li><strong>Tanks, SP Artillery &amp; Tank Destroyers (<code>tank</code>, <code>artillery</code>, or <code>anti_tank</code>):</strong> When they hit <strong>0 combat-ready vehicles</strong>, crews do NOT charge trenches with pistols — the formation <strong>withdraws from the sector to depot for refit</strong> (<code>WITHDRAWN (0 AFV)</code>).</li>
               <li><strong>Unscreened Artillery Auto-Withdrawal:</strong> If every friendly frontline unit is knocked out and only rear-area artillery remains, the gunners limber up and withdraw (<code>WITHDRAWN (UNSCREENED)</code>) rather than fighting a pointless suicide duel.</li>
             </ul>
@@ -463,7 +463,7 @@ window.IronDivision = window.IronDivision || {};
             <ul class="list-disc pl-6 space-y-1 text-sm text-[#232a24]">
               <li><strong>Armor Recovery (Dynamic Cap):</strong> Uses <code>clamp(baseRec + d50 + armorRecBonus, 5, 80 + d20)</code> with probabilistic fractional rounding (<code>floor(expected) + bernoulli(frac)</code>) so small-to-medium hits retain a realistic permanent write-off (<code>KO</code>) chance.</li>
               <li><strong>Field Repair Crew Tempo:</strong> Fires every <strong>4 rounds</strong> (<code>round % 4 === 0</code>) when <code>!isDismounted &amp;&amp; maxArmor &gt; 0 &amp;&amp; Supply &gt;= 25%</code>. Paused if <code>lastArmorHitRound === round - 1</code> (mechanics pinned). Restores <code>min(recoverable, ceil(0.35 * recoverable), maxPerCycle, ceil(dN / 2) + simpleEngBonus)</code> where <code>maxPerCycle</code> is <code>2</code> (or <code>3</code> with <code>Simple Engineering</code>).</li>
-              <li><strong>Dismounting vs. Withdrawal:</strong> Only <code>armored_vehicle</code> units <em>without</em> <code>anti_tank</code> dismount as infantry (at <code>Org &lt;= 20%</code> with <code>&gt;= 50%</code> personnel, or at <code>0</code> vehicles). <code>tank</code>, SP <code>artillery</code>, and <code>anti_tank</code> TDs retire (<code>defeated = true</code>) at <code>0</code> operational vehicles. Unscreened lone <code>artillery</code> auto-withdraws when all friendly frontliners are defeated.</li>
+              <li><strong>Dismounting vs. Withdrawal:</strong> Only <code>armored_vehicle</code> units <em>without</em> <code>anti_tank</code> dismount as infantry (at <code>0</code> operational vehicles when <code>Org &gt;= 20%</code> and <code>Personnel &gt;= 50%</code>; otherwise surviving crews attempt to rally dismounted). <code>tank</code>, SP <code>artillery</code>, and <code>anti_tank</code> TDs retire (<code>defeated = true</code>) at <code>0</code> operational vehicles. Unscreened lone <code>artillery</code> auto-withdraws when all friendly frontliners are defeated.</li>
               <li><strong>Rout, Rally Floor &amp; Shock Sync:</strong> On rout/scatter, <code>cumPersonnelLostTenths</code> syncs to current loss ratio so rallied units only take cumulative Org shock for new losses after returning. Rallied units return with a minimum Org floor of <code>min(maxOrg, max(18, ceil(maxOrg * 0.35)))</code>.</li>
               <li><strong>Commander Scaling &amp; Undo Stack:</strong> Each level (<code>0–10</code>) of <code>ATK/DEF/CMD/LOG</code> grants <code>+2.5%</code> army-wide; 10-tier Officer Rank Insignia steps every <code>4</code> total points (<code>1LT</code> to <code>5-Star General</code>). GM Undo stack stores up to <code>15</code> round snapshots in <code>battle.history</code>.</li>
             </ul>
@@ -529,7 +529,7 @@ window.IronDivision = window.IronDivision || {};
             </div>
             <div class="tradoc-mono text-[11px] bg-[#dfd7c2] border border-[#b5ad98] p-3 text-right shrink-0 space-y-0.5 text-[#1c211d]">
               <div><strong>PUB NO:</strong> DEV-DOC-ARCH</div>
-              <div><strong>MODULES:</strong> 9 JS + HTML + CSS</div>
+              <div><strong>MODULES:</strong> 9 JS + HTML + 2 CSS + TESTS</div>
               <div><strong>PATTERN:</strong> IIFE + <code>window.IronDivision</code></div>
             </div>
           </div>
@@ -556,7 +556,7 @@ window.IronDivision = window.IronDivision || {};
 
           <!-- SECTION 2 -->
           <section class="tradoc-chapter">
-            <h3 class="tradoc-chapter-title">2. COMPLETE MODULE MAP (ALL 11 FILES)</h3>
+            <h3 class="tradoc-chapter-title">2. COMPLETE MODULE MAP &amp; OFFLINE ASSETS</h3>
             <table class="tradoc-table">
               <thead>
                 <tr>
@@ -569,17 +569,22 @@ window.IronDivision = window.IronDivision || {};
                 <tr>
                   <td><code>index.html</code></td>
                   <td>DOM Shell</td>
-                  <td>7 workspace views (Battlefield, ORBAT, Traits, Command HQ, Terrain, Doctrines, FM Manual), full-width 3-col + split lower-center Battlefield layout, 5 modals (<code>#welcome-modal</code>, <code>#battle-modal</code>, <code>#log-expand-modal</code>, <code>#cmd-trait-modal</code>, <code>#confirm-modal</code>), and <code>#ui-tour-overlay</code>.</td>
+                  <td>100% offline shell (zero CDN links), 7 workspace views, full-width 3-col + split lower-center Battlefield layout, 5 modals (<code>#welcome-modal</code>, <code>#battle-modal</code>, <code>#log-expand-modal</code>, <code>#cmd-trait-modal</code>, <code>#confirm-modal</code>), and <code>#ui-tour-overlay</code>.</td>
+                </tr>
+                <tr>
+                  <td><code>css/tailwind-bundle.css</code></td>
+                  <td>Tailwind Utility Bundle</td>
+                  <td>Precompiled static Tailwind CSS v3.4.17 utility stylesheet generated directly from <code>index.html</code> and <code>js/**/*.js</code> for 100% offline execution.</td>
                 </tr>
                 <tr>
                   <td><code>css/styles.css</code></td>
                   <td>Theme &amp; Layout</td>
-                  <td>Olive-steel military monitor frames, wide-monitor responsive grid (<code>&gt;=1500px</code> Log beside 2D Sector under Op Status; <code>min-width: 1280px</code>), riveted brass commander nameplates, 3px status accents, diagonal hatch overlays, aged-parchment SITREP/manual palettes, keycap badges, and spotlight tour CSS.</td>
+                  <td>Olive-steel military monitor frames, responsive grid (<code>&gt;=1500px</code> Log beside 2D Sector; <code>&gt;=1280px</code> <code>min-width</code>; <code>1024–1279px</code> <code>overflow-x: auto</code>), WebP background plates, riveted brass nameplates, 3px status accents, parchment manuals, and keycap badges.</td>
                 </tr>
                 <tr>
                   <td><code>js/diagnostics.js</code></td>
-                  <td><code>ID.Diagnostics</code></td>
-                  <td>Global <code>window.onerror</code> and <code>unhandledrejection</code> traps, diagnostic error buffer, and crash-safe logging to the <code>SYS ERRORS</code> channel.</td>
+                  <td><code>ID.Diagnostics</code>, <code>ID.VERSION</code></td>
+                  <td>Exposes unified <code>ID.VERSION = '3.5'</code>, global <code>window.onerror</code> and <code>unhandledrejection</code> traps, diagnostic error buffer, and crash-safe logging to the <code>SYS ERRORS</code> channel.</td>
                 </tr>
                 <tr>
                   <td><code>js/data.js</code></td>
@@ -594,7 +599,7 @@ window.IronDivision = window.IronDivision || {};
                 <tr>
                   <td><code>js/engine-combat.js</code></td>
                   <td><code>ID.Combat</code></td>
-                  <td>Round orchestrator (<code>runSingleRound</code>), 15-round undo stack (<code>pushHistorySnapshot</code>), unit factory (<code>createCombatUnitInstance</code>), supply/depot/dig-in/fatigue/DOW/4-round repair loop (<code>processSupplyAndStartOfRoundTraits</code>), vigilance, fire support + AA/weather grounding, Y-axis maneuver &amp; Overwatch, piercing/<code>ARMOR HELD</code>/deflected knockout gating (<code>processArmorLossAndCrewCasualties</code>), crew &amp; personnel triage (<code>applyPersonnelCasualties</code>), dismounting vs. withdrawal (<code>canUnitDismountAsInfantry</code>), unscreened artillery auto-withdrawal, and per-unit combat telemetry (<code>u.stats</code>).</td>
+                  <td>Round orchestrator (<code>runSingleRound</code>), 15-round undo stack (<code>pushHistorySnapshot</code>), unit factory (<code>createCombatUnitInstance</code>), supply/depot/dig-in/fatigue/DOW/4-round repair loop (<code>processSupplyAndStartOfRoundTraits</code>), vigilance (<code>performVigilanceComparison</code>), fire support + AA/weather grounding (<code>processSideSupportFire</code>), engagement loop (<code>resolveUnitEngagement</code>), piercing/<code>ARMOR HELD</code>/deflected knockout gating (<code>processArmorLossAndCrewCasualties</code>), crew &amp; personnel triage (<code>applyPersonnelCasualties</code>), dismounting vs. withdrawal (<code>canUnitDismountAsInfantry</code>), unscreened artillery auto-withdrawal, and per-unit combat telemetry (<code>u.stats</code>).</td>
                 </tr>
                 <tr>
                   <td><code>js/engine-pursuit.js</code></td>
@@ -604,7 +609,7 @@ window.IronDivision = window.IronDivision || {};
                 <tr>
                   <td><code>js/ui-render.js</code></td>
                   <td><code>ID.UI</code></td>
-                  <td>Full DOM renderer (<code>renderAll</code>, <code>renderBattlefield</code>, <code>renderSideUnitCards</code>, <code>renderTacticalSectorCanvas</code>), two-way map-to-card linking (<code>focusUnitCard</code>, <code>highlightMapCounter</code>), <code>toggleCompactUnitCards</code>, <code>toggleOpStatusCollapse</code>, 11-step spotlight tutorial (<code>startUITutorial</code>), 25-page Tactics Manual, immediate AAR modal (<code>openBattleSummaryModal</code>), and printable A4 Form DA-774 generator (<code>buildPrintableAARHtml</code>, <code>sanitizeForPrintableAAR</code>, <code>extractAARChronology</code>).</td>
+                  <td>Full DOM renderer (<code>renderAll</code>, <code>renderBattlefield</code>, <code>renderSideUnitCards</code>, <code>renderTacticalSectorCanvas</code>), XSS-escaped templates + delegated listeners (<code>initDelegatedUIHandlers</code> via <code>data-action</code>/<code>data-unit-id</code>), two-way map-to-card linking (<code>focusUnitCard</code>, <code>highlightMapCounter</code>), <code>toggleCompactUnitCards</code>, <code>toggleOpStatusCollapse</code>, 11-step spotlight tutorial (<code>startUITutorial</code>), 25-page Tactics Manual, immediate AAR modal (<code>openBattleSummaryModal</code>, <code>getActiveAARData</code>), and printable A4 Form DA-774 generator (<code>buildPrintableAARHtml</code>, <code>sanitizeForPrintableAAR</code>, <code>extractAARChronology</code>).</td>
                 </tr>
                 <tr>
                   <td><code>js/guide.js</code></td>
@@ -614,12 +619,17 @@ window.IronDivision = window.IronDivision || {};
                 <tr>
                   <td><code>js/app.js</code></td>
                   <td><code>ID.App</code>, <code>ID.state</code></td>
-                  <td>Global mutable state tree, <code>localStorage</code> persistence, scenario loaders (<code>loadArracourtScenario</code>, <code>loadSanMarinoScenario</code>), Auto-Ops timer, global desktop keyboard shortcuts (<code>Space</code>/<code>Enter</code>, <code>A</code>, <code>Ctrl+Z</code>), themed Military Confirmation modal (<code>openConfirmModal</code>), GM Live overrides, and Preset JSON export/import.</td>
+                  <td>Global mutable state tree, <code>localStorage</code> persistence, scenario loaders (<code>loadArracourtScenario</code>, <code>loadSanMarinoScenario</code>), centralized side reset (<code>resetSideRuntimeState</code>), Auto-Ops timer, global desktop keyboard shortcuts (<code>Space</code>/<code>Enter</code>, <code>A</code>, <code>Ctrl+Z</code>), themed Military Confirmation modal (<code>openConfirmModal</code>), GM Live overrides, and Preset JSON export/import.</td>
                 </tr>
                 <tr>
                   <td><code>js/i18n-id.js</code></td>
                   <td><code>ID.I18n</code></td>
-                  <td>Standalone drop-in Indonesian localization (default <code>'en'</code>): injects header <code>EN/ID</code> toggle, reversibly localizes <code>ID.Data</code> registries, runs a <code>WeakMap</code>-backed <code>MutationObserver</code> + <code>translateCombatLogText()</code>, swaps Welcome Modal &amp; subordinate-tone Indonesian Manuals, and transforms both immediate and printable AARs into authentic <strong>TNI AD MINU LAP-OPS</strong> format.</td>
+                  <td>Standalone drop-in Indonesian localization (default <code>'en'</code>): injects header <code>EN/ID</code> toggle, non-mutating display localization via <code>localizeField()</code> (keeping <code>ID.state</code> &amp; JSON exports language-neutral), runs a <code>WeakMap</code>-backed <code>MutationObserver</code> + <code>translateCombatLogText()</code>, swaps Welcome Modal &amp; subordinate-tone Indonesian Manuals, and transforms both immediate and printable AARs into authentic <strong>TNI AD MINU LAP-OPS</strong> format.</td>
+                </tr>
+                <tr>
+                  <td><code>tests/run-tests.js</code></td>
+                  <td>Node Test Harness</td>
+                  <td>Zero-dependency headless regression &amp; invariant test suite runnable via <code>node tests/run-tests.js</code> (syntax, offline assets, combat math, XSS escaping, i18n decoupling, and Monte Carlo Personnel/AFV conservation).</td>
                 </tr>
               </tbody>
             </table>
@@ -683,9 +693,9 @@ window.IronDivision = window.IronDivision || {};
               <li><code>pushHistorySnapshot()</code> &rarr; deep-clones <code>battle</code> + <code>environment</code> into <code>battle.history</code> (max 15 entries).</li>
               <li><strong>Climate Weather Tick</strong> &rarr; every 3 rounds when <code>dynamicWeather</code> is true, calls <code>H.getClimateWeatherCandidates()</code> and logs <code>[WTH] [Weather Shift]</code>.</li>
               <li><code>processSupplyAndStartOfRoundTraits(side, ...)</code> &rarr; runs per-unit engagement checks, pauses ammo/fatigue/Green drift when out of range, draws from <code>sideState.supplyDepot</code>, updates entrenchment, rolls DOW, processes rally staging, and fires 4-round <code>Field Repair Crew</code> (skipping if <code>lastArmorHitRound === round - 1</code>).</li>
-              <li><code>resolveVigilanceContest()</code> &rarr; rolls <code>1d100</code> per side to grant flat accuracy boost.</li>
-              <li><code>processFireSupport()</code> &rarr; resolves Mortar, Artillery, and Air Support (with AA interception &amp; weather grounding), crediting <code>u.stats</code> via <code>applySupportCasualtiesAndArmor(..., sourceUnit, channel)</code>.</li>
-              <li><code>resolveCombatPhase()</code> &rarr; advances out-of-range units along <code>u.pos</code>, fires Defensive Overwatch, resolves Piercing vs. Hardness (or Cover Saves), calls <code>processArmorLossAndCrewCasualties()</code> &amp; <code>applyPersonnelCasualties()</code>, executes close-range supply raids (<code>totalDist &lt;= 2</code>), and runs Return Fire.</li>
+              <li><code>performVigilanceComparison(atkSide, defSide, atkTactic, defTactic)</code> &rarr; rolls <code>1d100</code> per side to grant flat accuracy boost.</li>
+              <li><code>processSideSupportFire(side, enemySide, ...)</code> &rarr; resolves Mortar, Artillery, and Air Support (with AA interception, weather grounding, and active target re-checking), crediting <code>u.stats</code> via <code>applySupportCasualtiesAndArmor(..., sourceUnit, channel)</code>.</li>
+              <li><code>resolveUnitEngagement(attacker, defender, ...)</code> &rarr; executes within <code>runSingleRound()</code>'s maneuver/overwatch/combat loops: advances out-of-range units along <code>u.pos</code>, fires Defensive Overwatch, resolves Piercing vs. Hardness (or Cover Saves), calls <code>processArmorLossAndCrewCasualties()</code> &amp; <code>applyPersonnelCasualties()</code>, executes close-range supply raids (<code>totalDist &lt;= 2</code>), and runs Return Fire.</li>
               <li><code>ID.Pursuit.checkBattleEndCondition()</code> &rarr; checks active frontliners &amp; unscreened artillery auto-withdrawal; on battle conclusion runs <code>resolveRetreatAndPursuit()</code> &rarr; <code>buildAfterActionReport()</code>.</li>
               <li><code>ID.UI.renderCombatRound()</code> &rarr; updates flank cards, telemetry, sticky round badges, 2D SVG Tactical Sector, Y-axis strip, and SITREP logbook.</li>
             </ol>
@@ -695,10 +705,10 @@ window.IronDivision = window.IronDivision || {};
           <section class="tradoc-chapter">
             <h3 class="tradoc-chapter-title">5. UI INTERACTION, MODAL &amp; i18n HOOK ARCHITECTURE</h3>
             <ul class="list-disc pl-6 space-y-1.5 text-sm text-[#232a24]">
-              <li><strong>Two-Way Map-to-Card Linking:</strong> SVG counters carry <code>data-unit-id</code> and call <code>focusUnitCard(id)</code> on click (scrolling &amp; pulsing <code>.unit-card-flash</code>). Unit cards bind <code>onmouseenter</code>/<code>onmouseleave</code> to <code>highlightMapCounter(id, active)</code>, toggling <code>.is-highlighted</code> on the SVG halo rect.</li>
+              <li><strong>Two-Way Map-to-Card Linking &amp; Event Delegation:</strong> Dynamic unit cards, ORBAT/trait/commander editors, and SVG counters use <code>escapeHtml()</code> plus <code>data-action</code> / <code>data-unit-id</code> attributes handled by <code>initDelegatedUIHandlers()</code> — clicking an SVG counter calls <code>focusUnitCard(id)</code> (pulsing <code>.unit-card-flash</code>), and hovering a card highlights its map counter via <code>highlightMapCounter(id, active)</code>.</li>
               <li><strong>Cursor-Following Floating Tooltip:</strong> Every unit card embeds a hidden <code>.unit-tooltip-source</code> block (including a <code>.unit-tooltip-compact-extra</code> section revealed only when <code>body.compact-unit-cards</code> is active). A single delegated <code>mousemove</code> listener clones it into <code>#floating-unit-tooltip</code>.</li>
-              <li><strong>Click-Outside Modals &amp; Confirmation Guard:</strong> All 5 modals bind <code>onclick="if(event.target===this) close...()"</code>. Destructive actions route through <code>ID.App.openConfirmModal({ title, message, hint, danger, onConfirm })</code> after pushing an undo snapshot.</li>
-              <li><strong>Zero-Invasion Localization (<code>js/i18n-id.js</code>):</strong> Keeps English as default (<code>'en'</code>). On <code>setLanguage('id')</code>, it backs up English strings once, patches <code>ID.Data</code> display properties, wraps <code>ID.Guide.renderSimulationGuide</code>, <code>ID.UI.openBattleSummaryModal</code>, and <code>ID.UI.buildPrintableAARHtml</code>, and uses a <code>WeakMap</code>-backed <code>MutationObserver</code> to translate dynamic DOM text and combat logs losslessly.</li>
+              <li><strong>Click-Outside Modals &amp; Confirmation Guard:</strong> All 5 modals bind <code>onclick="if(event.target===this) close...()"</code>. Destructive actions route through <code>ID.App.openConfirmModal({ title, message, hint, danger, onConfirm })</code> after pushing an undo snapshot via <code>pushHistorySnapshot()</code>.</li>
+              <li><strong>Zero-Invasion Localization (<code>js/i18n-id.js</code>):</strong> Keeps English as default (<code>'en'</code>). On <code>setLanguage('id')</code>, static read-only registries update cleanly while persisted <code>ID.state</code> user data stays language-neutral via non-mutating <code>localizeField()</code> rendering; wraps <code>ID.Guide.renderSimulationGuide</code>, <code>ID.UI.openBattleSummaryModal</code>, and <code>ID.UI.buildPrintableAARHtml</code>, and uses a <code>WeakMap</code>-backed <code>MutationObserver</code> + <code>translateCombatLogText()</code>.</li>
             </ul>
           </section>
 
@@ -709,7 +719,7 @@ window.IronDivision = window.IronDivision || {};
               <li><strong>Adding a Historical/Fictional Scenario:</strong> Add templates in <code>js/data.js</code> (<code>DEFAULT_UNIT_TEMPLATES</code>), then add a loader function in <code>js/app.js</code> calling <code>loadScenarioByConfig({ terrain, feature, weather, year, month, day, hour, minute, sideAName, sideBName, sideACmd, sideBCmd, pickA, pickB, loadLog })</code>. Any year from <code>-270000</code> to <code>+270000</code> is supported natively.</li>
               <li><strong>Adding a New Unit Trait:</strong> Append an object to <code>DEFAULT_TRAITS</code> in <code>js/data.js</code> with standard numeric modifier fields (<code>atkPct</code>, <code>defPct</code>, <code>pierceFlat</code>, <code>armorRecBonus</code>, etc.) — <code>engine-combat.js</code> aggregates them dynamically.</li>
               <li><strong>Adding Another Language Pack:</strong> Duplicate <code>js/i18n-id.js</code> (e.g. <code>js/i18n-de.js</code>), translate <code>EXACT_MAP</code>, <code>LOG_REPLACEMENTS</code>, and the data maps, and load it after <code>js/app.js</code> in <code>index.html</code>.</li>
-              <li><strong>Headless Automated Testing (Node.js):</strong> Load the 6 core JS files into a Node <code>vm</code> context with a lightweight DOM/<code>localStorage</code> shim, invoke <code>IronDivision.App.loadArracourtScenario()</code>, loop <code>IronDivision.Combat.runSingleRound()</code> until <code>isOver</code>, and assert invariants like <code>START === REM + KIA + WIA + POW + ESC</code> and <code>Start === Act + Rec + Tow + KO</code>.</li>
+              <li><strong>Headless Automated Testing (<code>node tests/run-tests.js</code>):</strong> Run <code>node tests/run-tests.js</code> to execute the full Node <code>vm</code> invariant &amp; regression harness checking offline assets, combat rules, XSS escaping, i18n state decoupling, and full Monte Carlo Personnel/AFV conservation.</li>
             </ul>
           </section>
 

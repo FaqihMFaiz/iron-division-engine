@@ -7,6 +7,8 @@ window.IronDivision = window.IronDivision || {};
 (function (ID) {
   'use strict';
 
+  ID.VERSION = '3.5';
+
   function logSystemError(context, error) {
     console.error(`[Iron Division Diagnostic: ${context}]`, error);
     const errMsg = error ? (error.message || String(error)) : 'Unknown exception';

@@ -718,7 +718,7 @@ window.IronDivision = window.IronDivision || {};
                     <strong>Turun Kendaraan (Dismount) vs. Mundur ke Depot:</strong>
                   </p>
                   <ul class="list-disc pl-6 space-y-1 text-sm text-[#232a24]">
-                    <li><strong>Infanteri Mekanis &amp; Intai (<code>armored_vehicle</code> non-<code>anti_tank</code>):</strong> Saat Org turun ke <strong>&lt;= 20%</strong> (dengan personel &gt;= 50%) atau semua kendaraan hancur, prajurit <strong>turun ke tanah dan terus bertempur sebagai infanteri</strong>.</li>
+                    <li><strong>Infanteri Mekanis &amp; Intai (<code>armored_vehicle</code> non-<code>anti_tank</code>):</strong> Saat semua kendaraan hancur (<strong>0 ranpur aktif</strong>) selama Org <strong>&gt;= 20%</strong> dan personel <strong>&gt;= 50%</strong>, prajurit <strong>turun ke tanah dan terus bertempur sebagai infanteri</strong> (jika di bawah batas itu, kru yang selamat mundur untuk rally tanpa kendaraan).</li>
                     <li><strong>Tank, Artileri Swagerak &amp; Penghancur Tank:</strong> Kalau kendaraan siap tempur habis (0), kru <strong>mundur ke depot</strong> untuk perbaikan/penggantian (<code>MUNDUR (0 RANPUR)</code>).</li>
                     <li><strong>Artileri Tanpa Pengawal:</strong> Kalau semua pasukan garis depan gugur/mundur dan tinggal artileri sendirian, baterai meriam otomatis berkemas dan mundur (<code>MUNDUR (TANPA PENGAWAL)</code>).</li>
                   </ul>
@@ -832,7 +832,7 @@ window.IronDivision = window.IronDivision || {};
                   <ul class="list-disc pl-6 space-y-1 text-sm text-[#232a24]">
                     <li><strong>Batas Pemulihan Baja Dinamis:</strong> <code>clamp(baseRec + d50 + bonus, 5, 80 + d20)</code> dengan pembulatan probabilistik agar hantaman kecil tetap berpeluang menghasilkan kerusakan permanen (<code>KO</code>).</li>
                     <li><strong>Tempo Kru Perbaikan:</strong> Berjalan tiap <strong>4 ronde</strong> (<code>round % 4 === 0</code>) jika <code>!isDismounted &amp;&amp; maxArmor &gt; 0 &amp;&amp; Supply &gt;= 25%</code>. Dijeda jika terkena tembakan anti-baja pada ronde sebelumnya. Memulihkan <code>ceil(dN / 2)</code> (maks 2 ranpur, atau 3 dengan Desain Sederhana, maks 35% pool).</li>
-                    <li><strong>Dismount vs. Mundur:</strong> Hanya <code>armored_vehicle</code> non-<code>anti_tank</code> yang turun menjadi infanteri (di <code>Org &lt;= 20%</code> &amp; <code>&gt;= 50%</code> personel). Tank, Artileri SP, dan TD mundur saat 0 ranpur; Artileri tanpa pengawal otomatis mundur.</li>
+                    <li><strong>Dismount vs. Mundur:</strong> Hanya <code>armored_vehicle</code> non-<code>anti_tank</code> yang turun menjadi infanteri (saat <code>0</code> ranpur aktif dengan <code>Org &gt;= 20%</code> &amp; <code>&gt;= 50%</code> personel; jika di bawah batas itu, kru mundur untuk rally tanpa kendaraan). Tank, Artileri SP, dan TD mundur saat 0 ranpur; Artileri tanpa pengawal otomatis mundur.</li>
                     <li><strong>Rally &amp; Konservasi AAR:</strong> Unit yang Rally kembali dengan lantai <code>max(18, 35% maxOrg)</code> dan menyelaraskan <code>cumPersonnelLostTenths</code>. Pengejaran pasca-perang menjamin <code>START === REM + KIA + WIA + POW + ESC</code> dan <code>Start === Act + Rec(+Abn) + Tow + KO</code>.</li>
                   </ul>
                 </section>
@@ -868,7 +868,7 @@ window.IronDivision = window.IronDivision || {};
                   </div>
                   <div class="tradoc-mono text-[11px] bg-[#dfd7c2] border border-[#b5ad98] p-3 text-right shrink-0 space-y-0.5 text-[#1c211d]">
                     <div><strong>NO. DOK:</strong> DEV-DOC-ARCH</div>
-                    <div><strong>MODUL:</strong> 9 JS + HTML + CSS</div>
+                    <div><strong>MODUL:</strong> 9 JS + HTML + 2 CSS + TES</div>
                     <div><strong>POLA:</strong> IIFE + <code>window.IronDivision</code></div>
                   </div>
                 </div>
@@ -882,26 +882,28 @@ window.IronDivision = window.IronDivision || {};
                     <code>1. diagnostics.js</code> &rarr; <code>2. data.js</code> &rarr; <code>3. engine-helpers.js</code> &rarr; <code>4. engine-combat.js</code> &rarr; <code>5. engine-pursuit.js</code> &rarr; <code>6. ui-render.js</code> &rarr; <code>7. guide.js</code> &rarr; <code>8. app.js</code> &rarr; <code>9. i18n-id.js</code>
                   </div>
                   <p class="tradoc-para">
-                    Setiap modul dibungkus IIFE yang mendaftarkan API publiknya ke <code>window.IronDivision</code>. File <code>i18n-id.js</code> dimuat paling akhir agar bisa membungkus <code>ID.Data</code>, <code>ID.Guide</code>, dan <code>ID.UI</code> secara aman dan bisa dibalik kapan saja.
+                    Setiap modul dibungkus IIFE yang mendaftarkan API publiknya ke <code>window.IronDivision</code> (versi terpadu <code>ID.VERSION = '3.5'</code>). File <code>i18n-id.js</code> dimuat paling akhir agar bisa membungkus <code>ID.Data</code>, <code>ID.Guide</code>, dan <code>ID.UI</code> secara aman tanpa memutasi state simpanan pengguna.
                   </p>
                 </section>
 
                 <section class="tradoc-chapter">
-                  <h3 class="tradoc-chapter-title">2. PETA LENGKAP 11 MODUL CODEBASE</h3>
+                  <h3 class="tradoc-chapter-title">2. PETA LENGKAP MODUL &amp; ASET OFFLINE</h3>
                   <table class="tradoc-table">
                     <thead><tr><th>File</th><th>Namespace</th><th>Tugas Utama</th></tr></thead>
                     <tbody>
-                      <tr><td><code>index.html</code></td><td>Kerangka DOM</td><td>7 tab ruang kerja, tata letak layar lebar 3-kolom + split tengah bawah (Log di sebelah Peta 2D), 5 modal pop-up, dan overlay Tur UI 11 langkah.</td></tr>
-                      <tr><td><code>css/styles.css</code></td><td>Tema &amp; Tata Letak</td><td>Bingkai monitor militer, grid layar lebar (<code>&gt;=1500px</code>, <code>min-width: 1280px</code>), pelat kuningan komandan, garis status 3px, kertas perkamen, lencana tombol pintas.</td></tr>
-                      <tr><td><code>js/diagnostics.js</code></td><td><code>ID.Diagnostics</code></td><td>Penangkap galat global (<code>onerror</code> &amp; <code>unhandledrejection</code>) untuk kanal <code>SYS ERRORS</code>.</td></tr>
+                      <tr><td><code>index.html</code></td><td>Kerangka DOM</td><td>100% offline (tanpa CDN eksternal), 7 tab ruang kerja, tata letak layar lebar 3-kolom + split tengah bawah (Log di sebelah Peta 2D), 5 modal pop-up, dan overlay Tur UI 11 langkah.</td></tr>
+                      <tr><td><code>css/tailwind-bundle.css</code></td><td>Bundel Tailwind</td><td>Stylesheet utilitas Tailwind CSS v3.4.17 statis hasil prakompilasi untuk jalan 100% offline.</td></tr>
+                      <tr><td><code>css/styles.css</code></td><td>Tema &amp; Tata Letak</td><td>Bingkai monitor militer, grid responsif (<code>&gt;=1500px</code>, <code>min-width: 1280px</code>, <code>1024–1279px</code> <code>overflow-x: auto</code>), latar WebP, pelat kuningan komandan, garis status 3px, kertas perkamen, lencana tombol pintas.</td></tr>
+                      <tr><td><code>js/diagnostics.js</code></td><td><code>ID.Diagnostics</code>, <code>ID.VERSION</code></td><td>Menyimpan <code>ID.VERSION = '3.5'</code> serta penangkap galat global (<code>onerror</code> &amp; <code>unhandledrejection</code>) untuk kanal <code>SYS ERRORS</code>.</td></tr>
                       <tr><td><code>js/data.js</code></td><td><code>ID.Data</code></td><td>Database statis: 8 Medan, 6 Fitur, 8 Cuaca, 4 Bahaya Gabungan, 32 Sifat Unit, 10 Sifat Komandan, 25 Taktik, dan templat Arracourt &amp; San Marino.</td></tr>
                       <tr><td><code>js/engine-helpers.js</code></td><td><code>ID.Helpers</code>, <code>ID.Icons</code></td><td>Dadu RNG, kalender UTC bebas era (<code>setUTCFullYear</code>), cuaca berbasis iklim, jarak tembak &amp; visibilitas, ikon SVG NATO &amp; pangkat 10 tingkat, buffer log.</td></tr>
-                      <tr><td><code>js/engine-combat.js</code></td><td><code>ID.Combat</code></td><td>Loop tempur 8 tahap (<code>runSingleRound</code>), undo 15 ronde, logistik/kelelahan, perbaikan 4 ronde, penetrasi/<code>ARMOR HELD</code>, knockout memantul, pemulihan <code>80+d20%</code>, dismount/mundur, dan telemetri <code>u.stats</code>.</td></tr>
-                      <tr><td><code>js/engine-pursuit.js</code></td><td><code>ID.Pursuit</code></td><td>Cek kemenangan, pengejaran &amp; konservasi personel 100%, penarikan ranpur, salvase medan, dan pembuat snapshot AAR (<code>weatherTrail</code> &amp; <code>logistics</code>).</td></tr>
-                      <tr><td><code>js/ui-render.js</code></td><td><code>ID.UI</code></td><td>Render seluruh UI, Peta Taktis 2D &amp; tautan dua arah (<code>focusUnitCard</code> / <code>highlightMapCounter</code>), mode kartu ringkas, Tur UI 11 langkah, dan ekspor PDF Form DA-774.</td></tr>
+                      <tr><td><code>js/engine-combat.js</code></td><td><code>ID.Combat</code></td><td>Loop tempur 8 tahap (<code>runSingleRound</code>), undo 15 ronde (<code>pushHistorySnapshot</code>), logistik/kelelahan, pengintaian (<code>performVigilanceComparison</code>), tembakan bantuan (<code>processSideSupportFire</code>), resolusi duel (<code>resolveUnitEngagement</code>), perbaikan 4 ronde, penetrasi/<code>ARMOR HELD</code>, pemulihan <code>80+d20%</code>, dismount/mundur, dan telemetri <code>u.stats</code>.</td></tr>
+                      <tr><td><code>js/engine-pursuit.js</code></td><td><code>ID.Pursuit</code></td><td>Cek kemenangan (<code>checkBattleEndCondition</code>), pengejaran &amp; konservasi personel 100% (<code>resolveRetreatAndPursuit</code>), penarikan ranpur, salvase medan, dan pembuat snapshot AAR (<code>buildAfterActionReport</code>).</td></tr>
+                      <tr><td><code>js/ui-render.js</code></td><td><code>ID.UI</code></td><td>Render seluruh UI dengan <code>escapeHtml()</code> + delegasi <code>initDelegatedUIHandlers()</code>, Peta Taktis 2D &amp; tautan dua arah (<code>focusUnitCard</code> / <code>highlightMapCounter</code>), mode kartu ringkas, Tur UI 11 langkah, <code>getActiveAARData()</code>, dan ekspor PDF Form DA-774.</td></tr>
                       <tr><td><code>js/guide.js</code></td><td><code>ID.Guide</code></td><td>Merender 3 tab map manila: <code>FM 100-5-BOOT</code>, <code>TM 9-1005-TECH</code>, dan <code>DEV-DOC-ARCH</code>.</td></tr>
-                      <tr><td><code>js/app.js</code></td><td><code>ID.App</code>, <code>ID.state</code></td><td>State global, <code>localStorage</code>, pemuat skenario, pintasan papan ketik (<code>Space</code>/<code>Enter</code>, <code>A</code>, <code>Ctrl+Z</code>), modal konfirmasi militer, Mode GM, dan Ekspor/Impor JSON.</td></tr>
-                      <tr><td><code>js/i18n-id.js</code></td><td><code>ID.I18n</code></td><td>Lokalisasi Bahasa Indonesia (bawaan <code>'en'</code>): tombol <code>EN/ID</code>, terjemahan <code>data.js</code> &amp; log tempur via <code>MutationObserver</code>, Buku Saku Ajudan, dan AAR format <strong>TNI AD MINU LAP-OPS</strong>.</td></tr>
+                      <tr><td><code>js/app.js</code></td><td><code>ID.App</code>, <code>ID.state</code></td><td>State global, <code>localStorage</code>, pemuat skenario &amp; <code>resetSideRuntimeState()</code>, pintasan papan ketik (<code>Space</code>/<code>Enter</code>, <code>A</code>, <code>Ctrl+Z</code>), modal konfirmasi militer, Mode GM, dan Ekspor/Impor JSON.</td></tr>
+                      <tr><td><code>js/i18n-id.js</code></td><td><code>ID.I18n</code></td><td>Lokalisasi Bahasa Indonesia (bawaan <code>'en'</code>): tombol <code>EN/ID</code>, lokalisasi tampilan via <code>localizeField()</code> (tanpa memutasi <code>ID.state</code>/JSON), <code>MutationObserver</code> + <code>translateCombatLogText()</code>, Buku Saku Ajudan, dan AAR format <strong>TNI AD MINU LAP-OPS</strong>.</td></tr>
+                      <tr><td><code>tests/run-tests.js</code></td><td>Suite Tes Node</td><td>Suite regresi &amp; invarian headless via <code>node tests/run-tests.js</code> untuk cek sintaks, aset offline, logika tempur, sanitasi XSS, dan konservasi Personel/Ranpur.</td></tr>
                     </tbody>
                   </table>
                 </section>
@@ -910,7 +912,7 @@ window.IronDivision = window.IronDivision || {};
                   <h3 class="tradoc-chapter-title">3. SKEMA STATE, ALUR RONDE &amp; PANDUAN MODDING</h3>
                   <ul class="list-disc pl-6 space-y-1.5 text-sm text-[#232a24]">
                     <li><strong>State Utama (<code>ID.state</code>):</strong> Seluruh data tersimpan dalam objek murni yang bisa di-<code>structuredClone()</code> — mencakup <code>environment</code>, <code>battle</code> (<code>round</code>, <code>logs</code>, <code>history</code>, <code>sideA/B</code>, <code>afterActionReport</code>), <code>unitTemplates</code>, <code>traits</code>, <code>commanders</code>, dan <code>terrains</code>.</li>
-                    <li><strong>Alur 1 Ronde:</strong> <code>runSingleRound()</code> &rarr; <code>pushHistorySnapshot()</code> &rarr; <code>processSupplyAndStartOfRoundTraits()</code> &rarr; <code>resolveVigilanceContest()</code> &rarr; <code>processFireSupport()</code> &rarr; <code>resolveCombatPhase()</code> &rarr; <code>checkBattleEndCondition()</code> &rarr; <code>resolveRetreatAndPursuit()</code> &rarr; <code>renderCombatRound()</code>.</li>
+                    <li><strong>Alur 1 Ronde:</strong> <code>runSingleRound()</code> &rarr; <code>pushHistorySnapshot()</code> &rarr; <code>processSupplyAndStartOfRoundTraits()</code> &rarr; <code>performVigilanceComparison()</code> &rarr; <code>processSideSupportFire()</code> &rarr; <code>resolveUnitEngagement()</code> (manuver, Overwatch, tempur utama, tembak balas) &rarr; <code>checkBattleEndCondition()</code> &rarr; <code>resolveRetreatAndPursuit()</code> &rarr; <code>renderCombatRound()</code>.</li>
                     <li><strong>Menambah Skenario / Mod Baru:</strong> Tambahkan templat unit di <code>js/data.js</code> lalu buat pemuat di <code>js/app.js</code> memakai <code>loadScenarioByConfig(...)</code>. Untuk menambah bahasa lain, cukup salin pola <code>js/i18n-id.js</code> dan muat setelah <code>app.js</code>.</li>
                   </ul>
                 </section>

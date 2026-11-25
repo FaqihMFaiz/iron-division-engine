@@ -1402,7 +1402,7 @@ window.IronDivision = window.IronDivision || {};
   function buildPresetsExportObject() {
     return {
       app: 'Iron Division Engine',
-      version: '3.2',
+      version: ID.VERSION || '3.5',
       exportedAt: new Date().toISOString(),
       unitTemplates: ID.state.unitTemplates || [],
       traits: ID.state.traits || [],

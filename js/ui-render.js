@@ -1946,20 +1946,19 @@ window.IronDivision = window.IronDivision || {};
 <head>
   <meta charset="UTF-8">
   <title>FM 100-5-TAC // Tactics Manual Page ${String(uiState.tacticsPage || 0).padStart(2, '0')}</title>
-  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     @page { size: A4; margin: 14mm; }
-    body { margin: 0; padding: 14px; background: ${bg}; color: ${fg}; font-family: 'IBM Plex Sans Condensed', sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body { margin: 0; padding: 14px; background: ${bg}; color: ${fg}; font-family: 'IBM Plex Sans Condensed', 'Segoe UI', Arial, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .tactics-book { border: 2px solid ${bdr}; padding: 0; background: ${bg}; color: ${fg}; }
-    .tactics-book-bar { background: #252e24; color: #f4f1e6; padding: 8px 16px; font-family: 'IBM Plex Mono', monospace; font-size: 10pt; display: flex; justify-content: space-between; }
+    .tactics-book-bar { background: #252e24; color: #f4f1e6; padding: 8px 16px; font-family: 'IBM Plex Mono', Consolas, 'Courier New', monospace; font-size: 10pt; display: flex; justify-content: space-between; }
     .tactics-book-body { padding: 18px 20px; }
     .tactics-sec-block { border: 1px solid ${bdr}; background: ${boxBg}; padding: 10px 12px; margin-bottom: 10px; }
-    .tactics-sec-head { font-family: 'Chakra Petch', sans-serif; text-transform: uppercase; border-bottom: 1.5px solid ${bdr}; padding-bottom: 3px; margin: 0 0 6px 0; font-size: 11pt; }
-    .tactics-mod-strip { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; border: 1px solid ${bdr}; background: ${boxBg}; font-family: 'IBM Plex Mono', monospace; font-size: 9pt; margin-bottom: 10px; }
+    .tactics-sec-head { font-family: 'Chakra Petch', 'Segoe UI', sans-serif; text-transform: uppercase; border-bottom: 1.5px solid ${bdr}; padding-bottom: 3px; margin: 0 0 6px 0; font-size: 11pt; }
+    .tactics-mod-strip { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; border: 1px solid ${bdr}; background: ${boxBg}; font-family: 'IBM Plex Mono', Consolas, 'Courier New', monospace; font-size: 9pt; margin-bottom: 10px; }
     .tactics-mod-chip { padding: 2px 6px; border: 1px solid ${bdr}; font-weight: bold; }
     .tactics-book-footer, button { display: none !important; }
-    .tactics-toc-row { display: flex; justify-content: space-between; border-bottom: 1px dotted ${bdr}; padding: 4px 0; font-family: 'IBM Plex Mono', monospace; font-size: 9.5pt; }
-    .tactics-toc-group-title { font-family: 'Chakra Petch', sans-serif; font-weight: bold; background: #252e24; color: #f4f1e6; padding: 4px 8px; margin-top: 10px; }
+    .tactics-toc-row { display: flex; justify-content: space-between; border-bottom: 1px dotted ${bdr}; padding: 4px 0; font-family: 'IBM Plex Mono', Consolas, 'Courier New', monospace; font-size: 9.5pt; }
+    .tactics-toc-group-title { font-family: 'Chakra Petch', 'Segoe UI', sans-serif; font-weight: bold; background: #252e24; color: #f4f1e6; padding: 4px 8px; margin-top: 10px; }
   </style>
 </head>
 <body>${container.innerHTML}</body>
@@ -2911,20 +2910,19 @@ window.IronDivision = window.IronDivision || {};
 <head>
   <meta charset="UTF-8">
   <title>${escapeHtml(docTitle)}</title>
-  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     @page {
       size: A4;
       margin: 14mm 14mm 18mm 14mm;
       @bottom-left {
         content: "FORM DA-774 // ${escapeHtml(rep.docId || 'AAR-001')}";
-        font-family: 'IBM Plex Mono', 'Courier New', Courier, monospace;
+        font-family: 'IBM Plex Mono', Consolas, 'Courier New', Courier, monospace;
         font-size: 7.5pt;
         color: #555555;
       }
       @bottom-right {
         content: "PAGE " counter(page) " OF " counter(pages);
-        font-family: 'IBM Plex Mono', 'Courier New', Courier, monospace;
+        font-family: 'IBM Plex Mono', Consolas, 'Courier New', Courier, monospace;
         font-size: 7.5pt;
         font-weight: bold;
         color: #222222;
@@ -2932,7 +2930,7 @@ window.IronDivision = window.IronDivision || {};
     }
     * { box-sizing: border-box; }
     body {
-      font-family: 'IBM Plex Mono', 'Courier New', Courier, monospace;
+      font-family: 'IBM Plex Mono', Consolas, 'Courier New', Courier, monospace;
       color: #111111;
       background: #ffffff;
       margin: 0;

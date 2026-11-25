@@ -37,7 +37,7 @@ Unlike arcade hit-point trackers, Iron Division simulates **Combined-Arms Format
 * **Dual-HP Decoupling**: Tracks physical casualties (**Personnel HP**) separately from unit stamina and tactical cohesion (**Organization HP**, displayed in distinct muted teal so it never collides with Side A blue).
 * **Realistic Armor Physics & Penetration**: Unpierced hits (`ARMOR HELD`) against Medium/Heavy/Super armor halve personnel casualties, negate Explosive bonus dice, and cap Heavy/Super Org shock at `-1`. Deflected clashes gate vehicle knockouts (`0` below 70% pressure, max `2` above).
 * **Dynamic `80 + d20%` Armor Recovery & Pinned Field Repairs**: Knocked-out vehicles split into Recoverable vs. Destroyed (`KO`) via a dynamic `80 + d20%` recovery cap with probabilistic fractional rounding. Organic **Field Repair Crews** operate every 4 rounds (paused if hit by anti-armor fire the previous round) and restore `1–2` hulls (`up to 3` with *Simple Engineering*).
-* **Smart Dismounting vs. Tactical Withdrawals**: Standard armored infantry (`armored_vehicle` without `anti_tank`) dismount on foot at `<= 20%` Org (with `>= 50%` personnel) or `0` vehicles. Pure Tanks, SP Artillery, and Tank Destroyers withdraw to depot at `0` operational vehicles; lone unscreened artillery auto-withdraws when all frontliners fall.
+* **Smart Dismounting vs. Tactical Withdrawals**: Standard armored infantry (`armored_vehicle` without `anti_tank`) dismount on foot when `0` operational vehicles remain (provided `Org >= 20%` and `Personnel >= 50%`; otherwise surviving crews fall back to rally dismounted). Pure Tanks, SP Artillery, and Tank Destroyers withdraw to depot at `0` operational vehicles; lone unscreened artillery auto-withdraws when all frontliners fall.
 * **Y-Axis Spatial Ranges & 2D Tactical Sector**: Live 2D SVG sector map with two-way map-to-card linking (click any NATO counter to scroll to and flash its battalion card; hover a card to highlight its counter on the map). Tank Destroyers (`anti_tank` armored vehicles) engage at `<= 3` alongside Tanks; Supply Raiding is gated to close-range direct-fire units (`<= 2`, non-artillery).
 * **Climate-Aware Dynamic Weather & Any-Era Calendar**: Dynamic weather obeys terrain, calendar season, and time of day. The calendar uses `Date.setUTCFullYear()` to support any historical or fictional year from **`-270000` (BCE) to `+270000`**, including Year `0` and double-digit years.
 * **Full Telemetry AAR & Printable A4 PDF Export**: Strictly in-universe **Form DA-774** (English) and **TNI AD MINU LAP-OPS** (Bahasa Indonesia) reports with exact personnel conservation (`START === REM + KIA + WIA + POW + ESC`), self-verifying AFV ledgers (`Start | Act/Rec/Tow/KO`), per-unit `Inflicted (Cas/AFV)` kills, theatre depot logistics, timestamped `METEO` weather trail, phase-balanced chronology, faction-neutral salvage, data-driven G-3/SOPS citations, and running `PAGE X OF Y` footers.
@@ -54,7 +54,11 @@ iron-division/
 ├── index.html                  # Application layout, 7 workspaces, modals, and UI tour overlay
 ├── README.md                   # Engine documentation and mathematical reference
 ├── css/
+│   ├── tailwind-bundle.css     # Precompiled static Tailwind CSS v3.4.17 utility bundle (100% offline)
 │   └── styles.css              # Military UI theme, wide-monitor grid, paper manuals, and animations
+├── img/                        # Compressed WebP tab background plates (<1 MB total)
+├── tests/
+│   └── run-tests.js            # Zero-dependency Node.js headless invariant & regression test suite
 └── js/
     ├── diagnostics.js          # System error logger, global exception traps, diagnostic registry
     ├── data.js                 # Static registries (Terrains, Weather, 32 Traits, 10 Cmd Traits, 25 Tactics, Templates)
@@ -99,7 +103,7 @@ A formation leaves active frontline combat under four conditions:
 1. **Total Wipeout (`WIPED OUT`)**: Personnel reaches `0`.
 2. **Cohesion Rout (`ROUTED` / `DISPERSED` / `SHATTERED`)**: Organization reaches `0` while unable to rally (or after already having rallied once).
 3. **Material Defeat / Armor Withdrawal (`WITHDRAWN (0 AFV)` vs. `DISMOUNTED (OP)`)**:
-   * Standard `armored_vehicle` units *without* `anti_tank` (halftracks, APCs, recon) **dismount as infantry** when `Org <= 20%` (with `>= 50%` personnel) or when `0` vehicles remain.
+   * Standard `armored_vehicle` units *without* `anti_tank` (halftracks, APCs, recon) **dismount as infantry** when `0` vehicles remain, provided `Org >= 20%` and `Personnel >= 50%` (otherwise surviving crews fall back to rally dismounted).
    * Pure `tank`, SP `artillery`, and `anti_tank` Tank Destroyer units do **not** dismount on foot — at `0` combat-ready vehicles, they withdraw to depot for refit.
 4. **Unscreened Artillery Withdrawal (`WITHDRAWN (UNSCREENED)`)**: Lone artillery batteries left with zero active friendly frontline screening units automatically limber up and withdraw from the sector.
 
@@ -239,7 +243,11 @@ iron-division/
 ├── index.html
 ├── README.md
 ├── css/
+│   ├── tailwind-bundle.css
 │   └── styles.css
+├── img/
+├── tests/
+│   └── run-tests.js
 └── js/
     ├── diagnostics.js
     ├── data.js
@@ -252,13 +260,14 @@ iron-division/
     └── i18n-id.js
 ```
 
-Open `index.html` directly in any modern browser, or serve locally via VS Code **Live Server** or `python -m http.server 8000`.
+Open `index.html` directly in any modern browser (works **100% offline** with no external CDN calls), or serve locally via VS Code **Live Server** or `python -m http.server 8000`.
 
 ## 🚨 Diagnostics & Error Boundary
 
 * **Try/Catch Round Wrapper**: Traps exceptions during combat execution, halts Auto-Ops cleanly, and preserves state.
 * **Global Exception Traps**: Captures unhandled errors with file and line numbers in `js/diagnostics.js`.
 * **System Error Channel**: Filter the SITREP logbook by `SYS ERRORS` to inspect diagnostic traces directly in the UI.
+* **Headless Invariant Regression Suite**: Run `node tests/run-tests.js` (or `STRESS_RUNS=50 node tests/run-tests.js`) to verify exact Personnel/AFV conservation, combat math, XSS escaping, i18n state decoupling, and offline asset integrity.
 
 ## 📜 License
 
