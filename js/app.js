@@ -60,6 +60,8 @@ window.IronDivision = window.IronDivision || {};
         nextRoundAtkMod: 0,
         airstrikeDisabled: false,
         barrageCooldown: 0,
+        supplyRaidedTotal: 0,
+        depotCriticalClock: '',
         supplyDepot: 150,
         maxSupplyDepot: 150,
         units: []
@@ -76,6 +78,8 @@ window.IronDivision = window.IronDivision || {};
         nextRoundAtkMod: 0,
         airstrikeDisabled: false,
         barrageCooldown: 0,
+        supplyRaidedTotal: 0,
+        depotCriticalClock: '',
         supplyDepot: 150,
         maxSupplyDepot: 150,
         units: []
@@ -414,6 +418,22 @@ window.IronDivision = window.IronDivision || {};
     }
   }
 
+  function resetSideRuntimeState(sideObj) {
+    if (!sideObj) return;
+    sideObj.lastChosenTacticId = null;
+    sideObj.prevRevealedTactic = null;
+    sideObj.repeatTacticCount = 0;
+    sideObj.nextRoundVigMod = 0;
+    sideObj.nextRoundAtkMod = 0;
+    sideObj.activeRoundVigMod = 0;
+    sideObj.activeRoundAtkMod = 0;
+    sideObj.breakthroughTriggeredThisRound = false;
+    sideObj.airstrikeDisabled = false;
+    sideObj.barrageCooldown = 0;
+    sideObj.supplyRaidedTotal = 0;
+    sideObj.depotCriticalClock = '';
+  }
+
   function resetCurrentBattle(skipConfirm = false) {
     stopAutoRun();
     if (!skipConfirm && ID.state.battle.round > 1 && document.getElementById('confirm-modal')) {
@@ -460,21 +480,14 @@ window.IronDivision = window.IronDivision || {};
     ID.state.battle.initialSnapshot = null;
     ID.state.battle.afterActionReport = null;
     ID.state.battle.salvageReport = null;
-    ID.state.battle.history = [];
     ID.state.battle.logs = [];
 
-    // Reset Supply Depots
+    // Reset Supply Depots & Per-Side Runtime Battle Flags
     ['sideA', 'sideB'].forEach(k => {
       const sideKey = k === 'sideA' ? 'A' : 'B';
       ID.state.battle[k].maxSupplyDepot = ID.Combat ? ID.Combat.calculateSideDepotCapacity(sideKey) : 150;
       ID.state.battle[k].supplyDepot = ID.state.battle[k].maxSupplyDepot;
-      ID.state.battle[k].lastChosenTacticId = null;
-      ID.state.battle[k].prevRevealedTactic = null;
-      ID.state.battle[k].repeatTacticCount = 0;
-      ID.state.battle[k].nextRoundVigMod = 0;
-      ID.state.battle[k].nextRoundAtkMod = 0;
-      ID.state.battle[k].airstrikeDisabled = false;
-      ID.state.battle[k].barrageCooldown = 0;
+      resetSideRuntimeState(ID.state.battle[k]);
     });
 
     H.addLog('rolls', `[RST] Current battle fully reset to Round 1. All deployed formations restored to 100% strength.`);
@@ -517,8 +530,14 @@ window.IronDivision = window.IronDivision || {};
     ID.state.battle.initialSnapshot = null;
     ID.state.battle.afterActionReport = null;
     ID.state.battle.salvageReport = null;
-    ID.state.battle.history = [];
     ID.state.battle.logs = [];
+
+    ['sideA', 'sideB'].forEach(k => {
+      const sideKey = k === 'sideA' ? 'A' : 'B';
+      ID.state.battle[k].maxSupplyDepot = ID.Combat ? ID.Combat.calculateSideDepotCapacity(sideKey) : 100;
+      ID.state.battle[k].supplyDepot = ID.state.battle[k].maxSupplyDepot;
+      resetSideRuntimeState(ID.state.battle[k]);
+    });
 
     H.addLog('rolls', `[CLR] Battlefield emptied. Select units from dropdowns to deploy new formations.`);
     H.showToast('Battlefield cleared of all units.', 'info');
@@ -534,17 +553,30 @@ window.IronDivision = window.IronDivision || {};
         ID.state.commanders.push(structuredClone(dc));
       }
     });
+    let healedTemplates = false;
     (D.DEFAULT_UNIT_TEMPLATES || []).forEach(dt => {
       const existing = ID.state.unitTemplates.find(u => u.id === dt.id);
       if (!existing) {
         ID.state.unitTemplates.push(structuredClone(dt));
+        healedTemplates = true;
       } else if (existing.recovery === undefined || existing.recovery === null) {
         existing.recovery = dt.recovery !== undefined ? dt.recovery : 50;
+        healedTemplates = true;
       }
     });
     (ID.state.unitTemplates || []).forEach(u => {
-      if (u.recovery === undefined || u.recovery === null) u.recovery = 50;
+      if (u.recovery === undefined || u.recovery === null) {
+        u.recovery = 50;
+        healedTemplates = true;
+      }
+      if (!u.armorTier || u.armorTier === 'none') {
+        u.armorTier = 'unarmored';
+        healedTemplates = true;
+      }
     });
+    if (healedTemplates && H.safeSaveStorage) {
+      H.safeSaveStorage('ttrpg_units_v1', ID.state.unitTemplates);
+    }
     const revampedTraitIds = new Set(['field_medic', 'first_aid_kit', 'repair_crew', 'redundancy', 'tough_chassis', 'simple_engineering']);
     (D.DEFAULT_TRAITS || []).forEach(dt => {
       const idx = ID.state.traits.findIndex(t => t.id === dt.id);
@@ -569,6 +601,8 @@ window.IronDivision = window.IronDivision || {};
     ID.state.battle.salvageReport = null;
     ID.state.battle.history = [];
     ID.state.battle.logs = [];
+    resetSideRuntimeState(ID.state.battle.sideA);
+    resetSideRuntimeState(ID.state.battle.sideB);
 
     syncBuiltInDefinitions();
 
@@ -1312,12 +1346,15 @@ window.IronDivision = window.IronDivision || {};
     ID.state.battle.sideA = snap.sideA;
     ID.state.battle.sideB = snap.sideB;
     ID.state.battle.logs = snap.logs;
+    if (snap.initialSnapshot !== undefined) {
+      ID.state.battle.initialSnapshot = snap.initialSnapshot;
+    }
     ID.state.battle.afterActionReport = snap.afterActionReport;
     ID.state.battle.salvageReport = snap.salvageReport;
 
     H.showToast(`Reverted battlefield to start of Round ${snap.round}.`, 'success');
     if (ID.UI) {
-      ID.UI.renderBattlefield(false);
+      ID.UI.renderBattlefield(true);
     }
   }
 
@@ -1476,6 +1513,7 @@ window.IronDivision = window.IronDivision || {};
     deleteCurrentCommanderTrait,
     toggleAutoRun,
     stopAutoRun,
+    resetSideRuntimeState,
     resetCurrentBattle,
     emptyBattlefield,
     loadDefaultSkirmish,
@@ -1541,6 +1579,7 @@ window.IronDivision = window.IronDivision || {};
     runSingleRound: () => ID.Combat && ID.Combat.runSingleRound(),
     toggleAutoRun,
     stopAutoRun,
+    resetSideRuntimeState,
     resetCurrentBattle,
     emptyBattlefield,
     loadDefaultSkirmish,

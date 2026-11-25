@@ -1431,11 +1431,14 @@ window.IronDivision = window.IronDivision || {};
       const wrappedExport = () => {
         if (currentLang !== 'id') return origExportAARToPDF();
         const rep = ID.UI.getActiveAARData ? ID.UI.getActiveAARData() : (ID.state?.battle?.afterActionReport || null);
-        if (!rep) return;
+        if (!rep) {
+          if (ID.Helpers && ID.Helpers.showToast) ID.Helpers.showToast('Belum ada data pertempuran aktif untuk diekspor.', 'warn');
+          return;
+        }
         const htmlDoc = buildTniAdPrintableAARHtml(rep);
         const win = window.open('', '_blank', 'width=980,height=820');
         if (!win) {
-          if (ID.Helpers && ID.Helpers.showToast) ID.Helpers.showToast('Izinkan pop-up browser untuk mencetak Laporan TNI AD (PDF).', 'error');
+          if (ID.Helpers && ID.Helpers.showToast) ID.Helpers.showToast('Izinkan pop-up browser untuk mencetak Laporan TNI AD (PDF).', 'danger');
           return;
         }
         win.document.open();

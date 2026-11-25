@@ -719,31 +719,31 @@ window.IronDivision = window.IronDivision || {};
     },
     // --- Battle of San Marino (17 Sep 1944): Wehrmacht (278. Infanterie-Division) ---
     {
-      id: 'tpl_ger_gr992', name: 'Grenadier-Regiment 992', category: 'infantry', armorTier: 'none',
+      id: 'tpl_ger_gr992', name: 'Grenadier-Regiment 992', category: 'infantry', armorTier: 'unarmored',
       personnel: 1800, maxOrg: 68, armorCount: 0, maxSupply: 55,
       softAttack: 24, hardAttack: 8, defense: 26, piercing: 8, hardness: 0, recovery: 52,
       experience: 'Seasoned', traits: ['frontliner_defender', 'desperate_defense']
     },
     {
-      id: 'tpl_ger_gr993', name: 'Grenadier-Regiment 993', category: 'infantry', armorTier: 'none',
+      id: 'tpl_ger_gr993', name: 'Grenadier-Regiment 993', category: 'infantry', armorTier: 'unarmored',
       personnel: 1750, maxOrg: 65, armorCount: 0, maxSupply: 55,
       softAttack: 23, hardAttack: 7, defense: 24, piercing: 7, hardness: 0, recovery: 50,
       experience: 'Regular', traits: ['frontliner_defender', 'grenade_assault']
     },
     {
-      id: 'tpl_ger_gr994', name: 'Grenadier-Regiment 994', category: 'infantry', armorTier: 'none',
+      id: 'tpl_ger_gr994', name: 'Grenadier-Regiment 994', category: 'infantry', armorTier: 'unarmored',
       personnel: 1700, maxOrg: 64, armorCount: 0, maxSupply: 55,
       softAttack: 22, hardAttack: 7, defense: 25, piercing: 7, hardness: 0, recovery: 50,
       experience: 'Regular', traits: ['desperate_defense', 'mortar_support']
     },
     {
-      id: 'tpl_ger_ar278', name: 'Artillerie-Regiment 278', category: 'artillery', armorTier: 'none',
+      id: 'tpl_ger_ar278', name: 'Artillerie-Regiment 278', category: 'artillery', armorTier: 'unarmored',
       personnel: 1100, maxOrg: 52, armorCount: 0, maxSupply: 65,
       softAttack: 34, hardAttack: 16, defense: 14, piercing: 14, hardness: 0, recovery: 50,
       experience: 'Seasoned', traits: ['heavy_artillery_support', 'high_caliber']
     },
     {
-      id: 'tpl_ger_fus278', name: 'Divisions-Füsilier-Kompanie 278', category: 'infantry', armorTier: 'none',
+      id: 'tpl_ger_fus278', name: 'Divisions-Füsilier-Kompanie 278', category: 'infantry', armorTier: 'unarmored',
       personnel: 420, maxOrg: 72, armorCount: 0, maxSupply: 50,
       softAttack: 20, hardAttack: 6, defense: 22, piercing: 6, hardness: 0, recovery: 55,
       experience: 'Veteran', traits: ['recon_support', 'rangers']
@@ -755,68 +755,68 @@ window.IronDivision = window.IronDivision || {};
       experience: 'Seasoned', traits: ['anti_tank', 'high_caliber']
     },
     {
-      id: 'tpl_ger_eng278', name: 'Engineer-Battalion 278', category: 'infantry', armorTier: 'none',
+      id: 'tpl_ger_eng278', name: 'Engineer-Battalion 278', category: 'infantry', armorTier: 'unarmored',
       personnel: 620, maxOrg: 66, armorCount: 0, maxSupply: 55,
       softAttack: 20, hardAttack: 12, defense: 26, piercing: 10, hardness: 0, recovery: 52,
       experience: 'Seasoned', traits: ['engineering_support', 'fortification_engineer', 'explosive_weapon']
     },
     {
-      id: 'tpl_ger_sig278', name: 'Signals Battalion 278', category: 'infantry', armorTier: 'none',
+      id: 'tpl_ger_sig278', name: 'Signals Battalion 278', category: 'infantry', armorTier: 'unarmored',
       personnel: 380, maxOrg: 60, armorCount: 0, maxSupply: 65,
       softAttack: 12, hardAttack: 4, defense: 16, piercing: 4, hardness: 0, recovery: 52,
       experience: 'Regular', traits: ['recon_support', 'logistic_support']
     },
     // --- Battle of San Marino (17 Sep 1944): British Indian Army (11th Indian Inf Bde / 4th Indian Div) ---
     {
-      id: 'tpl_ind_hq11', name: 'HQ 11th Indian Infantry Brigade', category: 'infantry', armorTier: 'none',
+      id: 'tpl_ind_hq11', name: 'HQ 11th Indian Infantry Brigade', category: 'infantry', armorTier: 'unarmored',
       personnel: 360, maxOrg: 76, armorCount: 0, maxSupply: 70,
       softAttack: 15, hardAttack: 5, defense: 20, piercing: 5, hardness: 0, recovery: 58,
       experience: 'Veteran', traits: ['recon_support', 'logistic_support']
     },
     {
-      id: 'tpl_ind_cameron', name: "2nd Bn, Queen's Own Cameron Highlanders", category: 'infantry', armorTier: 'none',
+      id: 'tpl_ind_cameron', name: "2nd Bn, Queen's Own Cameron Highlanders", category: 'infantry', armorTier: 'unarmored',
       personnel: 840, maxOrg: 74, armorCount: 0, maxSupply: 60,
       softAttack: 25, hardAttack: 8, defense: 25, piercing: 8, hardness: 0, recovery: 56,
       experience: 'Veteran', traits: ['mountaineers', 'frontliner_defender', 'first_aid_kit']
     },
     {
-      id: 'tpl_ind_mahratta', name: '2nd Bn, 5th Mahratta Light Infantry', category: 'infantry', armorTier: 'none',
+      id: 'tpl_ind_mahratta', name: '2nd Bn, 5th Mahratta Light Infantry', category: 'infantry', armorTier: 'unarmored',
       personnel: 820, maxOrg: 72, armorCount: 0, maxSupply: 60,
       softAttack: 24, hardAttack: 8, defense: 24, piercing: 8, hardness: 0, recovery: 55,
       experience: 'Veteran', traits: ['mountaineers', 'grenade_assault']
     },
     {
-      id: 'tpl_ind_rajputana', name: "1st Bn (Wellesley's), 6th Rajputana Rifles", category: 'infantry', armorTier: 'none',
+      id: 'tpl_ind_rajputana', name: "1st Bn (Wellesley's), 6th Rajputana Rifles", category: 'infantry', armorTier: 'unarmored',
       personnel: 810, maxOrg: 70, armorCount: 0, maxSupply: 60,
       softAttack: 23, hardAttack: 7, defense: 24, piercing: 7, hardness: 0, recovery: 55,
       experience: 'Seasoned', traits: ['mountaineers', 'field_medic']
     },
     {
-      id: 'tpl_ind_rajput', name: '4th Bn, 7th Rajput Regiment', category: 'infantry', armorTier: 'none',
+      id: 'tpl_ind_rajput', name: '4th Bn, 7th Rajput Regiment', category: 'infantry', armorTier: 'unarmored',
       personnel: 800, maxOrg: 68, armorCount: 0, maxSupply: 58,
       softAttack: 22, hardAttack: 7, defense: 23, piercing: 7, hardness: 0, recovery: 54,
       experience: 'Seasoned', traits: ['frontliner_defender', 'first_aid_kit']
     },
     {
-      id: 'tpl_ind_ffr', name: '3rd (Royal) Bn, 12th Frontier Force Regiment', category: 'infantry', armorTier: 'none',
+      id: 'tpl_ind_ffr', name: '3rd (Royal) Bn, 12th Frontier Force Regiment', category: 'infantry', armorTier: 'unarmored',
       personnel: 830, maxOrg: 73, armorCount: 0, maxSupply: 60,
       softAttack: 24, hardAttack: 8, defense: 24, piercing: 8, hardness: 0, recovery: 55,
       experience: 'Veteran', traits: ['mountaineers', 'mortar_support']
     },
     {
-      id: 'tpl_ind_punjab', name: '3rd Bn, 14th Punjab Regiment', category: 'infantry', armorTier: 'none',
+      id: 'tpl_ind_punjab', name: '3rd Bn, 14th Punjab Regiment', category: 'infantry', armorTier: 'unarmored',
       personnel: 810, maxOrg: 70, armorCount: 0, maxSupply: 58,
       softAttack: 23, hardAttack: 11, defense: 23, piercing: 11, hardness: 0, recovery: 54,
       experience: 'Seasoned', traits: ['rangers', 'anti_tank']
     },
     {
-      id: 'tpl_ind_gurkha', name: '2nd Bn, 7th Gurkha Rifles', category: 'infantry', armorTier: 'none',
+      id: 'tpl_ind_gurkha', name: '2nd Bn, 7th Gurkha Rifles', category: 'infantry', armorTier: 'unarmored',
       personnel: 820, maxOrg: 82, armorCount: 0, maxSupply: 60,
       softAttack: 28, hardAttack: 9, defense: 26, piercing: 9, hardness: 0, recovery: 60,
       experience: 'Elite', traits: ['mountaineers', 'melee_attack', 'special_forces']
     },
     {
-      id: 'tpl_ind_yugoslav', name: '1st Bn, Royal Yugoslav Guards', category: 'infantry', armorTier: 'none',
+      id: 'tpl_ind_yugoslav', name: '1st Bn, Royal Yugoslav Guards', category: 'infantry', armorTier: 'unarmored',
       personnel: 650, maxOrg: 72, armorCount: 0, maxSupply: 55,
       softAttack: 21, hardAttack: 7, defense: 24, piercing: 7, hardness: 0, recovery: 52,
       experience: 'Seasoned', traits: ['desperate_defense', 'unbreakable']

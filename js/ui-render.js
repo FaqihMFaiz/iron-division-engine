@@ -44,7 +44,8 @@ window.IronDivision = window.IronDivision || {};
       sideA_cmdHash: '',
       sideB_cmdHash: '',
       sideA_tplHash: '',
-      sideB_tplHash: ''
+      sideB_tplHash: '',
+      terrainHash: ''
     },
     renderedLogIds: new Set(),
     tacticsPage: 0,
@@ -249,11 +250,16 @@ window.IronDivision = window.IronDivision || {};
     const wSel = document.getElementById('bf-weather');
     if (!tSel || !fSel || !wSel) return;
 
-    if (tSel.children.length === 0) {
+    const terrainHash = Object.keys(state.terrains || {}).map(k => {
+      const t = state.terrains[k];
+      return `${k}:${t?.name || ''}:${t?.isUrban ? 1 : 0}`;
+    }).join('|');
+    if (uiState.selectCache.terrainHash !== terrainHash || tSel.children.length === 0) {
       tSel.innerHTML = Object.keys(state.terrains || {}).map(k => {
         const t = state.terrains[k];
-        return `<option value="${k}">${t.name}${t.isUrban ? ' (Urban Tactics Enabled)' : ''}</option>`;
+        return `<option value="${escapeHtml(k)}">${escapeHtml(t.name)}${t.isUrban ? ' (Urban Tactics Enabled)' : ''}</option>`;
       }).join('');
+      uiState.selectCache.terrainHash = terrainHash;
     }
     tSel.value = state.environment.terrain;
 
@@ -3626,6 +3632,7 @@ window.IronDivision = window.IronDivision || {};
     renderExpandedCombatLog,
     openBattleSummaryModal,
     closeBattleSummaryModal,
+    getActiveAARData,
     focusUnitCard,
     highlightMapCounter,
     toggleCompactUnitCards,

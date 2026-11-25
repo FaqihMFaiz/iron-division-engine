@@ -55,7 +55,7 @@ window.IronDivision = window.IronDivision || {};
       name: template.name,
       side: side,
       category: template.category,
-      armorTier: template.armorTier,
+      armorTier: (!template.armorTier || template.armorTier === 'none') ? 'unarmored' : template.armorTier,
       maxPersonnel: Number(template.personnel),
       personnel: Number(template.personnel),
       dead: 0,
@@ -620,6 +620,27 @@ window.IronDivision = window.IronDivision || {};
   // 5. Main Combat Execution Loop
   // --------------------------------------------------------------------------
 
+  function pushHistorySnapshot() {
+    if (!ID.state || !ID.state.battle) return;
+    if (!ID.state.battle.history) ID.state.battle.history = [];
+    ID.state.battle.history.push(structuredClone({
+      round: ID.state.battle.round,
+      attackerSide: ID.state.battle.attackerSide,
+      isOver: ID.state.battle.isOver,
+      winner: ID.state.battle.winner,
+      environment: ID.state.environment,
+      sideA: ID.state.battle.sideA,
+      sideB: ID.state.battle.sideB,
+      logs: ID.state.battle.logs,
+      initialSnapshot: ID.state.battle.initialSnapshot,
+      afterActionReport: ID.state.battle.afterActionReport,
+      salvageReport: ID.state.battle.salvageReport
+    }));
+    if (ID.state.battle.history.length > 15) {
+      ID.state.battle.history.shift();
+    }
+  }
+
   function runSingleRound() {
     try {
       if (ID.state.battle.isOver) {
@@ -644,22 +665,7 @@ window.IronDivision = window.IronDivision || {};
       }
 
       // Push round snapshot to GM Undo history stack (max 15 rounds)
-      if (!ID.state.battle.history) ID.state.battle.history = [];
-      ID.state.battle.history.push(structuredClone({
-        round: ID.state.battle.round,
-        attackerSide: ID.state.battle.attackerSide,
-        isOver: ID.state.battle.isOver,
-        winner: ID.state.battle.winner,
-        environment: ID.state.environment,
-        sideA: ID.state.battle.sideA,
-        sideB: ID.state.battle.sideB,
-        logs: ID.state.battle.logs,
-        afterActionReport: ID.state.battle.afterActionReport,
-        salvageReport: ID.state.battle.salvageReport
-      }));
-      if (ID.state.battle.history.length > 15) {
-        ID.state.battle.history.shift();
-      }
+      pushHistorySnapshot();
 
       const rd = ID.state.battle.round;
 
@@ -1947,7 +1953,7 @@ window.IronDivision = window.IronDivision || {};
     const effHardAtk = attacker.hardAttack + atkTraits.reduce((s, t) => s + (t.hardFlat || 0), 0) + getCommanderUnitBonus(atkSide, attacker, 'hardFlat');
 
     let combinedBaseAtk = 0;
-    if (defender.armorTier === 'unarmored') {
+    if (isTargetUnarmored) {
       combinedBaseAtk = effSoftAtk;
     } else if (pierced) {
       combinedBaseAtk = (effHardAtk * armorSplit.hardRatio) + (effSoftAtk * armorSplit.softRatio);
@@ -2174,10 +2180,11 @@ window.IronDivision = window.IronDivision || {};
         pendingRetArmorHit = { disabledRoll: cappedRetDisabled, bracketDesc: retBracketDesc };
       }
 
+      const isReturnTargetUnarmored = (attacker.armorTier === 'unarmored' || attacker.maxArmor <= 0);
       const atkArmorSplit = getEffectiveArmorSplit(attacker);
       const defSoft = defender.softAttack + defTraits.reduce((s, t) => s + (t.softFlat || 0), 0) + getCommanderUnitBonus(defSide, defender, 'softFlat');
       const defHard = defender.hardAttack + defTraits.reduce((s, t) => s + (t.hardFlat || 0), 0) + getCommanderUnitBonus(defSide, defender, 'hardFlat');
-      const retBaseAtk = attacker.armorTier === 'unarmored'
+      const retBaseAtk = isReturnTargetUnarmored
         ? defSoft
         : (retPierced
             ? (defHard * atkArmorSplit.hardRatio + defSoft * atkArmorSplit.softRatio)
@@ -2678,6 +2685,7 @@ window.IronDivision = window.IronDivision || {};
     getSupplyMalusPct,
     getTerrainUnitModifiers,
     getCombatDieSides,
+    pushHistorySnapshot,
     runSingleRound,
     processSupplyAndStartOfRoundTraits,
     calculateSideDepotCapacity,
