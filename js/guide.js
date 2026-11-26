@@ -1,6 +1,14 @@
 /* ==========================================================================
    IRON DIVISION ENGINE — MANILA FOLDER FIELD & TECHNICAL MANUALS
-   File: js/guide.js
+   File: js/guide.js (Load Order: 7/9)
+
+   Purpose:
+   - Renders the 3-tab Manila-folder documentation suite in Tab [07] FM Manual:
+     1. `FM 100-5-BOOT` (Drill Sergeant Field Manual)
+     2. `TM 9-1005-TECH` (Technical & Mathematical Reference)
+     3. `DEV-DOC-ARCH` (Developer Architecture & Module API Map)
+   - Wrapped non-destructively at runtime by `js/i18n-id.js` to swap in the
+     subordinate-voice Indonesian edition ("Komandan / Kumendan / Ndan") in ID mode.
    ========================================================================== */
 
 window.IronDivision = window.IronDivision || {};
@@ -10,6 +18,10 @@ window.IronDivision = window.IronDivision || {};
 
   let activeGuidePage = 'boot';
 
+  /**
+   * Switches between the 3 Manila-folder manual panes (`boot`, `tech`, `code`)
+   * and updates ARIA `aria-selected` tab attributes.
+   */
   function switchGuidePage(pageKey) {
     activeGuidePage = (pageKey === 'tech' || pageKey === 'code') ? pageKey : 'boot';
     const pages = ['boot', 'tech', 'code'];
@@ -25,6 +37,7 @@ window.IronDivision = window.IronDivision || {};
     });
   }
 
+  /** Renders the full Manila-folder documentation view into `#view-guide`. */
   function renderSimulationGuide() {
     const container = document.getElementById('view-guide');
     if (!container) return;

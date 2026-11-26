@@ -1,6 +1,18 @@
 /* ==========================================================================
    IRON DIVISION ENGINE — DOM RENDERING & USER INTERFACE
-   File: js/ui-render.js
+   File: js/ui-render.js (Load Order: 6/9)
+
+   Purpose:
+   - Tabbed DOM rendering (`uiState.dirtyTabs`) with option-hash caching
+     (`uiState.selectCache`) to keep active battle rendering fast without
+     destroying user `<select>` focus or open dropdowns.
+   - Security: Every user-editable/state string interpolated into HTML passes
+     through `escapeHtml()`; dynamic buttons & counters use `data-action` /
+     `data-unit-id` attributes handled by `initDelegatedUIHandlers()`.
+   - Non-mutating i18n display via `loc(kind, id, field, val)`.
+   - Renders the 3-Lane 2D SVG Tactical Sector (`renderTacticalSectorCanvas`),
+     cursor-following tooltips, interactive 11-step UI Tour, 25-page Doctrines
+     manual, and Form DA-774 printable A4 AAR pipeline (`buildPrintableAARHtml`).
    ========================================================================== */
 
 window.IronDivision = window.IronDivision || {};
@@ -68,6 +80,7 @@ window.IronDivision = window.IronDivision || {};
     { tier: 9, title: 'General of the Army', abbr: 'GA', svg: '<svg width="26" height="22" viewBox="0 0 26 22" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="13,1.5 13.8,3.9 16.3,3.9 14.3,5.4 15,7.8 13,6.3 11,7.8 11.7,5.4 9.7,3.9 12.2,3.9" fill="#f0d27a" stroke="#8a6d20" stroke-width="0.5"/><polygon points="20.5,6.8 21.3,9.2 23.8,9.2 21.8,10.7 22.5,13.1 20.5,11.6 18.5,13.1 19.2,10.7 17.2,9.2 19.7,9.2" fill="#f0d27a" stroke="#8a6d20" stroke-width="0.5"/><polygon points="17.8,14.5 18.6,16.9 21.1,16.9 19.1,18.4 19.8,20.8 17.8,19.3 15.8,20.8 16.5,18.4 14.5,16.9 17,16.9" fill="#f0d27a" stroke="#8a6d20" stroke-width="0.5"/><polygon points="8.2,14.5 9,16.9 11.5,16.9 9.5,18.4 10.2,20.8 8.2,19.3 6.2,20.8 6.9,18.4 4.9,16.9 7.4,16.9" fill="#f0d27a" stroke="#8a6d20" stroke-width="0.5"/><polygon points="5.5,6.8 6.3,9.2 8.8,9.2 6.8,10.7 7.5,13.1 5.5,11.6 3.5,13.1 4.2,10.7 2.2,9.2 4.7,9.2" fill="#f0d27a" stroke="#8a6d20" stroke-width="0.5"/></svg>' }
   ];
 
+  /** Resolves 10-tier Officer Rank metadata (every 4 stat points from 1LT to 5-Star GA). */
   function resolveOfficerRank(cmd) {
     if (ID.Icons && typeof ID.Icons.getOfficerRankInfo === 'function') {
       return ID.Icons.getOfficerRankInfo(cmd);
@@ -80,6 +93,7 @@ window.IronDivision = window.IronDivision || {};
     return { ...FALLBACK_OFFICER_RANKS[tier], total };
   }
 
+  /** Escapes HTML special characters (`& < > " '`) for safe template interpolation. */
   function escapeHtml(str) {
     return String(str ?? '')
       .replace(/&/g, '&amp;')
@@ -89,6 +103,10 @@ window.IronDivision = window.IronDivision || {};
       .replace(/'/g, '&#39;');
   }
 
+  /**
+   * Resolves a localized display label via `ID.I18n.localizeField()` without
+   * mutating underlying `ID.state` objects or user edits.
+   */
   function loc(kind, id, field, val) {
     if (ID.I18n && typeof ID.I18n.localizeField === 'function') {
       return ID.I18n.localizeField(kind, id, field, val);
@@ -1000,6 +1018,10 @@ window.IronDivision = window.IronDivision || {};
     return out || (baseNoParen || clean).slice(0, maxLen).trim();
   }
 
+  /**
+   * Renders the interactive 3-Lane (`N / C / S`) 2D SVG Tactical Sector map,
+   * terrain graphics, `visCap` ellipse, engagement fire lines, and NATO counters.
+   */
   function renderTacticalSectorCanvas() {
     const state = ID.state;
     const wrap = document.getElementById('tactical-sector-canvas');
@@ -1195,6 +1217,7 @@ window.IronDivision = window.IronDivision || {};
     `;
   }
 
+  /** Renders the interactive Y-axis coordinate bar (`-7` to `+7`) and rear rally indicators. */
   function renderYAxisTracker() {
     renderTacticalSectorCanvas();
     const state = ID.state;
@@ -1320,6 +1343,7 @@ window.IronDivision = window.IronDivision || {};
     error: 'paper-sitrep-row paper-sitrep-error'
   };
 
+  /** Renders the last 150 filtered SITREP combat log entries with slide-in animation tracking. */
   function renderCombatLog() {
     const state = ID.state;
     const container = document.getElementById('combat-log-container');
@@ -1462,6 +1486,7 @@ window.IronDivision = window.IronDivision || {};
     renderUnitDesigner();
   }
 
+  /** Renders Tab [02] ORBAT Unit Designer traits checklist and filterable template cards. */
   function renderUnitDesigner() {
     const state = ID.state;
     if (!state) return;
@@ -1564,6 +1589,7 @@ window.IronDivision = window.IronDivision || {};
     return 'combat';
   }
 
+  /** Renders Tab [03] Traits Library cards filtered by category (`combat`, `support`, `special`). */
   function renderTraitsTab() {
     const state = ID.state;
     const container = document.getElementById('traits-list-container');
@@ -1619,6 +1645,7 @@ window.IronDivision = window.IronDivision || {};
     renderCommandersTab();
   }
 
+  /** Renders Tab [04] Command HQ roster with dynamic 10-tier officer insignia and trait checkboxes. */
   function renderCommandersTab() {
     const state = ID.state;
     if (!state) return;
@@ -1715,6 +1742,7 @@ window.IronDivision = window.IronDivision || {};
     }).join('');
   }
 
+  /** Renders Tab [05] Terrain Matrix table and editor selector. */
   function renderTerrainTab() {
     const state = ID.state;
     if (!state) return;
@@ -2601,6 +2629,10 @@ window.IronDivision = window.IronDivision || {};
     return notes;
   }
 
+  /**
+   * Returns finalized post-battle AAR snapshot if the battle is over, or builds
+   * a live interim SITREP snapshot (used by modal + Indonesian/English interim PDF export).
+   */
   function getActiveAARData() {
     const state = ID.state;
     if (!state || !state.battle) return null;
@@ -2635,6 +2667,10 @@ window.IronDivision = window.IronDivision || {};
     };
   }
 
+  /**
+   * Builds and displays the in-universe After-Action Report (or interim SITREP) modal
+   * combining force comparison, self-verifying ORBAT/AFV ledgers, chronology, and G-3 findings.
+   */
   function openBattleSummaryModal() {
     const state = ID.state;
     const modal = document.getElementById('battle-modal');
@@ -2802,6 +2838,10 @@ window.IronDivision = window.IronDivision || {};
    * Generates a standalone, print-formatted Military After-Action Report (Form DA-774)
    * and triggers the browser Save-as-PDF / Print dialog.
    */
+  /**
+   * Strips engine-internal tags (`[RLY]`, `[OP]`, etc.), polyhedral dice rolls, and DC
+   * checks so printable Form DA-774 / TNI AD documents read as authentic military prose.
+   */
   function sanitizeForPrintableAAR(text) {
     return stripEmojisForAAR(text)
       // Remove leading engine category tags like [RLY], [ROUT], [MOV], [BRCH], [VIC], [AFV], [KIA], [POW], [BRK], [CRIT], [SHK], [SYS], [CAS], [NO-QTR]
@@ -2838,6 +2878,10 @@ window.IronDivision = window.IronDivision || {};
       .trim();
   }
 
+  /**
+   * Composes the self-contained printable A4 HTML document (`Form DA-774`) with CSS `@page`
+   * running headers/footers and exact Personnel & AFV conservation ledgers.
+   */
   function buildPrintableAARHtml(rep) {
     const state = ID.state;
     const isOver = !!(state && state.battle && state.battle.isOver);
@@ -3223,6 +3267,7 @@ window.IronDivision = window.IronDivision || {};
 </html>`;
   }
 
+  /** Opens a print-ready Form DA-774 (or TNI AD MINU LAP-OPS) A4 window for PDF saving. */
   function exportAARToPDF() {
     const rep = getActiveAARData();
     if (!rep) {
@@ -3370,6 +3415,11 @@ window.IronDivision = window.IronDivision || {};
   let delegatedHandlersBound = false;
   let hoveredDossierUnitId = null;
 
+  /**
+   * Binds single delegated click/mouseover/mouseout listeners on `document` for all
+   * dynamic card buttons (`data-action`) and NATO SVG counters (`data-unit-id`),
+   * replacing unsafe inline `onclick="fn('${id}')"` interpolations.
+   */
   function initDelegatedUIHandlers() {
     if (delegatedHandlersBound || typeof document === 'undefined' || !document.addEventListener) return;
     delegatedHandlersBound = true;
@@ -3678,6 +3728,7 @@ window.IronDivision = window.IronDivision || {};
     setTimeout(positionUITutorialStep, 260);
   }
 
+  /** Launches the 11-step interactive spotlight UI tour (`#ui-tour-overlay`) with arrow/Esc keys. */
   function startUITutorial(startIdx = 0) {
     const overlay = document.getElementById('ui-tour-overlay');
     if (!overlay) return;

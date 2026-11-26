@@ -1,6 +1,16 @@
 /* ==========================================================================
    IRON DIVISION ENGINE — APPLICATION STATE & CONTROLLER BOOTSTRAP
-   File: js/app.js
+   File: js/app.js (Load Order: 8/9)
+
+   Purpose:
+   - Owns the central serializable runtime state tree (`ID.state`).
+   - Persists custom definitions (`terrains`, `traits`, `commanders`,
+     `commanderTraits`, `unitTemplates`, side faction names, tour flags) in
+     `localStorage` under `ttrpg_*_v1` keys.
+   - Implements scenario loaders (Arracourt & San Marino), Reset/Clear with
+     Ctrl+Z Undo support, ORBAT/Traits/Commanders/Terrain CRUD controllers,
+     GM Live Mode overrides, Preset JSON Export/Import, keyboard shortcuts, and
+     the global window facade for declarative HTML handlers.
    ========================================================================== */
 
 window.IronDivision = window.IronDivision || {};
@@ -17,12 +27,14 @@ window.IronDivision = window.IronDivision || {};
   // --------------------------------------------------------------------------
 
   ID.state = {
+    // Persistent user-customizable libraries (backed by localStorage; kept language-neutral)
     terrains: H.safeLoadStorage ? H.safeLoadStorage('ttrpg_terrains_v1', structuredClone(D.DEFAULT_TERRAINS || {})) : structuredClone(D.DEFAULT_TERRAINS || {}),
     traits: H.safeLoadStorage ? H.safeLoadStorage('ttrpg_traits_v1', structuredClone(D.DEFAULT_TRAITS || [])) : structuredClone(D.DEFAULT_TRAITS || []),
     commanders: H.safeLoadStorage ? H.safeLoadStorage('ttrpg_commanders_v1', structuredClone(D.DEFAULT_COMMANDERS || [])) : structuredClone(D.DEFAULT_COMMANDERS || []),
     commanderTraits: H.safeLoadStorage ? H.safeLoadStorage('ttrpg_cmd_traits_v1', structuredClone(D.DEFAULT_COMMANDER_TRAITS || [])) : structuredClone(D.DEFAULT_COMMANDER_TRAITS || []),
     unitTemplates: H.safeLoadStorage ? H.safeLoadStorage('ttrpg_units_v1', structuredClone(D.DEFAULT_UNIT_TEMPLATES || [])) : structuredClone(D.DEFAULT_UNIT_TEMPLATES || []),
 
+    // Active theatre environmental & calendar parameters
     environment: {
       terrain: 'Hills',
       feature: 'Normal',
@@ -42,6 +54,7 @@ window.IronDivision = window.IronDivision || {};
       unexpectedInitiative: false
     },
 
+    // Active tactical combat instance (ephemeral; reset/loaded per scenario)
     battle: {
       round: 1,
       attackerSide: 'A',
@@ -58,6 +71,10 @@ window.IronDivision = window.IronDivision || {};
         repeatTacticCount: 0,
         nextRoundVigMod: 0,
         nextRoundAtkMod: 0,
+        activeRoundVigMod: 0,
+        activeRoundAtkMod: 0,
+        wonVigMarginThisRound: 0,
+        breakthroughTriggeredThisRound: false,
         airstrikeDisabled: false,
         barrageCooldown: 0,
         supplyRaidedTotal: 0,
@@ -76,6 +93,10 @@ window.IronDivision = window.IronDivision || {};
         repeatTacticCount: 0,
         nextRoundVigMod: 0,
         nextRoundAtkMod: 0,
+        activeRoundVigMod: 0,
+        activeRoundAtkMod: 0,
+        wonVigMarginThisRound: 0,
+        breakthroughTriggeredThisRound: false,
         airstrikeDisabled: false,
         barrageCooldown: 0,
         supplyRaidedTotal: 0,
@@ -418,6 +439,11 @@ window.IronDivision = window.IronDivision || {};
     }
   }
 
+  /**
+   * Resets all transient tactical flags, cooldowns, and round modifiers on a side
+   * without touching persistent faction metadata (`name`, `commanderId`, `tacticId`).
+   * Shared across Reset, Clear, and Scenario Load so stale flags never leak across battles.
+   */
   function resetSideRuntimeState(sideObj) {
     if (!sideObj) return;
     sideObj.lastChosenTacticId = null;
@@ -435,6 +461,10 @@ window.IronDivision = window.IronDivision || {};
     sideObj.depotCriticalClock = '';
   }
 
+  /**
+   * Restores all deployed units to 100% starting strength (`initialSnapshot`) and resets
+   * round counters to Round 1 while pushing an Undo snapshot so Ctrl+Z reverses the reset.
+   */
   function resetCurrentBattle(skipConfirm = false) {
     stopAutoRun();
     if (!skipConfirm && ID.state.battle.round > 1 && document.getElementById('confirm-modal')) {
@@ -500,6 +530,7 @@ window.IronDivision = window.IronDivision || {};
     }
   }
 
+  /** Clears all units from both sides while pushing an Undo snapshot for Ctrl+Z recovery. */
   function emptyBattlefield(skipConfirm = false) {
     stopAutoRun();
     const totalUnits = (ID.state.battle.sideA.units?.length || 0) + (ID.state.battle.sideB.units?.length || 0);
@@ -548,6 +579,10 @@ window.IronDivision = window.IronDivision || {};
     }
   }
 
+  /**
+   * Synchronizes missing built-in commanders/units/traits into `ID.state` and self-heals
+   * legacy `armorTier: 'none'` templates persisted in older `localStorage` caches.
+   */
   function syncBuiltInDefinitions() {
     (D.DEFAULT_COMMANDERS || []).forEach(dc => {
       if (!ID.state.commanders.some(c => c.id === dc.id)) {
@@ -589,6 +624,7 @@ window.IronDivision = window.IronDivision || {};
     });
   }
 
+  /** Shared scenario initializer configuring environment, commanders, rosters, and depot capacity. */
   function loadScenarioByConfig(cfg) {
     stopAutoRun();
     ID.state.battle.sideA.units = [];
@@ -1329,6 +1365,7 @@ window.IronDivision = window.IronDivision || {};
     if (ID.UI) ID.UI.renderCombatRound();
   }
 
+  /** Pops the latest snapshot from `battle.history` and restores full UI & environment state. */
   function undoLastRound() {
     stopAutoRun();
     const hist = ID.state.battle.history;
@@ -1360,6 +1397,7 @@ window.IronDivision = window.IronDivision || {};
     }
   }
 
+  /** Applies GM Live overrides (Supply, Org, Y-Axis Pos, 3-Lane shift, or instant Rally). */
   function gmAdjustUnit(side, instanceId, field, delta) {
     const sideObj = side === 'A' ? ID.state.battle.sideA : ID.state.battle.sideB;
     const u = sideObj.units.find(x => x.instanceId === instanceId);
@@ -1406,6 +1444,7 @@ window.IronDivision = window.IronDivision || {};
   // 7C. Preset JSON Export & Import (Armies, Commanders, Traits, Terrains)
   // --------------------------------------------------------------------------
 
+  /** Builds the language-neutral JSON backup payload of all user-customizable presets. */
   function buildPresetsExportObject() {
     return {
       app: 'Iron Division Engine',

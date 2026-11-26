@@ -1,6 +1,16 @@
 /* ==========================================================================
    IRON DIVISION ENGINE — CORE GAME DATABASES & REGISTRIES
-   File: js/data.js
+   File: js/data.js (Load Order: 2/9)
+
+   Purpose:
+   - Defines all static built-in registries (experience, armor splits, terrains,
+     features, weather, hazards, unit traits, commander traits, preset generals,
+     25 tactical doctrines, and historical ORBAT templates).
+   - IMPORTANT: `ID.Data.DEFAULT_*` objects are treated as canonical built-in
+     blueprints. Runtime user edits are stored in `ID.state.*` via localStorage,
+     and `js/i18n-id.js` must NOT mutate `DEFAULT_*` or `ID.state.*` directly.
+   - Schema invariant: Every unit template's `armorTier` must be one of
+     `'unarmored' | 'light' | 'medium' | 'heavy' | 'super'`.
    ========================================================================== */
 window.IronDivision = window.IronDivision || {};
 
@@ -8,7 +18,7 @@ window.IronDivision = window.IronDivision || {};
   'use strict';
 
   // --------------------------------------------------------------------------
-  // 1. Experience Tiers
+  // 1. Experience Tiers (Combat modifiers, recovery/pursuit/retreat & repair die)
   // --------------------------------------------------------------------------
   const EXPERIENCE_TIERS = {
     Green:    { name: 'Green',    atkPct: -10, defPct: -10, orgRegen: -1, recBonus: 0,  retreatBonus: -10, pursueBonus: 0,  repairDie: 2 },
@@ -21,6 +31,7 @@ window.IronDivision = window.IronDivision || {};
 
   // --------------------------------------------------------------------------
   // 2. Armor Class Hard/Soft Splits
+  // Governs what % of Hard vs. Soft Attack an incoming hit evaluates against.
   // --------------------------------------------------------------------------
   const ARMOR_TIERS = {
     unarmored: { label: 'Unarmored', hardRatio: 0.0,  softRatio: 1.0 },
@@ -32,6 +43,7 @@ window.IronDivision = window.IronDivision || {};
 
   // --------------------------------------------------------------------------
   // 3. Base Terrains
+  // Fields: unit category % mods, vigMod, supplyDrain, maxEntrench, outnumberCap.
   // --------------------------------------------------------------------------
   const DEFAULT_TERRAINS = {
     Plains:   { name: 'Plains',   infAtk: 0,   infDef: 0,  avAtk: 10,  avDef: 0,   tankAtk: 15,  tankDef: 5,   artAtk: 5,   artDef: 0,  vigMod: 5,   supplyDrain: 0, maxEntrench: 4, outnumberCap: 100, isUrban: false, openTerrain: true },
@@ -387,6 +399,7 @@ window.IronDivision = window.IronDivision || {};
 
   // --------------------------------------------------------------------------
   // 7. Commander Traits Directory & Preset Commanders
+  // `targetUnitCategory` filters bonus scope ('all' or specific unit category).
   // --------------------------------------------------------------------------
   const DEFAULT_COMMANDER_TRAITS = [
     {
@@ -475,6 +488,11 @@ window.IronDivision = window.IronDivision || {};
 
   // --------------------------------------------------------------------------
   // 8. The 25 Tactical Doctrines
+  // Split into 11 Standard Attack, 7 Standard Defense, 4 Urban Attack, 3 Urban Def.
+  // Note: Tactics with conditional/role-split effects (e.g. `urb_atk_armour_supported`,
+  // `def_ambush`, `def_guerrilla`, `atk_infiltration`) evaluate those dynamically in
+  // `js/engine-combat.js` (`computeUnitTotalStat` & upkeep loop) with base fields 0
+  // to prevent double-application.
   // --------------------------------------------------------------------------
   const TACTICS_DB = [
     {
@@ -630,7 +648,7 @@ window.IronDivision = window.IronDivision || {};
   ];
 
   // --------------------------------------------------------------------------
-  // 9. Built-in Sample Unit Templates
+  // 9. Built-in Sample Unit Templates (Generic, Arracourt 1944, San Marino 1944)
   // --------------------------------------------------------------------------
   const DEFAULT_UNIT_TEMPLATES = [
     {

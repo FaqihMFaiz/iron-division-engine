@@ -1,6 +1,14 @@
 /* ==========================================================================
    IRON DIVISION ENGINE — MATHEMATICAL & OPERATIONAL HELPERS
-   File: js/engine-helpers.js
+   File: js/engine-helpers.js (Load Order: 3/9)
+
+   Purpose:
+   - Polyhedral dice RNG (`rollDie`) & numeric clamping (`clamp`).
+   - Arbitrary-era UTC calendar (`-270000` BCE to `+270000`) & 24H clock lighting.
+   - Climate-aware dynamic weather filtering & compound hazard evaluation.
+   - Mobility/speed calculators, 3-lane 2D distance/range/dispersion math, and
+     grazing damage & fortification immunity rules.
+   - Inline NATO tactical counters & 10-tier Officer rank insignia SVG generators.
    ========================================================================== */
 window.IronDivision = window.IronDivision || {};
 
@@ -11,11 +19,13 @@ window.IronDivision = window.IronDivision || {};
   // 1. Core Utilities & Storage
   // --------------------------------------------------------------------------
 
+  /** Rolls an integer in `[1..sides]`. Returns `0` for non-positive inputs. */
   function rollDie(sides) {
     if (sides <= 0) return 0;
     return Math.floor(Math.random() * sides) + 1;
   }
 
+  /** Clamps `val` inclusively between `min` and `max`. */
   function clamp(val, min, max) {
     return Math.max(min, Math.min(max, val));
   }
@@ -25,6 +35,7 @@ window.IronDivision = window.IronDivision || {};
     B: 'OPFOR // SIDE B'
   };
 
+  /** Returns the customized side faction name, falling back to `DEFAULT_SIDE_NAMES`. */
   function getSideName(side) {
     const key = side === 'B' ? 'B' : 'A';
     const raw = key === 'A' ? ID.state?.battle?.sideA?.name : ID.state?.battle?.sideB?.name;
@@ -32,8 +43,11 @@ window.IronDivision = window.IronDivision || {};
     return trimmed || DEFAULT_SIDE_NAMES[key];
   }
 
+  /**
+   * Builds a UTC epoch timestamp without `Date.UTC`'s 0..99 -> 1900..1999 mapping,
+   * enabling historical BCE dates and arbitrary sci-fi years (`-270000`..`+270000`).
+   */
   function makeUtcTimestamp(yr, monthIdx, day, hr = 0, mn = 0, sec = 0) {
-    // Use setUTCFullYear so years 0..99 stay literal instead of being mapped to 1900..1999 by Date.UTC
     const d = new Date(0);
     d.setUTCFullYear(yr, monthIdx, day);
     d.setUTCHours(hr, mn, sec, 0);
@@ -47,6 +61,7 @@ window.IronDivision = window.IronDivision || {};
     return String(n);
   }
 
+  /** Computes the simulated UTC Date for a given combat round from clock & duration config. */
   function getSimulatedBattleDate(roundNumber = null) {
     const env = ID.state?.environment || {};
     const rawYr = (env.battleYear !== undefined && env.battleYear !== null && env.battleYear !== '') ? Number(env.battleYear) : 1944;
@@ -186,6 +201,7 @@ window.IronDivision = window.IronDivision || {};
     return null;
   }
 
+  /** Appends a structured combat log entry with round number and simulated 24H timestamp. */
   function addLog(category, text) {
     if (!ID.state || !ID.state.battle) {
       console.log(`[Combat Log Standby (${category})]`, text);
@@ -222,6 +238,7 @@ window.IronDivision = window.IronDivision || {};
     }, 3200);
   }
 
+  /** Persists JSON-serializable data to `localStorage`, ignoring restricted-context quota errors. */
   function safeSaveStorage(key, data) {
     try {
       localStorage.setItem(key, JSON.stringify(data));
@@ -284,6 +301,10 @@ window.IronDivision = window.IronDivision || {};
     return 1;
   }
 
+  /**
+   * Resolves effective speed class (used for 2-step Dry Open Advance vs. 1-step Mud slowdown,
+   * plus post-battle mobility pursuit and retreat calculations).
+   */
   function getUnitEffectiveSpeed(u) {
     const baseMob = getUnitMobilityClass(u) - (u.mobilityClassPenalty || 0);
     const env = ID.state?.environment || {};
@@ -331,6 +352,11 @@ window.IronDivision = window.IronDivision || {};
     return p.length > 0 ? ` (${p.join(', ')})` : '';
   }
 
+  /**
+   * Computes composite environment state: terrain, feature, weather, clock time-of-day,
+   * active compound hazards (`Mud/Rasputitsa`, `Zero Visibility`, `Deep Freeze`, `Heatstroke`),
+   * `visCap`, `airEfficiency`, and `outnumberCap`.
+   */
   function getActiveEnvironmentEffects() {
     const D = ID.Data || {};
     const env = ID.state?.environment || {};
@@ -469,9 +495,15 @@ window.IronDivision = window.IronDivision || {};
   }
 
   // --------------------------------------------------------------------------
-  // 3. Y-Axis Spatial Distance & Engagement Range Engine
+  // 3. 3-Lane 2D Spatial Distance, Engagement Range & Dispersion Engine
+  //
+  // Coordinate system:
+  // - Depth (`u.pos`): non-negative steps from Contact Line `0` (negative allowed when melee rushes).
+  // - Lane (`u.lane`): `0 = North`, `1 = Center` (default), `2 = South`.
+  // - Total Distance = `(posA + posB) + |laneA - laneB|`.
   // --------------------------------------------------------------------------
 
+  /** Returns baseline deployment depth from Contact Line `0` before artillery +2 offset. */
   function getBaseTerrainDistance() {
     const env = ID.state?.environment || {};
     const terr = env.terrain;
@@ -495,18 +527,25 @@ window.IronDivision = window.IronDivision || {};
   const LANE_LABELS = ['N', 'C', 'S'];
   const LANE_NAMES = ['North', 'Center', 'South'];
 
+  /** Returns valid lane index (`0=North`, `1=Center`, `2=South`), defaulting legacy units to Center. */
   function getUnitLane(u) {
     return (u && (u.lane === 0 || u.lane === 1 || u.lane === 2)) ? u.lane : 1;
   }
 
+  /** Returns compact single-letter lane tag (`'N' | 'C' | 'S'`). */
   function getLaneLabel(lane) {
     return LANE_LABELS[lane === 0 || lane === 1 || lane === 2 ? lane : 1];
   }
 
+  /** Returns display name for a flank lane (`'North' | 'Center' | 'South'`). */
   function getLaneName(lane) {
     return LANE_NAMES[lane === 0 || lane === 1 || lane === 2 ? lane : 1];
   }
 
+  /**
+   * Assigns balanced initial 3-lane deployment. Recon & mechanized units prefer flanks first
+   * when joining multi-unit rosters, while single-unit/1v1 tests start aligned on Center (`1`).
+   */
   function getUnitStartingLane(u, sideUnits = []) {
     const list = Array.isArray(sideUnits) ? sideUnits : [];
     if (list.length === 0) return 1; // 1v1 / single-unit skirmishes align on Center lane
@@ -546,6 +585,12 @@ window.IronDivision = window.IronDivision || {};
     return (u.traits && u.traits.includes('melee_attack')) || u.isZombie || (u.traits && u.traits.includes('zombie_unit'));
   }
 
+  /**
+   * Computes max weapon engagement distance for `u`:
+   * - Zombie/melee <= 1, Infantry/standard AV <= 2, Tank/AT-TD <= 3, Artillery <= 12.
+   * - Fog/Night `visCap` clamps direct-fire units; active friendly `recon_support` preserves
+   *   artillery's full range (`12`), otherwise unspotted batteries cap at `visCap + 1`.
+   */
   function getUnitEngagementRange(u) {
     if (!u) return 2;
     if (u.isZombie || (u.traits && u.traits.includes('zombie_unit'))) return 1;
@@ -569,18 +614,21 @@ window.IronDivision = window.IronDivision || {};
     return baseRange;
   }
 
+  /** Returns pure Y-axis depth gap (`posA + posB`), ignoring lane lateral offset. */
   function getDepthDistance(unitA, unitB) {
     const posA = (unitA && unitA.pos !== undefined && unitA.pos !== null) ? unitA.pos : getUnitStartingPosition(unitA);
     const posB = (unitB && unitB.pos !== undefined && unitB.pos !== null) ? unitB.pos : getUnitStartingPosition(unitB);
     return Math.max(0, posA + posB);
   }
 
+  /** Returns full 2D engagement distance: `posA + posB + |laneA - laneB|`. */
   function getTotalDistance(unitA, unitB) {
     const depth = getDepthDistance(unitA, unitB);
     const laneDiff = Math.abs(getUnitLane(unitA) - getUnitLane(unitB));
     return depth + laneDiff;
   }
 
+  /** Returns true when unit traits or active tactics bypass spatial range checks. */
   function canUnitIgnoreDistance(u, sideTactic = null) {
     if (!u) return false;
     const traits = u.traits || [];
@@ -611,6 +659,14 @@ window.IronDivision = window.IronDivision || {};
     return 0.15;
   }
 
+  /**
+   * Computes mild artillery range dispersion beyond Distance `6` (`-4%` per step,
+   * capped at `-20%`), halved when an active friendly `recon_support` spotter exists.
+   *
+   * @param {Object} attacker - Firing unit.
+   * @param {number} totalDist - 2D Total Distance to target.
+   * @returns {number} Non-positive integer percentage modifier (e.g. `-12` or `0`).
+   */
   function getArtilleryRangeDispersionPct(attacker, totalDist) {
     if (!attacker || attacker.category !== 'artillery') return 0;
     const dist = Number(totalDist) || 0;
@@ -630,6 +686,10 @@ window.IronDivision = window.IronDivision || {};
   // 4. Grazing Damage, Armor Immunity & Fortification Engine
   // --------------------------------------------------------------------------
 
+  /**
+   * Evaluates suppressed grazing fire when Attack <= Defense (`ARMOR HELD` small-arms
+   * immunity, Level 5 deep bunker overhead immunity, and Fort/dig-in pressure gates).
+   */
   function calculateGrazingCasualties(attacker, defender, atkVal, defVal, isPierced, isReturnFire) {
     const atkTraits = (attacker.traits || []).map(getTraitById).filter(Boolean);
     const hasHighCal = atkTraits.some(t => t.grantsHighCaliber) || attacker.category === 'armored_vehicle' || attacker.category === 'tank';

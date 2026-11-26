@@ -1,6 +1,19 @@
 /* ==========================================================================
    IRON DIVISION ENGINE — TACTICAL COMMAND POST STYLESHEET
    File: css/styles.css
+
+   Table of Contents & Responsive Breakpoints:
+   - :root design palette tokens (matte olive-steel, brass, Bluefor/Opfor)
+   - Map-table background grid & sharp corner overrides
+   - Header, Brass Plaques, Nav Dock, & Status-Driven Unit Card Accents
+   - Unit Dossiers, Compact Mode, Telemetry Bars, & Y-Axis Rangefinder Strip
+   - Manila-Folder FM/TM Manuals & Flippable 25-Page Doctrines Book
+   - Spotlight UI Tour & Command Confirmation Modals
+   - Responsive Grid Breakpoints:
+     * `>= 1500px`: Full 3-column cockpit + side-by-side Log / 2D Sector
+     * `>= 1280px`: Desktop cockpit (`min-width: 1280px` prevents squish)
+     * `1024px–1279px`: Enables `overflow-x: auto` on `#view-battlefield` to stop right clipping
+     * `<= 768px`: Mobile padding & stacked view adjustments
    ========================================================================== */
 
 :root {

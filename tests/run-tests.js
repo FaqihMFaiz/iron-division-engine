@@ -617,10 +617,7 @@ console.log('PASS [1]: All 9 js/*.js files pass `node --check`.');
   const owTank = ID.Combat.createCombatUnitInstance(getTpl(ID, 'tank'), 'A');
   owTank.traits = ['armored_spearhead'];
   owTank.pos = 5;
-  const owTarget1 = ID.Combat.createCombatUnitInstance(getTpl(ID, 'inf'), 'B');
-  const owTarget2 = ID.Combat.createCombatUnitInstance(getTpl(ID, 'inf'), 'B');
-  const owTarget3 = ID.Combat.createCombatUnitInstance(getTpl(ID, 'inf'), 'B');
-  // Put 3 tanks on B at pos 1 within range 3 of owTank after advance (5 -> 3 => dist 4... put at pos 0 => after 5->3 dist=3!)
+  // Place 3 Side B tanks at pos 0 (lane 1): after fast advance (5 -> 3), distance is 3 <= tank range(3)
   const owDef1 = ID.Combat.createCombatUnitInstance(getTpl(ID, 'tank'), 'B'); owDef1.pos = 0; owDef1.lane = 1;
   const owDef2 = ID.Combat.createCombatUnitInstance(getTpl(ID, 'tank'), 'B'); owDef2.pos = 0; owDef2.lane = 1;
   const owDef3 = ID.Combat.createCombatUnitInstance(getTpl(ID, 'tank'), 'B'); owDef3.pos = 0; owDef3.lane = 1;

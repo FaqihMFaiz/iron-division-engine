@@ -1,6 +1,20 @@
 /* ==========================================================================
    IRON DIVISION ENGINE — COMBAT ENGINE & ENGAGEMENT RESOLUTION
-   File: js/engine-combat.js
+   File: js/engine-combat.js (Load Order: 4/9)
+
+   Purpose:
+   - Factory for live deployed battalion instances (`createCombatUnitInstance`) with
+     exact conservation pools, 2D spatial coordinates (`pos`, `lane`), and telemetry.
+   - Orchestrates the 8-step combat round (`runSingleRound`):
+     0. Clock lighting & climate-aware weather transitions
+     1. Tactic selection (AI personality or GM manual override)
+     2. Frontline upkeep, rally staging, 4-round Field Repair Crew & Round 4+ DOW
+     3. 1d100 Vigilance / Recon contest
+     4. Distance-gated Fire Support (Mortar <= 5, Artillery <= 12, Air theatre-wide)
+     5. Main Attack, 3-Lane movement / Flank Shift, Hold-Cover & Defensive Overwatch
+     6. End-of-round tactic shock & tactic memory update
+     7. Battle-end detection -> pursuit & AAR build (`ID.Pursuit`)
+     8. Turn progression & deadlock-free initiative handoff
    ========================================================================== */
 
 window.IronDivision = window.IronDivision || {};
@@ -8,7 +22,7 @@ window.IronDivision = window.IronDivision || {};
 (function (ID) {
   'use strict';
 
-  // Private module closure variable - completely isolated from the window scope
+  // Private module closure counter for unique per-instance IDs
   let instanceCounter = 1;
 
   // Shortcuts to companion modules with safe fallbacks
@@ -19,6 +33,16 @@ window.IronDivision = window.IronDivision || {};
   // 1. Unit Factory & Lifecycle Helpers
   // --------------------------------------------------------------------------
 
+  /**
+   * Instantiates a live frontline unit from an ORBAT template, applying commander
+   * Max Org / Supply scaling, inherent High-Caliber / Explosive rules, and balanced
+   * initial 3-lane placement.
+   *
+   * @param {Object} template - ORBAT unit template object.
+   * @param {'A'|'B'} side - Deploying side key.
+   * @param {number|null} [laneOverride=null] - Optional lane index (`0=N`, `1=C`, `2=S`).
+   * @returns {Object} Mutable deployed unit state object.
+   */
   function createCombatUnitInstance(template, side, laneOverride = null) {
     const traitObjs = (template.traits || []).map(tid => getTraitById(tid)).filter(Boolean);
     const isMonster = traitObjs.some(t => t.isMonster);
@@ -208,11 +232,15 @@ window.IronDivision = window.IronDivision || {};
     return true;
   }
 
+  /**
+   * Transitions a broken unit to rear-area rally staging (`isRallying = true`),
+   * scatters undisciplined troops into `u.escaped`, and syncs `cumPersonnelLostTenths`
+   * so returning units are not double-penalized by pre-rout casualties.
+   */
   function triggerUnitRally(u, reason) {
     if (u.isRallying || u.defeated) return;
 
     u.isRallying = true;
-    const cmd = getSideCommander(u.side);
     const baseCooldown = 2 + H.rollDie(2);
 
     const durationRed = getCommanderUnitBonus(u.side, u, 'rallyDurationRed');
@@ -253,6 +281,10 @@ window.IronDivision = window.IronDivision || {};
     u.entrenchmentLevel = 0;
   }
 
+  /**
+   * Only mechanized infantry / recon (`armored_vehicle` without `anti_tank`)
+   * fight on as dismounted foot infantry when vehicles run out.
+   */
   function canUnitDismountAsInfantry(u) {
     if (!u || u.category !== 'armored_vehicle') return false;
     // Tank Destroyers / Panzerjaeger do not carry dismounted rifle infantry
@@ -260,6 +292,13 @@ window.IronDivision = window.IronDivision || {};
     return true;
   }
 
+  /**
+   * Evaluates exit conditions after casualties or Org/AFV loss:
+   * - 0 Personnel -> WIPED OUT
+   * - 0 Operational Vehicles -> armored infantry dismount if Org>=20% & Pers>=50%
+   *   (otherwise rally dismounted if eligible); Tanks / SP Arty / TDs withdraw
+   * - 0 Org -> triggers 1st-time Rally (or Rout/Defeat if already rallied once)
+   */
   function checkAndMarkUnitDefeat(u) {
     if (u.defeated) return true;
     if (u.isRallying) return false;
@@ -333,6 +372,13 @@ window.IronDivision = window.IronDivision || {};
   // 2. Dynamic Target Value (TV) & Priority Engine
   // --------------------------------------------------------------------------
 
+  /**
+   * Scores a candidate target's priority (`TV`).
+   * Direct-fire units weight proximity + same-lane alignment (`x1.20`) and
+   * Frontliner magnets; indirect artillery prioritizes batteries and dug-in
+   * concentrations with mild range falloff. When `attacker` is provided, TV is
+   * damped by `1 / (1 + 0.35 * engagedByCount)` to spread fire across the line.
+   */
   function getUnitTargetValue(target, attacker = null, atkTactic = null) {
     if (!target) return 0;
 
@@ -647,6 +693,7 @@ window.IronDivision = window.IronDivision || {};
   // 5. Main Combat Execution Loop
   // --------------------------------------------------------------------------
 
+  /** Deep-clones battle & environment state into `battle.history` (FIFO max 15 snapshots for Ctrl+Z). */
   function pushHistorySnapshot() {
     if (!ID.state || !ID.state.battle) return;
     if (!ID.state.battle.history) ID.state.battle.history = [];
@@ -668,6 +715,11 @@ window.IronDivision = window.IronDivision || {};
     }
   }
 
+  /**
+   * Main 8-step turn orchestrator wrapped in an error boundary (`ID.Diagnostics`).
+   * Coordinates clock/weather, upkeep/repairs, vigilance, fire support, 2D maneuver/combat,
+   * battle termination checks, and initiative alternation.
+   */
   function runSingleRound() {
     try {
       if (ID.state.battle.isOver) {
@@ -1609,6 +1661,13 @@ window.IronDivision = window.IronDivision || {};
   // 8. Support Fire & Anti-Air Defense
   // --------------------------------------------------------------------------
 
+  /**
+   * Executes Step 8 Support Fire for `firingSide` using weapon-specific spatial gates:
+   * - Mortar Support: `Total Distance <= 5`
+   * - Inherent / Heavy Artillery: `Total Distance <= getUnitEngagementRange()` (sets
+   *   `firedInherentBarrage = true` on inherent artillery so it skips Step 5 Main Attack)
+   * - Air Support: theatre-wide, gated by weather grounding (`effectiveAirMod <= -50%`) and AA.
+   */
   function processSideSupportFire(firingSide, enemySide) {
     const firingState = firingSide === 'A' ? ID.state.battle.sideA : ID.state.battle.sideB;
     const enemyState = enemySide === 'A' ? ID.state.battle.sideA : ID.state.battle.sideB;
@@ -1881,6 +1940,11 @@ window.IronDivision = window.IronDivision || {};
     checkAndMarkUnitDefeat(target);
   }
 
+  /**
+   * Applies indirect/air support personnel losses followed by armor hits.
+   * Guardrails prevent rallied units from taking secondary armor crew casualties after
+   * initial casualties triggered `triggerUnitRally()`, preserving `ralliedPersonnel` integrity.
+   */
   function applySupportCasualtiesAndArmor(target, casualties, armorDisabled, sourceLabel, sourceUnit = null, channel = 'indirect') {
     if (casualties > 0 && !target.defeated && !target.isRallying) {
       applyPersonnelCasualties(target, casualties, true, true, sourceLabel, {}, {}, false, sourceUnit, channel);
@@ -1911,6 +1975,11 @@ window.IronDivision = window.IronDivision || {};
     return (u.org / Math.max(1, u.maxOrg)) >= threshold;
   }
 
+  /**
+   * Evaluates spatially-aware Frontliner screening: a non-frontliner is screened only if
+   * a Frontliner sits at equal or shallower depth (`pos`) in its lane (or strictly forward
+   * in an adjacent lane if no same-lane Frontliner exists). Indirect artillery bypasses screens.
+   */
   function getSpatiallyScreenedPool(attacker, defenders) {
     if (!defenders || defenders.length === 0) return { frontliners: [], unscreened: [] };
     if (attacker && attacker.category === 'artillery') {
@@ -1938,6 +2007,7 @@ window.IronDivision = window.IronDivision || {};
     return { frontliners: activeFrontliners, unscreened };
   }
 
+  /** Weighted random pick across top K (`2` if Vigilance won with quadratic bias, `3` if lost). */
   function pickWeightedTarget(candidates, attacker, atkTactic, attackerWonVig) {
     if (!candidates || candidates.length === 0) return null;
     if (candidates.length === 1) return candidates[0];
@@ -1956,6 +2026,7 @@ window.IronDivision = window.IronDivision || {};
     return topK[0].u;
   }
 
+  /** Selects target using Infiltration Bypass, Anti-Unit priority, Vigilance, and spatial pools. */
   function selectTargetUnit(attacker, defenders, atkTactic, defTactic, attackerWonVig) {
     if (defenders.length === 0) return null;
     if (defenders.length === 1) return defenders[0];
@@ -2032,6 +2103,11 @@ window.IronDivision = window.IronDivision || {};
   // 10. Main Combat Engagement & Resolution
   // --------------------------------------------------------------------------
 
+  /**
+   * Executes close-range (`Total Distance <= 2`, non-artillery) Supply Raiding.
+   * Fires during BOTH Main Attack and Return Fire so `supply_raiders` and
+   * `def_guerrilla` work consistently regardless of who initiates the volley.
+   */
   function tryRaidEnemySupply(raider, victim, raiderTraits, raiderTactic) {
     if (!raider || !victim || raider.category === 'artillery') return;
     if (victim.isMonster || victim.isZombie) return;
@@ -2232,6 +2308,9 @@ window.IronDivision = window.IronDivision || {};
       inflictCombatDamage(attacker, defender, margin, atkSide, defSide, atkTactic, defTactic, isOverwatch ? 'Overwatch Volley' : 'Main Attack', pierced);
       if (attacker.defeated || attacker.isRallying) return;
 
+      // Note: Breakthrough Org heal, atk_breakthrough next-round boost, supply raids, and
+      // enemy Vig malus run BEFORE checking `defender.defeated || defender.isRallying` so a
+      // decisive attack that breaks/destroys the defender in 1 strike still awards its bonuses.
       const inflictedRatio = (prevDefPersonnel - defender.personnel) / Math.max(1, defender.maxPersonnel);
       if (!attacker.isMonster && !attacker.isZombie) {
         let orgGain = atkTactic.hitOrgHeal || 0;
@@ -2475,6 +2554,11 @@ window.IronDivision = window.IronDivision || {};
   // 11. Aggregate Statistic Calculations
   // --------------------------------------------------------------------------
 
+  /**
+   * Returns true if a direct-fire attack strikes across lanes from a lane where
+   * all active non-artillery enemies have been cleared, unlocking +15% Enfilade Atk
+   * and halving defender entrenchment. Never triggers on Return Fire or artillery.
+   */
   function isEnfiladeFlankAttack(attacker, defender, enemySideKey, isReturnFire = false) {
     if (!attacker || !defender || isReturnFire || attacker.category === 'artillery') return false;
     const getLane = H.getUnitLane || (u => (u && (u.lane === 0 || u.lane === 1 || u.lane === 2) ? u.lane : 1));
@@ -2487,6 +2571,11 @@ window.IronDivision = window.IronDivision || {};
     return !enemyUnits.some(eu => isUnitActive(eu) && eu.category !== 'artillery' && getLane(eu) === attLane);
   }
 
+  /**
+   * Aggregates flat and additive percentage modifiers (experience, traits, commander,
+   * environment, outnumbering, supply/org/manpower maluses, tactics, artillery dispersion,
+   * enfilade flanking, and Overwatch `-15%`) into `(base + die + flat) * (1 + clamp(netPct, -95))`.
+   */
   function computeUnitTotalStat(unit, opponent, mySide, enemySide, role, baseStat, dieRoll, vigFlatBoost, myTactic, enemyTactic, isReturnFire, isOverwatch = false) {
     const myState = mySide === 'A' ? ID.state.battle.sideA : ID.state.battle.sideB;
     const traits = unit.traits.map(getTraitById).filter(Boolean);
@@ -2782,6 +2871,11 @@ window.IronDivision = window.IronDivision || {};
     applyPersonnelCasualties(defender, rawDowned, hasHighCal && !armorHeldMitigation, hasExplosive && !armorHeldMitigation, phaseLabel, atkTactic, defTactic, armorHeldHeavy, attacker, attacker.category === 'artillery' ? 'indirect' : 'direct');
   }
 
+  /**
+   * Applies downed personnel casualties, partitions survivors into KIA/WIA vs. Monsters/Zombies,
+   * rolls cumulative Org shock per 10% lost (`cumPersonnelLostTenths`), and keeps `ralliedPersonnel`
+   * synced so later rallying never restores stale counts.
+   */
   function applyPersonnelCasualties(defender, rawDowned, hasHighCal, hasExplosive, phaseLabel, atkTactic = {}, defTactic = {}, armorHeldHeavy = false, sourceUnit = null, channel = 'direct') {
     const actualDowned = Math.min(defender.personnel, Math.max(0, rawDowned));
     if (actualDowned <= 0) return;

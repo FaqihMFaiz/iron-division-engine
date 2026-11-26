@@ -1,10 +1,18 @@
 /* ==========================================================================
    IRON DIVISION ENGINE — INDONESIAN (BAHASA INDONESIA) LOCALIZATION MODULE
-   File: js/i18n-id.js
-   Drop-in i18n layer (default EN) with live EN <-> ID toggle, localStorage
-   persistence, reversible data.js localization, natural non-stiff Indonesian
-   Manuals written by a subordinate soldier ("Komandan / Kumendan / Ndan"),
-   and automatic MutationObserver sync.
+   File: js/i18n-id.js (Load Order: 9/9 — MUST load after js/app.js)
+
+   Architecture & Invariants:
+   - Default language is English (`'en'`), persisted via `iron_division_lang_v1`.
+   - Non-mutating contract: `ID.state.{terrains, traits, commanderTraits}` and
+     `ID.Data.DEFAULT_*` are NEVER modified in-place; display rendering reads
+     `localizeField(kind, id, field, currentValue)` so `localStorage` saves,
+     JSON exports, and user edits remain strictly language-neutral.
+   - Only read-only runtime lookup tables (`TERRAIN_FEATURES`, `WEATHER_TYPES`,
+     `TIME_OF_DAY_TYPES`, `COMPOUND_HAZARDS`, `TACTICS_DB`) are toggled via
+     `dataBackups`.
+   - Uses a `WeakMap`-backed `MutationObserver` (`originalTextMap`) for
+     lossless EN <-> ID DOM switching without reloading.
    ========================================================================== */
 
 window.IronDivision = window.IronDivision || {};
@@ -930,8 +938,10 @@ window.IronDivision = window.IronDivision || {};
   }
 
   // --------------------------------------------------------------------------
-  // 4. Reversible data.js Localization
+  // 4. Non-Mutating Display Localization & Read-Only Data Registry Patching
   // --------------------------------------------------------------------------
+
+  /** Captures canonical English strings from `ID.Data` once before applying Indonesian overlays. */
   function backupEnglishDataOnce() {
     if (dataBackups.saved || !ID.Data) return;
     const D = ID.Data;
@@ -959,6 +969,11 @@ window.IronDivision = window.IronDivision || {};
     dataBackups.saved = true;
   }
 
+  /**
+   * Non-mutating display lookup for persisted items (`terrain`, `trait`, `cmdTrait`).
+   * Returns Indonesian translation ONLY if `currentValue` still matches the built-in
+   * English default, preserving custom user edits and keeping `ID.state`/JSON language-neutral.
+   */
   function localizeField(kind, id, field, currentValue) {
     if (currentLang !== 'id' || !id) return currentValue;
     backupEnglishDataOnce();
@@ -979,6 +994,7 @@ window.IronDivision = window.IronDivision || {};
     return translated;
   }
 
+  /** Patches read-only non-persisted reference registries when toggling between EN and ID. */
   function applyDataLocalization(lang) {
     if (!ID.Data) return;
     backupEnglishDataOnce();
@@ -1049,7 +1065,7 @@ window.IronDivision = window.IronDivision || {};
   }
 
   // --------------------------------------------------------------------------
-  // 4B. Combat Log Translator (Natural Indonesian Sitrep)
+  // 6. Combat Log Translator (Natural Indonesian Sitrep)
   // --------------------------------------------------------------------------
   const LOG_REPLACEMENTS = [
     [/Current battle fully reset to Round 1\. All deployed formations restored to 100% strength\./g, 'Pertempuran diulang penuh ke Ronde 1. Seluruh satuan kembali 100% siap tempur.'],
@@ -1169,7 +1185,7 @@ window.IronDivision = window.IronDivision || {};
   }
 
   // --------------------------------------------------------------------------
-  // 4C. Full Welcome Briefing Pop-up Localization (Subordinate -> Komandan)
+  // 7. Full Welcome Briefing Pop-up Localization (Subordinate -> Komandan)
   // --------------------------------------------------------------------------
   function applyWelcomeModalLanguage(lang) {
     const modal = document.getElementById('welcome-modal');
@@ -1233,8 +1249,9 @@ window.IronDivision = window.IronDivision || {};
   }
 
   // --------------------------------------------------------------------------
-  // 4D. Indonesian Army (TNI AD) Printable A4 AAR (MINU TNI AD // LPT)
+  // 8. Indonesian Army (TNI AD) Printable A4 AAR (MINU TNI AD // LPT)
   // --------------------------------------------------------------------------
+  /** Wraps `buildPrintableAARHtml()` to emit formal Indonesian Army (TNI AD) MINU LAP-OPS A4 formatting. */
   function buildTniAdPrintableAARHtml(rep) {
     if (!origBuildPrintableAAR) return '';
     let html = origBuildPrintableAAR(rep);
@@ -1589,6 +1606,11 @@ window.IronDivision = window.IronDivision || {};
     observer.observe(document.body, { childList: true, subtree: true, characterData: true });
   }
 
+  // --------------------------------------------------------------------------
+  // 9. MutationObserver, Language Toggle & Public Bootstrap
+  // --------------------------------------------------------------------------
+
+  /** Applies `'en' | 'id'` across UI, logs, manuals, and read-only registries without mutating `ID.state`. */
   function setLanguage(lang) {
     currentLang = (lang === 'id') ? 'id' : 'en';
     try {

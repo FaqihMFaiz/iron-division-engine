@@ -1,6 +1,20 @@
 /* ==========================================================================
    IRON DIVISION ENGINE — PURSUIT, OVERRUNS & BATTLEFIELD SALVAGE
-   File: js/engine-pursuit.js
+   File: js/engine-pursuit.js (Load Order: 5/9)
+
+   Purpose:
+   - Detects battle termination when one side loses all active AND rallying
+     formations (`checkBattleEndCondition`).
+   - Resolves post-battle pursuit, mobility overruns, vehicle towing, and
+     proportional battlefield salvage (`resolveRetreatAndPursuit`).
+   - Builds the immutable AAR snapshot (`buildAfterActionReport`) for Form DA-774
+     and TNI AD MINU LAP-OPS reports.
+
+   Conservation Invariants (Enforced Across Every Unit):
+   - Personnel: `maxPersonnel === personnel + dead + wounded + captured + escaped`
+     (on defeat, active `personnel` becomes `0` after partitioning into `escaped`/`captured`,
+      while `wounded` remains in `wounded` unless Victor enforces No Quarter).
+   - Armor: `originalMaxArmor === armor + recoverableArmor + abandonedArmor + towedArmor + unrecoverableArmor`
    ========================================================================== */
 
 window.IronDivision = window.IronDivision || {};
@@ -13,7 +27,11 @@ window.IronDivision = window.IronDivision || {};
   const D = ID.Data || {};
 
   /**
-   * Safe helper to check if a unit is currently operational on the frontline
+   * Checks whether a deployed unit instance is currently active on the frontline.
+   * Delegates to `ID.Combat.isUnitActive` when loaded.
+   *
+   * @param {Object} u - Deployed combat unit instance.
+   * @returns {boolean} True if unit can fight or hold ground.
    */
   function isUnitActive(u) {
     if (ID.Combat && typeof ID.Combat.isUnitActive === 'function') {
@@ -43,6 +61,12 @@ window.IronDivision = window.IronDivision || {};
     return 0;
   }
 
+  /**
+   * Safely retrieves a unit's pursuit bonus for post-battle encirclement checks.
+   *
+   * @param {Object} u - Victorious unit instance.
+   * @returns {number} Additive pursuit modifier.
+   */
   function getPursuitBonus(u) {
     if (ID.Combat && typeof ID.Combat.getUnitPursuitBonus === 'function') {
       return ID.Combat.getUnitPursuitBonus(u);
@@ -282,7 +306,33 @@ window.IronDivision = window.IronDivision || {};
   }
 
   /**
-   * Builds the persistent telemetry snapshot used by the After-Action Report (AAR) modal.
+   * Summarizes side-level depot expenditure, raiding totals, and low-supply unit
+   * counts for the post-battle AAR snapshot. Extracted to avoid A/B duplication.
+   *
+   * @param {Object} sideState - Side runtime state (`ID.state.battle.sideA` or `sideB`).
+   * @returns {Object} Serialized logistics metrics for Form DA-774 / AAR display.
+   */
+  function buildSideLogisticsSummary(sideState) {
+    const s = sideState || {};
+    const us = (s.units || []).filter(u => !u.isMonster && !u.isZombie);
+    const depotStart = Number(s.maxSupplyDepot || 0);
+    const depotRem = Math.max(0, Number(s.supplyDepot || 0));
+    const depotExpended = Math.max(0, depotStart - depotRem);
+    return {
+      depotStart,
+      depotRem,
+      depotExpended,
+      depotExpPct: depotStart > 0 ? Math.round((depotExpended / depotStart) * 100) : 0,
+      supplyRaided: Number(s.supplyRaidedTotal || 0),
+      criticalSupplyCount: us.filter(u => u.supplyBelow20Triggered || (u.maxSupply > 0 && (u.supply / u.maxSupply) < 0.25)).length,
+      exhaustedCount: us.filter(u => u.maxSupply > 0 && u.supply <= 0).length,
+      depotCriticalClock: s.depotCriticalClock || ''
+    };
+  }
+
+  /**
+   * Builds the persistent telemetry snapshot used by the After-Action Report (AAR) modal
+   * and Form DA-774 / TNI AD printable PDF exporters.
    */
   function buildAfterActionReport() {
     const state = ID.state;
@@ -334,40 +384,8 @@ window.IronDivision = window.IronDivision || {};
       sideB: structuredClone(state.battle.sideB.units),
       salvage: state.battle.salvageReport ? structuredClone(state.battle.salvageReport) : null,
       logistics: {
-        A: (() => {
-          const s = state.battle.sideA || {};
-          const us = (s.units || []).filter(u => !u.isMonster && !u.isZombie);
-          const depotStart = Number(s.maxSupplyDepot || 0);
-          const depotRem = Math.max(0, Number(s.supplyDepot || 0));
-          const depotExpended = Math.max(0, depotStart - depotRem);
-          return {
-            depotStart,
-            depotRem,
-            depotExpended,
-            depotExpPct: depotStart > 0 ? Math.round((depotExpended / depotStart) * 100) : 0,
-            supplyRaided: Number(s.supplyRaidedTotal || 0),
-            criticalSupplyCount: us.filter(u => u.supplyBelow20Triggered || (u.maxSupply > 0 && (u.supply / u.maxSupply) < 0.25)).length,
-            exhaustedCount: us.filter(u => u.maxSupply > 0 && u.supply <= 0).length,
-            depotCriticalClock: s.depotCriticalClock || ""
-          };
-        })(),
-        B: (() => {
-          const s = state.battle.sideB || {};
-          const us = (s.units || []).filter(u => !u.isMonster && !u.isZombie);
-          const depotStart = Number(s.maxSupplyDepot || 0);
-          const depotRem = Math.max(0, Number(s.supplyDepot || 0));
-          const depotExpended = Math.max(0, depotStart - depotRem);
-          return {
-            depotStart,
-            depotRem,
-            depotExpended,
-            depotExpPct: depotStart > 0 ? Math.round((depotExpended / depotStart) * 100) : 0,
-            supplyRaided: Number(s.supplyRaidedTotal || 0),
-            criticalSupplyCount: us.filter(u => u.supplyBelow20Triggered || (u.maxSupply > 0 && (u.supply / u.maxSupply) < 0.25)).length,
-            exhaustedCount: us.filter(u => u.maxSupply > 0 && u.supply <= 0).length,
-            depotCriticalClock: s.depotCriticalClock || ""
-          };
-        })()
+        A: buildSideLogisticsSummary(state.battle.sideA),
+        B: buildSideLogisticsSummary(state.battle.sideB)
       }
     };
   }
